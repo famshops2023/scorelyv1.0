@@ -1,0 +1,257 @@
+<!DOCTYPE html><html class="light" lang="en" style=""><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>Match Result - India vs Australia</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&amp;family=Inter:wght@400;500;700&amp;family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&amp;family=Plus+Jakarta+Sans:wght@100..900&amp;display=swap" rel="stylesheet">
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .victory-pulse {
+            animation: pulse-ring 2s cubic-bezier(0.455, 0.03, 0.515, 0.955) infinite;
+        }
+        @keyframes pulse-ring {
+            0% { transform: scale(0.8); opacity: 0.5; }
+            50% { transform: scale(1.1); opacity: 0.3; }
+            100% { transform: scale(0.8); opacity: 0.5; }
+        }
+        .confetti-piece {
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            background: #ba0013;
+            top: -20px;
+            opacity: 0;
+            animation: fall 3s linear infinite;
+        }
+        @keyframes fall {
+            0% { transform: translateY(0) rotate(0deg); opacity: 1; }
+            100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+        }
+    </style>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "on-tertiary-container": "#f5ffef",
+                    "error": "#ba1a1a",
+                    "on-tertiary-fixed-variant": "#005313",
+                    "on-error": "#ffffff",
+                    "secondary-container": "#d8defe",
+                    "on-background": "#191c1e",
+                    "tertiary-fixed-dim": "#78dc77",
+                    "outline-variant": "#e7bdb8",
+                    "on-secondary-container": "#5b627c",
+                    "on-primary-fixed": "#410002",
+                    "inverse-primary": "#ffb4ab",
+                    "on-secondary-fixed-variant": "#3f465f",
+                    "on-primary-container": "#fffafa",
+                    "surface-variant": "#e0e3e6",
+                    "secondary-fixed": "#dbe1ff",
+                    "tertiary-fixed": "#94f990",
+                    "surface": "#f7f9fc",
+                    "outline": "#926f6b",
+                    "on-tertiary": "#ffffff",
+                    "surface-tint": "#c00014",
+                    "surface-container": "#eceef1",
+                    "on-primary-fixed-variant": "#93000d",
+                    "inverse-on-surface": "#eff1f4",
+                    "surface-container-low": "#f2f4f7",
+                    "surface-container-lowest": "#ffffff",
+                    "secondary-fixed-dim": "#bfc5e4",
+                    "primary-container": "#e31e24",
+                    "on-primary": "#ffffff",
+                    "surface-bright": "#f7f9fc",
+                    "primary-fixed": "#ffdad6",
+                    "inverse-surface": "#2d3133",
+                    "error-container": "#ffdad6",
+                    "surface-dim": "#d8dadd",
+                    "background": "#f7f9fc",
+                    "on-secondary-fixed": "#131b31",
+                    "on-surface-variant": "#5d3f3c",
+                    "primary": "#ba0013",
+                    "on-tertiary-fixed": "#002204",
+                    "on-secondary": "#ffffff",
+                    "tertiary": "#006b1b",
+                    "surface-container-high": "#e6e8eb",
+                    "tertiary-container": "#1d862d",
+                    "on-surface": "#191c1e",
+                    "surface-container-highest": "#e0e3e6",
+                    "on-error-container": "#93000a",
+                    "primary-fixed-dim": "#ffb4ab",
+                    "secondary": "#575d78"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "container-padding": "20px",
+                    "xs": "4px",
+                    "sm": "8px",
+                    "lg": "24px",
+                    "xl": "32px",
+                    "base": "4px",
+                    "md": "16px",
+                    "card-gutter": "12px"
+            },
+            "fontFamily": {
+                    "headline-lg-mobile": ["Plus Jakarta Sans"],
+                    "headline-sm": ["Plus Jakarta Sans"],
+                    "body-lg": ["Inter"],
+                    "label-bold": ["Inter"],
+                    "body-md": ["Inter"],
+                    "score-display": ["Plus Jakarta Sans"],
+                    "headline-md": ["Plus Jakarta Sans"],
+                    "headline-lg": ["Plus Jakarta Sans"]
+            },
+            "fontSize": {
+                    "headline-lg-mobile": ["28px", {"lineHeight": "34px", "fontWeight": "700"}],
+                    "headline-sm": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                    "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "label-bold": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "700"}],
+                    "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                    "score-display": ["48px", {"lineHeight": "48px", "letterSpacing": "-0.04em", "fontWeight": "700"}],
+                    "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "700"}],
+                    "headline-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}]
+            }
+          },
+        },
+      }
+    </script>
+</head>
+<body class="bg-background text-on-background font-body-md min-h-screen selection:bg-primary selection:text-white">
+<!-- Confetti Overlay -->
+<div class="fixed inset-0 pointer-events-none overflow-hidden z-[60]" id="confetti-container"><div class="confetti-piece" style="left: 36.2007vw; background-color: rgb(186, 0, 19); animation-delay: 1.27295s; width: 4.20438px; height: 4.20438px;"></div><div class="confetti-piece" style="left: 4.25306vw; background-color: rgb(255, 255, 255); animation-delay: 0.134215s; width: 10.4924px; height: 10.4924px;"></div><div class="confetti-piece" style="left: 25.9304vw; background-color: rgb(255, 215, 0); animation-delay: 0.762652s; width: 6.73499px; height: 6.73499px;"></div><div class="confetti-piece" style="left: 76.2088vw; background-color: rgb(255, 215, 0); animation-delay: 0.28992s; width: 4.32726px; height: 4.32726px;"></div><div class="confetti-piece" style="left: 91.8198vw; background-color: rgb(26, 33, 56); animation-delay: 2.19358s; width: 11.2763px; height: 11.2763px;"></div><div class="confetti-piece" style="left: 27.8683vw; background-color: rgb(186, 0, 19); animation-delay: 0.260636s; width: 4.43185px; height: 4.43185px;"></div><div class="confetti-piece" style="left: 46.0732vw; background-color: rgb(186, 0, 19); animation-delay: 1.85154s; width: 5.47013px; height: 5.47013px;"></div><div class="confetti-piece" style="left: 16.4074vw; background-color: rgb(26, 33, 56); animation-delay: 1.95196s; width: 11.3227px; height: 11.3227px;"></div><div class="confetti-piece" style="left: 98.6899vw; background-color: rgb(255, 215, 0); animation-delay: 0.458064s; width: 4.80117px; height: 4.80117px;"></div><div class="confetti-piece" style="left: 31.4285vw; background-color: rgb(186, 0, 19); animation-delay: 2.50126s; width: 4.476px; height: 4.476px;"></div><div class="confetti-piece" style="left: 4.01583vw; background-color: rgb(26, 33, 56); animation-delay: 0.531708s; width: 7.55139px; height: 7.55139px;"></div><div class="confetti-piece" style="left: 91.4649vw; background-color: rgb(26, 33, 56); animation-delay: 0.121343s; width: 4.28634px; height: 4.28634px;"></div><div class="confetti-piece" style="left: 2.03228vw; background-color: rgb(255, 255, 255); animation-delay: 1.36487s; width: 10.8286px; height: 10.8286px;"></div><div class="confetti-piece" style="left: 30.7825vw; background-color: rgb(186, 0, 19); animation-delay: 1.77222s; width: 6.44421px; height: 6.44421px;"></div><div class="confetti-piece" style="left: 89.2093vw; background-color: rgb(255, 255, 255); animation-delay: 1.72172s; width: 11.3167px; height: 11.3167px;"></div><div class="confetti-piece" style="left: 91.9559vw; background-color: rgb(26, 33, 56); animation-delay: 0.510311s; width: 6.13616px; height: 6.13616px;"></div><div class="confetti-piece" style="left: 71.6373vw; background-color: rgb(255, 215, 0); animation-delay: 2.67834s; width: 4.95209px; height: 4.95209px;"></div><div class="confetti-piece" style="left: 51.0134vw; background-color: rgb(255, 255, 255); animation-delay: 2.33199s; width: 10.4516px; height: 10.4516px;"></div><div class="confetti-piece" style="left: 21.9924vw; background-color: rgb(255, 255, 255); animation-delay: 0.883619s; width: 11.1447px; height: 11.1447px;"></div><div class="confetti-piece" style="left: 60.8217vw; background-color: rgb(186, 0, 19); animation-delay: 0.980873s; width: 10.3666px; height: 10.3666px;"></div><div class="confetti-piece" style="left: 99.1283vw; background-color: rgb(255, 215, 0); animation-delay: 1.56206s; width: 7.29962px; height: 7.29962px;"></div><div class="confetti-piece" style="left: 70.6106vw; background-color: rgb(255, 215, 0); animation-delay: 2.20965s; width: 4.83331px; height: 4.83331px;"></div><div class="confetti-piece" style="left: 87.1641vw; background-color: rgb(255, 255, 255); animation-delay: 0.190514s; width: 11.7932px; height: 11.7932px;"></div><div class="confetti-piece" style="left: 37.5164vw; background-color: rgb(26, 33, 56); animation-delay: 2.30098s; width: 11.2956px; height: 11.2956px;"></div><div class="confetti-piece" style="left: 67.8391vw; background-color: rgb(255, 215, 0); animation-delay: 0.0211641s; width: 6.43086px; height: 6.43086px;"></div><div class="confetti-piece" style="left: 66.6488vw; background-color: rgb(255, 215, 0); animation-delay: 2.19552s; width: 4.02414px; height: 4.02414px;"></div><div class="confetti-piece" style="left: 19.6576vw; background-color: rgb(255, 215, 0); animation-delay: 0.0919459s; width: 5.13103px; height: 5.13103px;"></div><div class="confetti-piece" style="left: 22.5618vw; background-color: rgb(255, 215, 0); animation-delay: 2.90522s; width: 7.62741px; height: 7.62741px;"></div><div class="confetti-piece" style="left: 41.8029vw; background-color: rgb(255, 215, 0); animation-delay: 0.948801s; width: 6.5321px; height: 6.5321px;"></div><div class="confetti-piece" style="left: 10.3353vw; background-color: rgb(255, 215, 0); animation-delay: 2.45378s; width: 5.24999px; height: 5.24999px;"></div><div class="confetti-piece" style="left: 85.2682vw; background-color: rgb(26, 33, 56); animation-delay: 1.76735s; width: 9.96073px; height: 9.96073px;"></div><div class="confetti-piece" style="left: 6.3616vw; background-color: rgb(26, 33, 56); animation-delay: 1.36282s; width: 8.17778px; height: 8.17778px;"></div><div class="confetti-piece" style="left: 4.74328vw; background-color: rgb(255, 255, 255); animation-delay: 2.02529s; width: 11.9315px; height: 11.9315px;"></div><div class="confetti-piece" style="left: 12.8997vw; background-color: rgb(255, 255, 255); animation-delay: 0.159656s; width: 8.82108px; height: 8.82108px;"></div><div class="confetti-piece" style="left: 68.604vw; background-color: rgb(186, 0, 19); animation-delay: 2.84919s; width: 6.99547px; height: 6.99547px;"></div><div class="confetti-piece" style="left: 43.9094vw; background-color: rgb(186, 0, 19); animation-delay: 0.244788s; width: 7.88785px; height: 7.88785px;"></div><div class="confetti-piece" style="left: 38.6136vw; background-color: rgb(26, 33, 56); animation-delay: 0.402309s; width: 6.08027px; height: 6.08027px;"></div><div class="confetti-piece" style="left: 64.7524vw; background-color: rgb(186, 0, 19); animation-delay: 2.01354s; width: 11.3678px; height: 11.3678px;"></div><div class="confetti-piece" style="left: 33.5205vw; background-color: rgb(26, 33, 56); animation-delay: 1.89786s; width: 9.6462px; height: 9.6462px;"></div><div class="confetti-piece" style="left: 57.8077vw; background-color: rgb(186, 0, 19); animation-delay: 2.456s; width: 7.89437px; height: 7.89437px;"></div><div class="confetti-piece" style="left: 66.716vw; background-color: rgb(26, 33, 56); animation-delay: 1.98529s; width: 6.97061px; height: 6.97061px;"></div><div class="confetti-piece" style="left: 23.6062vw; background-color: rgb(26, 33, 56); animation-delay: 0.398106s; width: 8.66902px; height: 8.66902px;"></div><div class="confetti-piece" style="left: 39.7204vw; background-color: rgb(186, 0, 19); animation-delay: 0.694447s; width: 6.18937px; height: 6.18937px;"></div><div class="confetti-piece" style="left: 57.3255vw; background-color: rgb(255, 255, 255); animation-delay: 1.44868s; width: 6.5506px; height: 6.5506px;"></div><div class="confetti-piece" style="left: 26.5539vw; background-color: rgb(26, 33, 56); animation-delay: 0.247447s; width: 11.6209px; height: 11.6209px;"></div><div class="confetti-piece" style="left: 0.618147vw; background-color: rgb(255, 215, 0); animation-delay: 2.0646s; width: 6.62928px; height: 6.62928px;"></div><div class="confetti-piece" style="left: 11.6891vw; background-color: rgb(186, 0, 19); animation-delay: 0.820026s; width: 10.1387px; height: 10.1387px;"></div><div class="confetti-piece" style="left: 36.839vw; background-color: rgb(186, 0, 19); animation-delay: 2.05858s; width: 9.1745px; height: 9.1745px;"></div><div class="confetti-piece" style="left: 96.8227vw; background-color: rgb(26, 33, 56); animation-delay: 0.343034s; width: 5.07103px; height: 5.07103px;"></div><div class="confetti-piece" style="left: 20.4436vw; background-color: rgb(255, 215, 0); animation-delay: 0.610815s; width: 4.84967px; height: 4.84967px;"></div></div>
+<!-- Top Navigation Anchor (Shared Component) -->
+<header class="fixed top-0 left-0 w-full z-50 flex justify-between items-center px-container-padding h-16 bg-surface dark:bg-surface-dim border-b border-outline-variant shadow-sm" style="background-color: rgb(26, 33, 56);">
+<div class="flex items-center gap-md">
+<button class="flex items-center justify-center w-10 h-10 rounded-full hover:bg-surface-container-high transition-colors active:opacity-80 active:scale-95">
+<span class="material-symbols-outlined text-white">arrow_back</span>
+</button>
+<h1 class="font-headline-sm text-headline-sm text-white font-bold">India vs Australia</h1>
+</div>
+<button class="flex items-center justify-center w-10 h-10 rounded-full hover:bg-surface-container-high transition-colors active:opacity-80 active:scale-95">
+
+</button>
+</header>
+<!-- Main Canvas -->
+<main class="pt-20 pb-24 px-container-padding max-w-[480px] mx-auto min-h-screen flex flex-col gap-lg">
+<!-- Celebration Header -->
+<!-- Winning Team Section -->
+<section class="bg-surface-container-lowest rounded-xl p-lg shadow-[0px_4px_20px_rgba(26,33,56,0.08)] relative overflow-hidden border-primary"><div class="absolute top-0 left-0 w-full bg-primary/90 backdrop-blur-sm py-2 text-center z-10">
+<h2 class="font-headline-lg-mobile text-headline-sm text-white tracking-tight italic uppercase">Victory!</h2>
+<p class="font-label-bold text-white/80">Tournament Final 2024</p>
+</div>
+<div class="flex flex-col items-center justify-center pt-16 pb-4">
+<div class="relative">
+<div class="w-32 h-32 rounded-full border-4 border-primary-fixed bg-surface-variant overflow-hidden flex items-center justify-center shadow-lg">
+<img alt="Winning Team Logo" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDIbFBaSWYyoDFkZw2tJbmCg823rOQfFOZH_grkChQ4DLtVsYBxlEfYskZvpar69G2kXJrQYAZERYRAo6JHevF4d6vw01OL_jZXdGiAfNq2jp5czYj931YAgyzjFzX3xgQ6lB-cVq8urFeT73kJH7cD1fboO6Aw6G4vHpA-RI6sPF1Xis8spc0oVug44IziiQ2pgRGTMf6hrWygE8S1jSSpe9jkJsyeEDPVSXlgwkQsoPGZRhQFK7XqpHto3jSa_QszhmOQgor3sUCF">
+</div>
+<div class="absolute -bottom-2 -right-2 bg-primary text-white w-10 h-10 rounded-full flex items-center justify-center shadow-lg border-2 border-white">
+<span class="material-symbols-outlined" style="font-variation-settings: &quot;FILL&quot; 1;">emoji_events</span>
+</div>
+</div>
+<div class="text-center mt-4">
+<h3 class="font-headline-md text-headline-md text-on-background mb-base">INDIA XI</h3>
+<p class="font-body-lg text-body-lg text-on-surface-variant font-bold px-4 py-1 bg-primary-container/10 rounded-full">India XI won by 5 wickets</p>
+</div>
+</div></section>
+<!-- Summary Stats Bento Grid -->
+<section class="grid grid-cols-2 gap-card-gutter w-full">
+<div class="bg-white p-md rounded-xl shadow-[0px_4px_20px_rgba(26,33,56,0.08)] border-l-4 border-primary">
+<p class="font-label-bold text-label-bold text-primary mb-xs">INDIA XI</p>
+<div class="flex items-baseline gap-xs">
+<span class="font-headline-md text-headline-md">165</span>
+<span class="font-headline-sm text-headline-sm text-secondary">/5</span>
+</div>
+<p class="font-label-bold text-label-bold text-on-surface-variant mt-xs">19.2 OVERS</p>
+</div>
+<div class="bg-white p-md rounded-xl shadow-[0px_4px_20px_rgba(26,33,56,0.08)] border-l-4 border-secondary">
+<p class="font-label-bold text-label-bold text-secondary mb-xs">AUSTRALIA</p>
+<div class="flex items-baseline gap-xs">
+<span class="font-headline-md text-headline-md">162</span>
+<span class="font-headline-sm text-headline-sm text-secondary">/8</span>
+</div>
+<p class="font-label-bold text-label-bold text-on-surface-variant mt-xs">20.0 OVERS</p>
+</div>
+</section>
+<!-- Key Performers -->
+<section>
+<div class="bg-surface-container-lowest rounded-xl shadow-[0px_4px_20px_rgba(26,33,56,0.08)] overflow-hidden">
+<div class="p-md flex flex-col gap-sm">
+<div class="h-px bg-outline-variant/30"></div>
+</div>
+</div>
+</section>
+<!-- Action Buttons -->
+<section class="flex flex-col gap-md mt-lg">
+<button class="w-full bg-primary text-white h-14 rounded-xl font-headline-sm flex items-center justify-center gap-sm shadow-[0px_8px_16px_rgba(186,0,19,0.2)] active:scale-95 transition-all">
+<span class="material-symbols-outlined">share</span>
+                SHARE VICTORY
+            </button>
+<button class="w-full bg-white text-secondary border-2 border-secondary/20 h-14 rounded-xl font-headline-sm flex items-center justify-center gap-sm active:bg-surface-container transition-all">START NEW MATCH</button>
+</section>
+</main>
+<!-- Bottom Navigation Shell (Shared Component) -->
+<nav class="fixed md:hidden bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 py-2 bg-surface dark:bg-surface-dim rounded-t-xl shadow-[0px_-4px_20px_rgba(26,33,56,0.08)]">
+<div class="flex flex-col items-center justify-center text-primary dark:text-primary-fixed-dim bg-primary-container/10 rounded-xl p-1 w-1/4 transition-all active:scale-90 duration-150">
+<span class="material-symbols-outlined" style="font-variation-settings: &quot;FILL&quot; 1;">analytics</span>
+<span class="font-label-bold text-label-bold">Summary</span>
+</div>
+<div class="flex flex-col items-center justify-center text-secondary dark:text-secondary-fixed-dim p-1 w-1/4 hover:bg-surface-container-low transition-all active:scale-90 duration-150">
+<span class="material-symbols-outlined">sports_cricket</span>
+<span class="font-label-bold text-label-bold">Scoreboard</span>
+</div>
+<div class="flex flex-col items-center justify-center text-secondary dark:text-secondary-fixed-dim p-1 w-1/4 hover:bg-surface-container-low transition-all active:scale-90 duration-150">
+<span class="material-symbols-outlined">groups</span>
+<span class="font-label-bold text-label-bold">Squad</span>
+</div>
+<div class="flex flex-col items-center justify-center text-secondary dark:text-secondary-fixed-dim p-1 w-1/4 hover:bg-surface-container-low transition-all active:scale-90 duration-150">
+<span class="material-symbols-outlined">home</span>
+<span class="font-label-bold text-label-bold">Home</span>
+</div>
+</nav>
+<script>
+        // Simple Confetti Generator
+        function createConfetti() {
+            const container = document.getElementById('confetti-container');
+            const colors = ['#ba0013', '#1A2138', '#ffd700', '#ffffff'];
+            
+            for (let i = 0; i < 50; i++) {
+                const confetti = document.createElement('div');
+                confetti.className = 'confetti-piece';
+                confetti.style.left = Math.random() * 100 + 'vw';
+                confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                confetti.style.animationDelay = Math.random() * 3 + 's';
+                confetti.style.width = Math.random() * 8 + 4 + 'px';
+                confetti.style.height = confetti.style.width;
+                container.appendChild(confetti);
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            createConfetti();
+            
+            // Re-trigger confetti every 3 seconds for atmospheric effect
+            setInterval(() => {
+                const container = document.getElementById('confetti-container');
+                container.innerHTML = '';
+                createConfetti();
+            }, 5000);
+        });
+    </script>
+
+
+
+
+
+
+</body></html>

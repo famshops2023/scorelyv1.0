@@ -4,7 +4,6 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:confetti/confetti.dart';
 import 'dart:math';
 
-import '../../core/theme/typography.dart';
 import '../../models/match_result_data.dart';
 
 class MatchResultScreen extends StatefulWidget {
@@ -67,25 +66,45 @@ class _MatchResultScreenState extends State<MatchResultScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF2F4F7),
+      backgroundColor: const Color(0xFFF7F9FC),
+      appBar: AppBar(
+        backgroundColor: const Color(0xFF1a2238),
+        elevation: 0,
+        centerTitle: true,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.white, size: 24),
+          onPressed: () {
+            if (context.canPop()) {
+              context.pop();
+            } else {
+              context.go('/home');
+            }
+          },
+        ),
+        title: Text(
+          '${widget.resultData.team1Name} vs ${widget.resultData.team2Name}',
+          style: GoogleFonts.plusJakartaSans(
+            color: Colors.white,
+            fontSize: 20,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      ),
       body: Stack(
         children: [
           SingleChildScrollView(
-            child: Column(
-              children: [
-                _buildCelebrationHeader(),
-                _buildScoresSection(),
-                _buildMatchDetails(),
-                _buildInningsSummary(),
-                const SizedBox(height: 100), // padding for bottom buttons
-              ],
+            child: Padding(
+              padding: const EdgeInsets.only(left: 20, right: 20, top: 24, bottom: 120),
+              child: Column(
+                children: [
+                  _buildCelebrationCard(),
+                  const SizedBox(height: 24),
+                  _buildSummaryStatsGrid(),
+                  const SizedBox(height: 24),
+                  _buildActionButtons(context),
+                ],
+              ),
             ),
-          ),
-          Positioned(
-            bottom: 0,
-            left: 0,
-            right: 0,
-            child: _buildBottomButtons(context),
           ),
           Align(
             alignment: Alignment.topCenter,
@@ -99,488 +118,443 @@ class _MatchResultScreenState extends State<MatchResultScreen> {
                 Colors.pink,
                 Colors.orange,
                 Colors.purple,
+                Color(0xFFBA0013),
               ],
               createParticlePath: drawStar,
             ),
           ),
+          Positioned(
+            bottom: 0,
+            left: 0,
+            right: 0,
+            child: _buildBottomNav(),
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildCelebrationHeader() {
+  Widget _buildCelebrationCard() {
     final hasWinner = widget.resultData.winningTeam != null;
-    final parts = widget.resultData.matchStatusText.split('\n');
+    final winnerName = widget.resultData.winningTeam ?? 'DRAW';
+    // Use tournament format or default
+    final tournamentName = widget.resultData.format.isNotEmpty ? widget.resultData.format : 'Match Result';
+    final resultText = widget.resultData.matchStatusText.replaceAll('\n', ' ');
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.only(top: 60, bottom: 40, left: 20, right: 20),
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          colors: [Color(0xFF2C1935), Color(0xFF1a2238)],
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-        ),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFBA0013), width: 1),
+        boxShadow: const [
+          BoxShadow(
+            color: Color.fromRGBO(26, 33, 56, 0.08),
+            blurRadius: 20,
+            offset: Offset(0, 4),
+          ),
+        ],
       ),
       child: Column(
         children: [
-          // Trophy icon
+          // Red Header
           Container(
-            width: 80,
-            height: 80,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              border: Border.all(
-                color: Colors.amber.withValues(alpha: 0.5),
-                width: 2,
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(vertical: 12),
+            decoration: const BoxDecoration(
+              color: Color(0xFFBA0013),
+              borderRadius: BorderRadius.only(
+                topLeft: Radius.circular(15),
+                topRight: Radius.circular(15),
               ),
             ),
-            alignment: Alignment.center,
-            child: const Text('🏆', style: TextStyle(fontSize: 40)),
+            child: Column(
+              children: [
+                Text(
+                  hasWinner ? 'VICTORY!' : 'MATCH TIED!',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w700,
+                    fontStyle: FontStyle.italic,
+                    color: Colors.white,
+                    letterSpacing: -0.5,
+                  ),
+                ),
+                Text(
+                  tournamentName,
+                  style: GoogleFonts.inter(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.white.withValues(alpha: 0.8),
+                  ),
+                ),
+              ],
+            ),
           ),
-          const SizedBox(height: 20),
-          Text(
-            hasWinner ? 'CONGRATULATIONS !' : 'MATCH TIED !',
-            style: AppTypography.headlineMedium.copyWith(
-              color: Colors.white,
-              fontSize: 18,
-              letterSpacing: 1.5,
+          
+          // Body
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 16),
+            child: Column(
+              children: [
+                // Logo & Trophy Badge
+                Stack(
+                  alignment: Alignment.bottomRight,
+                  children: [
+                    Container(
+                      width: 128,
+                      height: 128,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(color: const Color(0xFFFFDAD6), width: 4),
+                        color: const Color(0xFFE0E3E6),
+                        boxShadow: const [
+                          BoxShadow(
+                            color: Colors.black26,
+                            blurRadius: 10,
+                            offset: Offset(0, 4),
+                          )
+                        ],
+                      ),
+                      child: ClipOval(
+                        child: Image.asset(
+                          'assets/images/scorely_icon.png',
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) {
+                            return const Icon(Icons.sports_cricket, size: 64, color: Colors.grey);
+                          },
+                        ),
+                      ),
+                    ),
+                    Positioned(
+                      bottom: -8,
+                      right: -8,
+                      child: Container(
+                        width: 40,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: const Color(0xFFBA0013),
+                          border: Border.all(color: Colors.white, width: 2),
+                          boxShadow: const [
+                            BoxShadow(
+                              color: Colors.black26,
+                              blurRadius: 5,
+                            )
+                          ],
+                        ),
+                        child: const Icon(Icons.emoji_events, color: Colors.white, size: 24),
+                      ),
+                    ),
+                  ],
+                ),
+                
+                const SizedBox(height: 24),
+                
+                Text(
+                  winnerName.toUpperCase(),
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 24,
+                    fontWeight: FontWeight.w700,
+                    color: const Color(0xFF191C1E),
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                
+                const SizedBox(height: 12),
+                
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFBA0013).withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                  child: Text(
+                    resultText,
+                    style: GoogleFonts.inter(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      color: const Color(0xFF5D3F3C),
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+              ],
             ),
           ),
-          const SizedBox(height: 8),
-          if (hasWinner) ...[
-            Text(
-              widget.resultData.winningTeam!,
-              style: AppTypography.headlineLarge.copyWith(
-                color: Colors.amber,
-                fontSize: 22,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 8),
-          ],
-          for (var part in parts)
-            Text(
-              part,
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 15,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
         ],
       ),
     );
   }
 
-  Widget _buildScoresSection() {
-    return Transform.translate(
-      offset: const Offset(0, -20),
-      child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 16),
-        padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
-        decoration: BoxDecoration(
-          color: const Color(0xFF202A46),
-          borderRadius: BorderRadius.circular(16),
-          border: const Border(
-            left: BorderSide(color: Colors.red, width: 4),
-            right: BorderSide(color: Colors.blue, width: 4),
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.1),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: Stack(
-          alignment: Alignment.center,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                _buildTeamScoreScoreboard(
-                  widget.resultData.team1Name,
-                  widget.resultData.team1Score,
-                  widget.resultData.team1Overs,
-                  Colors.redAccent,
-                  isLeft: true,
-                ),
-                _buildTeamScoreScoreboard(
-                  widget.resultData.team2Name,
-                  widget.resultData.team2Score,
-                  widget.resultData.team2Overs,
-                  Colors.blueAccent,
-                  isLeft: false,
+  Widget _buildSummaryStatsGrid() {
+    return Row(
+      children: [
+        Expanded(
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              border: const Border(left: BorderSide(color: Color(0xFFBA0013), width: 4)),
+              boxShadow: const [
+                BoxShadow(
+                  color: Color.fromRGBO(26, 33, 56, 0.08),
+                  blurRadius: 20,
+                  offset: Offset(0, 4),
                 ),
               ],
             ),
-            Container(
-              width: 32,
-              height: 32,
-              decoration: const BoxDecoration(
-                color: Colors.red,
-                shape: BoxShape.circle,
-              ),
-              alignment: Alignment.center,
-              child: const Text(
-                'VS',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 11,
-                  fontWeight: FontWeight.bold,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  widget.resultData.innings1Team.toUpperCase(),
+                  style: GoogleFonts.inter(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: const Color(0xFFBA0013),
+                    letterSpacing: 0.5,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
-              ),
+                const SizedBox(height: 8),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.baseline,
+                  textBaseline: TextBaseline.alphabetic,
+                  children: [
+                    Text(
+                      widget.resultData.innings1Score.split('/').first,
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 24,
+                        fontWeight: FontWeight.w700,
+                        color: const Color(0xFF191C1E),
+                      ),
+                    ),
+                    Text(
+                      '/${widget.resultData.innings1Score.split('/').last}',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w600,
+                        color: const Color(0xFF575D78),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  '${widget.resultData.innings1Overs} OVERS',
+                  style: GoogleFonts.inter(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: const Color(0xFF5D3F3C),
+                  ),
+                ),
+              ],
             ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildTeamScoreScoreboard(
-    String name,
-    String score,
-    String overs,
-    Color accentColor, {
-    required bool isLeft,
-  }) {
-    return Column(
-      crossAxisAlignment: isLeft
-          ? CrossAxisAlignment.start
-          : CrossAxisAlignment.end,
-      children: [
-        Text(
-          name,
-          style: TextStyle(
-            color: accentColor,
-            fontWeight: FontWeight.bold,
-            fontSize: 13,
           ),
         ),
-        const SizedBox(height: 2),
-        Row(
-          children: [
-            Icon(Icons.sports_cricket, color: Colors.orange, size: 10),
-            const SizedBox(width: 4),
-            const Text(
-              'BAT',
-              style: TextStyle(color: Colors.white70, fontSize: 9),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              border: const Border(left: BorderSide(color: Color(0xFF575D78), width: 4)),
+              boxShadow: const [
+                BoxShadow(
+                  color: Color.fromRGBO(26, 33, 56, 0.08),
+                  blurRadius: 20,
+                  offset: Offset(0, 4),
+                ),
+              ],
             ),
-          ],
-        ),
-        const SizedBox(height: 6),
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.end,
-          children: [
-            Text(
-              score,
-              style: GoogleFonts.oswald(
-                color: Colors.white,
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                height: 1.0,
-              ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  widget.resultData.innings2Team.toUpperCase(),
+                  style: GoogleFonts.inter(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: const Color(0xFF575D78),
+                    letterSpacing: 0.5,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.baseline,
+                  textBaseline: TextBaseline.alphabetic,
+                  children: [
+                    Text(
+                      widget.resultData.innings2Score.split('/').first,
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 24,
+                        fontWeight: FontWeight.w700,
+                        color: const Color(0xFF191C1E),
+                      ),
+                    ),
+                    Text(
+                      '/${widget.resultData.innings2Score.split('/').last}',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w600,
+                        color: const Color(0xFF575D78),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  '${widget.resultData.innings2Overs} OVERS',
+                  style: GoogleFonts.inter(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: const Color(0xFF5D3F3C),
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(width: 4),
-            Text(
-              overs,
-              style: const TextStyle(color: Colors.white54, fontSize: 10),
-            ),
-          ],
+          ),
         ),
       ],
     );
   }
 
-  Widget _buildMatchDetails() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Row(
-        children: [
-          Expanded(
-            child: _buildInfoCard(
-              'FORMAT',
-              widget.resultData.format,
-              'Match type',
-              '🔥',
-            ),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: _buildInfoCard(
-              'VENUE',
-              widget.resultData.venue,
-              'Ground',
-              null,
-            ),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: _buildInfoCard(
-              'OVERS',
-              widget.resultData.totalOvers.toString(),
-              'Per side',
-              null,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildInfoCard(
-    String title,
-    String value,
-    String subtitle,
-    String? icon,
-  ) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 4,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(width: 2, height: 10, color: Colors.red),
-              const SizedBox(width: 4),
-              Text(
-                title,
-                style: const TextStyle(
-                  fontSize: 8,
-                  color: Colors.grey,
-                  fontWeight: FontWeight.bold,
-                ),
+  Widget _buildActionButtons(BuildContext context) {
+    return Column(
+      children: [
+        SizedBox(
+          width: double.infinity,
+          height: 50,
+          child: ElevatedButton(
+            onPressed: () {
+              // Share logic
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFBA0013),
+              elevation: 4,
+              shadowColor: const Color(0xFFBA0013).withValues(alpha: 0.5),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
               ),
-            ],
-          ),
-          const SizedBox(height: 6),
-          Row(
-            children: [
-              if (icon != null) ...[
-                Text(icon, style: const TextStyle(fontSize: 14)),
-                const SizedBox(width: 4),
-              ],
-              Text(
-                value,
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black87,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 2),
-          Text(
-            subtitle,
-            style: const TextStyle(fontSize: 9, color: Colors.grey),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildInningsSummary() {
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'INNINGS SUMMARY',
-            style: TextStyle(
-              fontSize: 10,
-              color: Colors.grey,
-              fontWeight: FontWeight.bold,
             ),
-          ),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              Expanded(
-                child: _buildInningCard(
-                  '1st Innings',
-                  widget.resultData.innings1Team,
-                  widget.resultData.innings1Score,
-                  widget.resultData.innings1Overs,
-                  Colors.red,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _buildInningCard(
-                  '2nd Innings',
-                  widget.resultData.innings2Team,
-                  widget.resultData.innings2Score,
-                  widget.resultData.innings2Overs,
-                  Colors.blue,
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildInningCard(
-    String title,
-    String team,
-    String score,
-    String overs,
-    Color accent,
-  ) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 4,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(width: 2, height: 36, color: accent),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
+                const Icon(Icons.share, color: Colors.white, size: 18),
+                const SizedBox(width: 8),
                 Text(
-                  title,
-                  style: const TextStyle(fontSize: 9, color: Colors.grey),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  team,
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.bold,
-                    color: accent,
+                  'SHARE VICTORY',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white,
                   ),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  score,
-                  style: const TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black87,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Divider(height: 1, color: Colors.grey[200]),
-                const SizedBox(height: 4),
-                Text(
-                  overs,
-                  style: const TextStyle(fontSize: 9, color: Colors.grey),
                 ),
               ],
             ),
           ),
-        ],
-      ),
+        ),
+        const SizedBox(height: 16),
+        SizedBox(
+          width: double.infinity,
+          height: 50,
+          child: ElevatedButton(
+            onPressed: () {
+              context.go('/home');
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.white,
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+                side: const BorderSide(color: Color(0xFFD8DADD), width: 1.5),
+              ),
+            ),
+            child: Text(
+              'START NEW MATCH',
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+                color: const Color(0xFF1A2138),
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 
-  Widget _buildBottomButtons(BuildContext context) {
+  Widget _buildBottomNav() {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF2F4F7),
-        gradient: LinearGradient(
-          begin: Alignment.bottomCenter,
-          end: Alignment.topCenter,
-          colors: [
-            const Color(0xFFF2F4F7),
-            const Color(0xFFF2F4F7).withValues(alpha: 0.8),
-          ],
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+        boxShadow: [
+          BoxShadow(
+            color: Color.fromRGBO(26, 33, 56, 0.08),
+            blurRadius: 20,
+            offset: Offset(0, -4),
+          ),
+        ],
+      ),
+      child: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              _buildNavItem(Icons.analytics_outlined, 'Summary', isActive: true, onTap: () {
+                context.go('/match-stats', extra: widget.resultData.matchId);
+              }),
+              _buildNavItem(Icons.sports_cricket_outlined, 'Scoreboard', onTap: () {
+                context.go('/match-stats', extra: widget.resultData.matchId);
+              }),
+              _buildNavItem(Icons.groups_outlined, 'Squad', onTap: () {
+                context.go('/match-stats', extra: widget.resultData.matchId);
+              }),
+              _buildNavItem(Icons.home_outlined, 'Home', onTap: () {
+                context.go('/home');
+              }),
+            ],
+          ),
         ),
       ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFDA291C),
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-              onPressed: () {
-                context.go('/match-stats', extra: widget.resultData.matchId);
-              },
-              child: const Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.analytics_outlined, color: Colors.white, size: 20),
-                  SizedBox(width: 8),
-                  Text(
-                    'Match Stats',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 15,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ],
+    );
+  }
+
+  Widget _buildNavItem(IconData icon, String label, {bool isActive = false, VoidCallback? onTap}) {
+    final color = isActive ? const Color(0xFFBA0013) : const Color(0xFF575D78);
+    
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Container(
+        padding: const EdgeInsets.all(4),
+        decoration: isActive ? BoxDecoration(
+          color: const Color(0xFFBA0013).withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(12),
+        ) : null,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, color: color, size: 24),
+            Text(
+              label,
+              style: GoogleFonts.inter(
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                color: color,
               ),
             ),
-          ),
-          const SizedBox(height: 12),
-          SizedBox(
-            width: double.infinity,
-            child: OutlinedButton(
-              style: OutlinedButton.styleFrom(
-                backgroundColor: Colors.white,
-                side: const BorderSide(color: Color(0xFFDA291C)),
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-              onPressed: () {},
-              child: const Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.share, color: Color(0xFFDA291C), size: 20),
-                  SizedBox(width: 8),
-                  Text(
-                    'Share the match results',
-                    style: TextStyle(
-                      color: Color(0xFFDA291C),
-                      fontSize: 15,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

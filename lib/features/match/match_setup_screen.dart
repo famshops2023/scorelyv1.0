@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import '../../core/theme/colors.dart';
-import '../../core/theme/typography.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../models/player_setup.dart';
 
 class MatchSetupData {
@@ -37,146 +36,216 @@ class MatchSetupScreen extends StatefulWidget {
 }
 
 class _MatchSetupScreenState extends State<MatchSetupScreen> {
-  late String _teamAName;
-  late String _teamBName;
-  late List<PlayerSetupData> _teamAPlayers;
-  late List<PlayerSetupData> _teamBPlayers;
+  late TextEditingController _teamAController;
+  late TextEditingController _teamBController;
+  List<PlayerSetupData> _teamAPlayers = [];
+  List<PlayerSetupData> _teamBPlayers = [];
 
   int _overs = 20;
-  String? _tossWonBy;
-  String? _battingFirstTeam;
-  final TextEditingController _maxOversController = TextEditingController();
-  final TextEditingController _powerplayOversController =
-      TextEditingController();
+  String _tossWonBy = 'TEAM A';
+  String _tossDecision = 'BATTING';
+  int _maxOversPerBowler = 4;
+  int _powerplayOvers = 6;
+  String _ballType = 'LEATHER';
 
   @override
   void initState() {
     super.initState();
-    _teamAName = widget.initialData?['teamAName'] ?? 'Team Alpha';
-    _teamBName = widget.initialData?['teamBName'] ?? 'Team Bravo';
+    _teamAController = TextEditingController(text: widget.initialData?['teamAName'] ?? '');
+    _teamBController = TextEditingController(text: widget.initialData?['teamBName'] ?? '');
     _teamAPlayers = widget.initialData?['teamAPlayers'] ?? [];
     _teamBPlayers = widget.initialData?['teamBPlayers'] ?? [];
-    _tossWonBy = _teamAName;
-    _battingFirstTeam = _teamAName;
-
-    _updateDependentOvers();
   }
 
   void _updateDependentOvers() {
-    // Default standard calculations (T20 style logic)
-    int maxOvers = (_overs / 5).ceil();
-    if (_overs < 5) maxOvers = 1;
-    _maxOversController.text = maxOvers.toString();
-
-    int powerplay = (_overs * 0.3).ceil(); // ~30% for powerplay
-    _powerplayOversController.text = powerplay.toString();
-  }
-
-  void _setOvers(int val) {
     setState(() {
-      _overs = val;
-      _updateDependentOvers();
+      int maxOvers = (_overs / 5).ceil();
+      if (_overs < 5) maxOvers = 1;
+      _maxOversPerBowler = maxOvers;
+
+      int powerplay = (_overs * 0.3).ceil();
+      _powerplayOvers = powerplay;
     });
   }
 
   @override
   void dispose() {
-    _maxOversController.dispose();
-    _powerplayOversController.dispose();
+    _teamAController.dispose();
+    _teamBController.dispose();
     super.dispose();
+  }
+
+  void _startMatch() {
+    final String teamAName = _teamAController.text.trim().isNotEmpty ? _teamAController.text.trim() : 'Team A';
+    final String teamBName = _teamBController.text.trim().isNotEmpty ? _teamBController.text.trim() : 'Team B';
+
+    String battingFirstTeam;
+    if (_tossWonBy == 'TEAM A') {
+      battingFirstTeam = _tossDecision == 'BATTING' ? teamAName : teamBName;
+    } else {
+      battingFirstTeam = _tossDecision == 'BATTING' ? teamBName : teamAName;
+    }
+
+    final data = MatchSetupData(
+      teamAName: teamAName,
+      teamBName: teamBName,
+      teamAPlayers: _teamAPlayers,
+      teamBPlayers: _teamBPlayers,
+      overs: _overs,
+      tossWonBy: _tossWonBy == 'TEAM A' ? teamAName : teamBName,
+      maxOversPerBowler: _maxOversPerBowler,
+      powerplayOvers: _powerplayOvers,
+      battingFirstTeam: battingFirstTeam,
+    );
+    context.push('/match-details', extra: data);
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FA),
+      backgroundColor: const Color(0xFFF7F9FC),
       appBar: AppBar(
-        backgroundColor: const Color(0xFF1a2238),
+        backgroundColor: const Color(0xFF191C1E),
         elevation: 0,
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Match Setup',
-              style: AppTypography.headlineMedium.copyWith(color: Colors.white),
-            ),
-            Text(
-              'Configure your match details',
-              style: AppTypography.bodySmall.copyWith(color: Colors.white70),
-            ),
-          ],
-        ),
+        centerTitle: true,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios, color: Colors.white, size: 20),
-          onPressed: () => context.pop(),
+          icon: const Icon(Icons.menu, color: Colors.white),
+          onPressed: () {},
         ),
-      ),
-      body: Column(
-        children: [
-          Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(18.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildSectionTitle('TEAMS'),
-                  Row(
-                    children: [
-                      Expanded(child: _buildTeamCard(_teamAName, Colors.red)),
-                      const SizedBox(width: 12),
-                      Expanded(child: _buildTeamCard(_teamBName, Colors.blue)),
-                    ],
-                  ),
-                  const SizedBox(height: 24),
-
-                  _buildSectionTitle('OVERS'),
-                  _buildOversSection(),
-                  const SizedBox(height: 24),
-
-                  _buildSectionTitle('TOSS WON BY'),
-                  _buildTossSelection(),
-                  const SizedBox(height: 24),
-
-                  _buildSectionTitle('BATTING FIRST'),
-                  _buildBattingFirstSelection(),
-                  const SizedBox(height: 24),
-
-                  _buildSectionTitle('BOWLING RESTRICTIONS'),
-                  _buildInputRow('Max overs per bowler:', _maxOversController),
-                  const SizedBox(height: 24),
-
-                  _buildSectionTitle('POWERPLAY OVERS'),
-                  _buildInputRow(
-                    'Total Powerplay overs:',
-                    _powerplayOversController,
-                  ),
-                  const SizedBox(height: 24),
-                ],
-              ),
-            ),
+        title: Text(
+          'MATCH SETUP',
+          style: GoogleFonts.plusJakartaSans(
+            fontSize: 16,
+            fontWeight: FontWeight.w700,
+            color: Colors.white,
+            letterSpacing: 1.0,
           ),
-          _buildBottomButton(),
+        ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.share_outlined, color: Colors.white),
+            onPressed: () {},
+          ),
         ],
       ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildSectionTitle('TEAM SELECTION'),
+            const SizedBox(height: 12),
+            _buildTeamInput('TEAM A', 'Home Team Name', _teamAController, true),
+            const SizedBox(height: 12),
+            _buildTeamInput('TEAM B', 'Away Team Name', _teamBController, false),
+            const SizedBox(height: 24),
+
+            _buildSectionTitle('OVERS'),
+            const SizedBox(height: 12),
+            _buildOversCard(),
+            const SizedBox(height: 12),
+            _buildOversChips(),
+            const SizedBox(height: 24),
+
+            _buildSectionTitle('COIN TOSS WINNER'),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(child: _buildTossCard('TEAM A', Icons.workspace_premium)),
+                const SizedBox(width: 12),
+                Expanded(child: _buildTossCard('TEAM B', Icons.stadium_outlined)),
+              ],
+            ),
+            const SizedBox(height: 16),
+            
+            Center(child: _buildSectionTitle('DECIDED TO')),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(child: _buildDecisionButton('BATTING')),
+                const SizedBox(width: 12),
+                Expanded(child: _buildDecisionButton('BOWLING')),
+              ],
+            ),
+            const SizedBox(height: 24),
+
+            Row(
+              children: [
+                Expanded(
+                  child: _buildCounterCard('OVERS/BOWLER', _maxOversPerBowler, (val) {
+                    setState(() => _maxOversPerBowler = val);
+                  }),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _buildCounterCard('POWERPLAY', _powerplayOvers, (val) {
+                    setState(() => _powerplayOvers = val);
+                  }),
+                ),
+              ],
+            ),
+            const SizedBox(height: 24),
+
+            _buildSectionTitle('BALL TYPE'),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(child: _buildBallChip('LEATHER', Icons.sports_baseball)),
+                const SizedBox(width: 8),
+                Expanded(child: _buildBallChip('TENNIS', Icons.sports_tennis)),
+                const SizedBox(width: 8),
+                Expanded(child: _buildBallChip('TAPE', Icons.texture)),
+              ],
+            ),
+            const SizedBox(height: 40),
+
+            SizedBox(
+              width: double.infinity,
+              height: 56,
+              child: ElevatedButton.icon(
+                onPressed: _startMatch,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFBA0013),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  elevation: 4,
+                  shadowColor: const Color(0xFFBA0013).withValues(alpha: 0.4),
+                ),
+                icon: const Icon(Icons.play_arrow, color: Colors.white, size: 20),
+                label: Text(
+                  'START MATCH',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+          ],
+        ),
+      ),
+      bottomNavigationBar: _buildBottomNav(),
     );
   }
 
   Widget _buildSectionTitle(String title) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12.0),
-      child: Text(
-        title,
-        style: AppTypography.labelCaps.copyWith(color: Colors.black54),
+    return Text(
+      title,
+      style: GoogleFonts.inter(
+        fontSize: 11,
+        fontWeight: FontWeight.w700,
+        color: const Color(0xFF575D78),
+        letterSpacing: 0.8,
       ),
     );
   }
 
-  Widget _buildTeamCard(String name, Color color) {
+  Widget _buildTeamInput(String title, String hint, TextEditingController controller, bool isTeamA) {
     return Container(
-      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.03),
@@ -188,157 +257,68 @@ class _MatchSetupScreenState extends State<MatchSetupScreen> {
       child: Row(
         children: [
           Container(
-            width: 3,
-            height: 32,
+            width: 4,
+            height: 70,
             decoration: BoxDecoration(
-              color: color,
-              borderRadius: BorderRadius.circular(2),
+              color: isTeamA ? const Color(0xFFBA0013) : const Color(0xFF191C1E),
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(12),
+                bottomLeft: Radius.circular(12),
+              ),
             ),
           ),
-          const SizedBox(width: 10),
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  name == _teamAName ? 'TEAM A' : 'TEAM B',
-                  style: AppTypography.labelCaps.copyWith(
-                    color: color,
-                    fontSize: 8,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: GoogleFonts.inter(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w700,
+                      color: isTeamA ? const Color(0xFFBA0013) : const Color(0xFF191C1E),
+                    ),
                   ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  name,
-                  style: AppTypography.bodyLarge.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black87,
+                  TextField(
+                    controller: controller,
+                    decoration: InputDecoration(
+                      hintText: hint,
+                      hintStyle: GoogleFonts.inter(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                        color: const Color(0xFFBFC5E4),
+                      ),
+                      border: InputBorder.none,
+                      isDense: true,
+                      contentPadding: const EdgeInsets.only(top: 4),
+                    ),
+                    style: GoogleFonts.inter(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: const Color(0xFF191C1E),
+                    ),
                   ),
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
+                ],
+              ),
             ),
           ),
-          Icon(Icons.edit, size: 13, color: Colors.grey.withValues(alpha: 0.5)),
+          const Padding(
+            padding: EdgeInsets.only(right: 16),
+            child: Icon(Icons.sports_cricket, color: Color(0xFFBFC5E4), size: 24),
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildOversSection() {
-    return Column(
-      children: [
-        Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(14),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.03),
-                blurRadius: 10,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              _buildRoundButton(Icons.remove, () {
-                if (_overs > 1) _setOvers(_overs - 1);
-              }, AppColors.surface),
-              Column(
-                children: [
-                  Text(
-                    _overs.toString(),
-                    style: AppTypography.displayLarge.copyWith(
-                      color: Colors.black87,
-                      fontSize: 38,
-                    ),
-                  ),
-                  Text(
-                    'overs',
-                    style: AppTypography.bodySmall.copyWith(color: Colors.grey),
-                  ),
-                ],
-              ),
-              _buildRoundButton(Icons.add, () {
-                _setOvers(_overs + 1);
-              }, Colors.red),
-            ],
-          ),
-        ),
-        const SizedBox(height: 12),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            _buildOverChip(5),
-            _buildOverChip(10),
-            _buildOverChip(20),
-            _buildOverChip(50),
-          ],
-        ),
-      ],
-    );
-  }
-
-  Widget _buildRoundButton(IconData icon, VoidCallback onTap, Color bgColor) {
-    final isRed = bgColor == Colors.red;
-    final isDark = bgColor == AppColors.surface;
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(14),
-      child: Container(
-        width: 48,
-        height: 48,
-        decoration: BoxDecoration(
-          color: bgColor,
-          borderRadius: BorderRadius.circular(14),
-        ),
-        child: Icon(
-          icon,
-          color: isRed || isDark ? Colors.white : Colors.black87,
-          size: 26,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildOverChip(int value) {
-    final isSelected = _overs == value;
-    return Expanded(
-      child: GestureDetector(
-        onTap: () => _setOvers(value),
-        child: Container(
-          margin: const EdgeInsets.symmetric(horizontal: 4),
-          padding: const EdgeInsets.symmetric(vertical: 10),
-          decoration: BoxDecoration(
-            color: isSelected ? Colors.red : Colors.white,
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(
-              color: isSelected
-                  ? Colors.red
-                  : Colors.grey.withValues(alpha: 0.2),
-            ),
-          ),
-          alignment: Alignment.center,
-          child: Text(
-            value.toString(),
-            style: AppTypography.bodyLarge.copyWith(
-              color: isSelected ? Colors.white : Colors.black87,
-              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildTossSelection() {
+  Widget _buildOversCard() {
     return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.03),
@@ -347,186 +327,342 @@ class _MatchSetupScreenState extends State<MatchSetupScreen> {
           ),
         ],
       ),
-      child: Column(
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          _buildTossOption(_teamAName, 'A', Colors.blue),
-          Divider(height: 1, color: Colors.grey.withValues(alpha: 0.2)),
-          _buildTossOption(_teamBName, 'B', Colors.green),
+          GestureDetector(
+            onTap: () {
+              if (_overs > 1) {
+                setState(() => _overs--);
+                _updateDependentOvers();
+              }
+            },
+            child: Container(
+              width: 48,
+              height: 48,
+              decoration: BoxDecoration(
+                color: const Color(0xFFECEEF1),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: const Icon(Icons.remove, color: Color(0xFF191C1E)),
+            ),
+          ),
+          Column(
+            children: [
+              Text(
+                _overs.toString(),
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 48,
+                  fontWeight: FontWeight.w700,
+                  color: const Color(0xFF191C1E),
+                  height: 1.0,
+                ),
+              ),
+              Text(
+                'overs',
+                style: GoogleFonts.inter(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  color: const Color(0xFFBFC5E4),
+                ),
+              ),
+            ],
+          ),
+          GestureDetector(
+            onTap: () {
+              setState(() => _overs++);
+              _updateDependentOvers();
+            },
+            child: Container(
+              width: 48,
+              height: 48,
+              decoration: BoxDecoration(
+                color: const Color(0xFFBA0013),
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFFBA0013).withValues(alpha: 0.3),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: const Icon(Icons.add, color: Colors.white),
+            ),
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildTossOption(String teamName, String initial, Color color) {
-    final isSelected = _tossWonBy == teamName;
-    return InkWell(
-      onTap: () => setState(() => _tossWonBy = teamName),
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Row(
-          children: [
-            Container(
-              width: 26,
-              height: 26,
-              decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+  Widget _buildOversChips() {
+    return Row(
+      children: [5, 10, 20, 50].map((val) {
+        bool isSelected = _overs == val;
+        return Expanded(
+          child: GestureDetector(
+            onTap: () {
+              setState(() => _overs = val);
+              _updateDependentOvers();
+            },
+            child: Container(
+              margin: const EdgeInsets.symmetric(horizontal: 4),
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              decoration: BoxDecoration(
+                color: isSelected ? const Color(0xFFBA0013) : Colors.white,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: isSelected ? const Color(0xFFBA0013) : const Color(0xFFECEEF1),
+                ),
+                boxShadow: isSelected
+                    ? [
+                        BoxShadow(
+                          color: const Color(0xFFBA0013).withValues(alpha: 0.3),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        )
+                      ]
+                    : [],
+              ),
               alignment: Alignment.center,
               child: Text(
-                initial,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
+                val.toString(),
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                  color: isSelected ? Colors.white : const Color(0xFF191C1E),
                 ),
               ),
             ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                teamName,
-                style: AppTypography.bodyLarge.copyWith(
-                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                  color: Colors.black87,
-                ),
-              ),
-            ),
-            if (isSelected) const Icon(Icons.check_circle, color: Colors.red),
-          ],
-        ),
-      ),
+          ),
+        );
+      }).toList(),
     );
   }
 
-  Widget _buildBattingFirstSelection() {
+  Widget _buildTossCard(String teamName, IconData icon) {
+    bool isSelected = _tossWonBy == teamName;
     return GestureDetector(
-      onTap: () {
-        setState(() {
-          _battingFirstTeam = _battingFirstTeam == _teamAName
-              ? _teamBName
-              : _teamAName;
-        });
-      },
+      onTap: () => setState(() => _tossWonBy = teamName),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+        padding: const EdgeInsets.symmetric(vertical: 24),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isSelected ? const Color(0xFF191C1E) : Colors.transparent,
+            width: 1.5,
+          ),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withValues(alpha: 0.03),
               blurRadius: 10,
               offset: const Offset(0, 4),
-            ),
+            )
           ],
         ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        child: Column(
           children: [
-            Text(
-              _battingFirstTeam ?? _teamAName,
-              style: AppTypography.bodyLarge.copyWith(
-                fontWeight: FontWeight.bold,
-                color: Colors.black87,
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: isSelected ? const Color(0xFFECEEF1) : const Color(0xFFF7F9FC),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                icon,
+                size: 28,
+                color: isSelected ? const Color(0xFF191C1E) : const Color(0xFFBFC5E4),
               ),
             ),
-            const Icon(Icons.chevron_right, color: Colors.grey),
+            const SizedBox(height: 12),
+            Text(
+              teamName,
+              style: GoogleFonts.inter(
+                fontSize: 14,
+                fontWeight: FontWeight.w700,
+                color: isSelected ? const Color(0xFF191C1E) : const Color(0xFFBFC5E4),
+              ),
+            ),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildInputRow(String label, TextEditingController controller) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Expanded(
-          child: Text(
-            label,
-            style: AppTypography.bodyLarge.copyWith(color: Colors.black87),
+  Widget _buildDecisionButton(String decision) {
+    bool isSelected = _tossDecision == decision;
+    return GestureDetector(
+      onTap: () => setState(() => _tossDecision = decision),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 16),
+        decoration: BoxDecoration(
+          color: isSelected ? const Color(0xFFBA0013) : const Color(0xFFECEEF1),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        alignment: Alignment.center,
+        child: Text(
+          decision,
+          style: GoogleFonts.inter(
+            fontSize: 14,
+            fontWeight: FontWeight.w700,
+            color: isSelected ? Colors.white : const Color(0xFF575D78),
           ),
         ),
-        SizedBox(
-          width: 80,
-          child: TextField(
-            controller: controller,
-            keyboardType: TextInputType.number,
-            textAlign: TextAlign.center,
-            style: AppTypography.bodyLarge.copyWith(color: Colors.black87),
-            decoration: InputDecoration(
-              filled: true,
-              fillColor: Colors.white,
-              contentPadding: const EdgeInsets.symmetric(vertical: 10),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(10),
-                borderSide: BorderSide(
-                  color: Colors.grey.withValues(alpha: 0.2),
-                ),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(10),
-                borderSide: const BorderSide(color: Colors.red),
-              ),
-            ),
-          ),
-        ),
-      ],
+      ),
     );
   }
 
-  Widget _buildBottomButton() {
+  Widget _buildCounterCard(String title, int value, Function(int) onChanged) {
     return Container(
-      padding: const EdgeInsets.all(18),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
+            color: Colors.black.withValues(alpha: 0.03),
             blurRadius: 10,
-            offset: const Offset(0, -4),
-          ),
+            offset: const Offset(0, 4),
+          )
         ],
       ),
-      child: SizedBox(
-        width: double.infinity,
-        child: ElevatedButton(
-          onPressed: () {
-            final data = MatchSetupData(
-              teamAName: _teamAName,
-              teamBName: _teamBName,
-              teamAPlayers: _teamAPlayers,
-              teamBPlayers: _teamBPlayers,
-              overs: _overs,
-              tossWonBy: _tossWonBy ?? _teamAName,
-              maxOversPerBowler: int.tryParse(_maxOversController.text) ?? 4,
-              powerplayOvers: int.tryParse(_powerplayOversController.text) ?? 6,
-              battingFirstTeam: _battingFirstTeam ?? _teamAName,
-            );
-            context.push('/match-details', extra: data);
-          },
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.red,
-            foregroundColor: Colors.white,
-            padding: const EdgeInsets.symmetric(vertical: 16),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: GoogleFonts.inter(
+              fontSize: 10,
+              fontWeight: FontWeight.w700,
+              color: const Color(0xFF575D78),
+              letterSpacing: 0.5,
             ),
           ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: const [
-              Icon(Icons.play_arrow, color: Colors.white),
-              SizedBox(width: 8),
+          const SizedBox(height: 12),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              GestureDetector(
+                onTap: () {
+                  if (value > 1) onChanged(value - 1);
+                },
+                child: Container(
+                  width: 32,
+                  height: 32,
+                  decoration: const BoxDecoration(
+                    color: Color(0xFFECEEF1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.remove, size: 16, color: Color(0xFF191C1E)),
+                ),
+              ),
               Text(
-                'Start Match',
-                style: TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
+                value.toString(),
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 24,
+                  fontWeight: FontWeight.w700,
+                  color: const Color(0xFF191C1E),
+                ),
+              ),
+              GestureDetector(
+                onTap: () => onChanged(value + 1),
+                child: Container(
+                  width: 32,
+                  height: 32,
+                  decoration: const BoxDecoration(
+                    color: Color(0xFFECEEF1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.add, size: 16, color: Color(0xFF191C1E)),
                 ),
               ),
             ],
           ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBallChip(String type, IconData icon) {
+    bool isSelected = _ballType == type;
+    return GestureDetector(
+      onTap: () => setState(() => _ballType = type),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        decoration: BoxDecoration(
+          color: isSelected ? const Color(0xFF191C1E) : const Color(0xFFECEEF1),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              icon,
+              size: 16,
+              color: isSelected ? Colors.white : const Color(0xFF575D78),
+            ),
+            const SizedBox(width: 6),
+            Text(
+              type,
+              style: GoogleFonts.inter(
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                color: isSelected ? Colors.white : const Color(0xFF575D78),
+              ),
+            ),
+          ],
         ),
       ),
+    );
+  }
+
+  Widget _buildBottomNav() {
+    return LayoutBuilder(
+      builder: (context, _) {
+        final bottomInset = MediaQuery.of(context).viewPadding.bottom;
+        return Container(
+          height: 70 + bottomInset,
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            border: Border(top: BorderSide(color: Color(0xFFECEEF1), width: 1)),
+          ),
+          child: Padding(
+            padding: EdgeInsets.only(bottom: bottomInset),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                _buildNavItem(Icons.home_outlined, 'Home', true),
+                _buildNavItem(Icons.groups_outlined, 'Teams', false),
+                _buildNavItem(Icons.history, 'History', false),
+                _buildNavItem(Icons.person_outline, 'Profile', false),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildNavItem(IconData icon, String label, bool isSelected) {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Icon(
+          icon,
+          color: isSelected ? const Color(0xFFBA0013) : const Color(0xFF575D78),
+          size: 24,
+        ),
+        const SizedBox(height: 4),
+        Text(
+          label,
+          style: GoogleFonts.inter(
+            fontSize: 10,
+            fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+            color: isSelected ? const Color(0xFFBA0013) : const Color(0xFF575D78),
+          ),
+        ),
+      ],
     );
   }
 }

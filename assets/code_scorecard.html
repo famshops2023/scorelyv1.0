@@ -1,0 +1,381 @@
+<!DOCTYPE html><html class="light" lang="en" style=""><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>Live Scoreboard - India vs Australia</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Plus+Jakarta+Sans:wght@600;700;800&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            vertical-align: middle;
+        }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        .card-shadow { shadow-[0px_4px_20px_rgba(26,33,56,0.08)]; }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "error": "#ba1a1a",
+                        "secondary-fixed": "#dbe1ff",
+                        "on-tertiary-fixed-variant": "#005313",
+                        "on-primary-container": "#fffafa",
+                        "primary-fixed": "#ffdad6",
+                        "on-surface-variant": "#5d3f3c",
+                        "tertiary-fixed": "#94f990",
+                        "surface-container-lowest": "#ffffff",
+                        "on-tertiary": "#ffffff",
+                        "secondary-fixed-dim": "#bfc5e4",
+                        "primary-container": "#e31e24",
+                        "background": "#f7f9fc",
+                        "outline": "#926f6b",
+                        "on-primary": "#ffffff",
+                        "surface-container-highest": "#e0e3e6",
+                        "primary": "#ba0013",
+                        "on-tertiary-container": "#f5ffef",
+                        "on-primary-fixed-variant": "#93000d",
+                        "surface-container-low": "#f2f4f7",
+                        "inverse-primary": "#ffb4ab",
+                        "surface-container": "#eceef1",
+                        "on-secondary-container": "#5b627c",
+                        "inverse-on-surface": "#eff1f4",
+                        "secondary": "#575d78",
+                        "on-error-container": "#93000a",
+                        "surface-container-high": "#e6e8eb",
+                        "secondary-container": "#d8defe",
+                        "on-secondary": "#ffffff",
+                        "surface": "#f7f9fc",
+                        "tertiary-fixed-dim": "#78dc77",
+                        "surface-dim": "#d8dadd",
+                        "inverse-surface": "#2d3133",
+                        "surface-bright": "#f7f9fc",
+                        "on-tertiary-fixed": "#002204",
+                        "on-primary-fixed": "#410002",
+                        "primary-fixed-dim": "#ffb4ab",
+                        "on-secondary-fixed": "#131b31",
+                        "tertiary-container": "#1d862d",
+                        "tertiary": "#006b1b",
+                        "surface-tint": "#c00014",
+                        "on-error": "#ffffff",
+                        "on-secondary-fixed-variant": "#3f465f",
+                        "on-surface": "#191c1e",
+                        "surface-variant": "#e0e3e6",
+                        "error-container": "#ffdad6",
+                        "outline-variant": "#e7bdb8",
+                        "on-background": "#191c1e"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "xs": "4px",
+                        "container-padding": "20px",
+                        "md": "16px",
+                        "sm": "8px",
+                        "base": "4px",
+                        "xl": "32px",
+                        "lg": "24px",
+                        "card-gutter": "12px"
+                    },
+                    "fontFamily": {
+                        "label-bold": ["Inter"],
+                        "headline-lg": ["Plus Jakarta Sans"],
+                        "body-md": ["Inter"],
+                        "body-lg": ["Inter"],
+                        "headline-md": ["Plus Jakarta Sans"],
+                        "score-display": ["Plus Jakarta Sans"],
+                        "headline-lg-mobile": ["Plus Jakarta Sans"],
+                        "headline-sm": ["Plus Jakarta Sans"]
+                    },
+                    "fontSize": {
+                        "label-bold": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "700"}],
+                        "headline-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                        "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                        "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                        "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "700"}],
+                        "score-display": ["48px", {"lineHeight": "48px", "letterSpacing": "-0.04em", "fontWeight": "700"}],
+                        "headline-lg-mobile": ["28px", {"lineHeight": "34px", "fontWeight": "700"}],
+                        "headline-sm": ["20px", {"lineHeight": "28px", "fontWeight": "600"}]
+                    }
+                },
+            },
+        }
+    </script>
+</head>
+<body class="bg-background text-on-surface font-body-md min-h-screen pb-24">
+<!-- Top App Bar -->
+<header class="fixed top-0 left-0 w-full z-50 flex justify-between items-center px-container-padding h-16 bg-surface dark:bg-surface-dim border-b border-outline-variant shadow-sm" style="background-color: rgb(26, 33, 56);">
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-white cursor-pointer hover:bg-white/10 transition-colors p-2 rounded-full" data-icon="arrow_back">arrow_back</span>
+<h1 class="font-headline-sm text-headline-sm text-white font-bold">SOCREBAORD</h1>
+</div>
+
+</header>
+<main class="pt-20 px-container-padding max-w-[480px] mx-auto space-y-card-gutter">
+<!-- Score Overview Hero (Contextual for Scoreboard) -->
+<section class="bg-surface-container-lowest rounded-xl p-lg shadow-[0px_4px_20px_rgba(26,33,56,0.08)] border-l-4 border-primary">
+<div class="flex justify-between items-end mb-sm">
+<div>
+<span class="font-label-bold text-label-bold text-tertiary flex items-center gap-xs">
+<span class="w-2 h-2 rounded-full bg-tertiary animate-pulse"></span> LIVE • 1st Innings
+                    </span>
+<h2 class="font-headline-md text-headline-md mt-xs">India</h2>
+</div>
+<div class="text-right">
+<div class="font-score-display text-score-display text-on-surface">245/4</div>
+<div class="font-body-md text-body-md text-on-surface-variant">38.2 Overs</div>
+</div>
+</div>
+</section>
+<!-- Team Selector Segmented Control -->
+<nav class="flex p-1 bg-surface-container rounded-xl">
+<button class="flex-1 py-2 font-label-bold text-label-bold bg-white text-primary rounded-lg shadow-sm">INDIA</button>
+<button class="flex-1 py-2 font-label-bold text-label-bold text-on-surface-variant hover:bg-surface-container-high transition-all">AUSTRALIA</button>
+</nav>
+<!-- Batting Scorecard -->
+<section class="bg-surface-container-lowest rounded-xl shadow-[0px_4px_20px_rgba(26,33,56,0.08)] overflow-hidden">
+<div class="bg-on-secondary-fixed text-white px-md py-sm font-label-bold text-label-bold flex justify-between items-center">
+<span class="">BATTING</span>
+<span class="opacity-70">RR: 6.39</span>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead class="bg-surface-container-low border-b border-outline-variant">
+<tr class="font-label-bold text-label-bold text-on-surface-variant">
+<th class="py-3 px-md">BATTER</th>
+<th class="py-3 px-sm text-center">R</th>
+<th class="py-3 px-sm text-center">B</th>
+<th class="py-3 px-sm text-center">4s</th>
+<th class="py-3 px-sm text-center">6s</th>
+<th class="py-3 px-sm text-center">SR</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-outline-variant">
+<!-- Active Batter -->
+<tr class="bg-primary-container/5">
+<td class="py-3 px-md">
+<div class="font-body-md text-body-md font-bold text-on-surface flex items-center gap-xs">
+                                    V. Kohli <span class="text-primary">*</span>
+</div>
+<div class="text-[10px] text-tertiary font-bold uppercase">Not Out</div>
+</td>
+<td class="py-3 px-sm text-center font-bold">84</td>
+<td class="py-3 px-sm text-center">72</td>
+<td class="py-3 px-sm text-center">9</td>
+<td class="py-3 px-sm text-center">2</td>
+<td class="py-3 px-sm text-center text-on-surface-variant">116.6</td>
+</tr>
+<!-- Active Batter -->
+<tr class="bg-primary-container/5">
+<td class="py-3 px-md">
+<div class="font-body-md text-body-md font-bold text-on-surface flex items-center gap-xs">
+                                    KL Rahul <span class="text-primary">*</span>
+</div>
+<div class="text-[10px] text-tertiary font-bold uppercase">Not Out</div>
+</td>
+<td class="py-3 px-sm text-center font-bold">32</td>
+<td class="py-3 px-sm text-center">41</td>
+<td class="py-3 px-sm text-center">3</td>
+<td class="py-3 px-sm text-center">0</td>
+<td class="py-3 px-sm text-center text-on-surface-variant">78.0</td>
+</tr>
+<!-- Out Batters -->
+<tr>
+<td class="py-3 px-md">
+<div class="font-body-md text-body-md text-on-surface">R. Sharma (c)</div>
+<div class="text-[10px] text-on-surface-variant italic">c Smith b Zampa</div>
+</td>
+<td class="py-3 px-sm text-center">45</td>
+<td class="py-3 px-sm text-center">31</td>
+<td class="py-3 px-sm text-center">6</td>
+<td class="py-3 px-sm text-center">2</td>
+<td class="py-3 px-sm text-center text-on-surface-variant">145.1</td>
+</tr>
+<tr>
+<td class="py-3 px-md">
+<div class="font-body-md text-body-md text-on-surface">S. Gill</div>
+<div class="text-[10px] text-on-surface-variant italic">lbw Starc</div>
+</td>
+<td class="py-3 px-sm text-center">23</td>
+<td class="py-3 px-sm text-center">18</td>
+<td class="py-3 px-sm text-center">4</td>
+<td class="py-3 px-sm text-center">0</td>
+<td class="py-3 px-sm text-center text-on-surface-variant">127.7</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="p-md bg-surface-container-low flex items-center gap-md">
+<span class="font-label-bold text-label-bold text-on-surface-variant">EXTRAS</span>
+<span class="font-body-md text-body-md">12 <span class="text-[10px] text-on-surface-variant">(w 5, nb 1, b 2, lb 4)</span></span>
+</div>
+</section>
+<!-- Fall of Wickets -->
+<section class="space-y-sm">
+<h3 class="font-label-bold text-label-bold text-on-surface-variant px-1 uppercase tracking-wider">Fall of Wickets</h3>
+<div class="flex gap-sm overflow-x-auto no-scrollbar pb-2">
+<div class="flex-shrink-0 bg-white border border-outline-variant rounded-lg p-sm min-w-[100px] shadow-sm">
+<div class="font-label-bold text-label-bold text-primary">48/1</div>
+<div class="text-[10px] text-on-surface-variant">S. Gill (6.4)</div>
+</div>
+<div class="flex-shrink-0 bg-white border border-outline-variant rounded-lg p-sm min-w-[100px] shadow-sm">
+<div class="font-label-bold text-label-bold text-primary">89/2</div>
+<div class="text-[10px] text-on-surface-variant">R. Sharma (12.2)</div>
+</div>
+<div class="flex-shrink-0 bg-white border border-outline-variant rounded-lg p-sm min-w-[100px] shadow-sm">
+<div class="font-label-bold text-label-bold text-primary">156/3</div>
+<div class="text-[10px] text-on-surface-variant">S. Iyer (24.1)</div>
+</div>
+<div class="flex-shrink-0 bg-white border border-outline-variant rounded-lg p-sm min-w-[100px] shadow-sm">
+<div class="font-label-bold text-label-bold text-primary">201/4</div>
+<div class="text-[10px] text-on-surface-variant">Hardik (32.5)</div>
+</div>
+</div>
+</section>
+<!-- Bowling Analysis -->
+<section class="bg-surface-container-lowest rounded-xl shadow-[0px_4px_20px_rgba(26,33,56,0.08)] overflow-hidden">
+<div class="bg-on-secondary-fixed text-white px-md py-sm font-label-bold text-label-bold uppercase">
+                Bowling - Australia
+            </div>
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead class="bg-surface-container-low border-b border-outline-variant">
+<tr class="font-label-bold text-label-bold text-on-surface-variant">
+<th class="py-3 px-md">BOWLER</th>
+<th class="py-3 px-sm text-center">O</th>
+<th class="py-3 px-sm text-center">M</th>
+<th class="py-3 px-sm text-center">R</th>
+<th class="py-3 px-sm text-center">W</th>
+<th class="py-3 px-sm text-center">ER</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-outline-variant">
+<tr>
+<td class="py-3 px-md font-body-md text-body-md">M. Starc</td>
+<td class="py-3 px-sm text-center">8.0</td>
+<td class="py-3 px-sm text-center">0</td>
+<td class="py-3 px-sm text-center">52</td>
+<td class="py-3 px-sm text-center font-bold">1</td>
+<td class="py-3 px-sm text-center">6.5</td>
+</tr>
+<tr>
+<td class="py-3 px-md font-body-md text-body-md">P. Cummins</td>
+<td class="py-3 px-sm text-center">7.2</td>
+<td class="py-3 px-sm text-center">1</td>
+<td class="py-3 px-sm text-center">38</td>
+<td class="py-3 px-sm text-center font-bold">0</td>
+<td class="py-3 px-sm text-center">5.1</td>
+</tr>
+<tr class="bg-tertiary/5">
+<td class="py-3 px-md font-body-md text-body-md">A. Zampa</td>
+<td class="py-3 px-sm text-center">9.0</td>
+<td class="py-3 px-sm text-center">0</td>
+<td class="py-3 px-sm text-center">44</td>
+<td class="py-3 px-sm text-center font-bold text-tertiary">2</td>
+<td class="py-3 px-sm text-center">4.8</td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<!-- Over-by-Over Analysis -->
+<section class="space-y-sm">
+<div class="flex justify-between items-center px-1">
+<h3 class="font-label-bold text-label-bold text-on-surface-variant uppercase tracking-wider">Over-by-Over</h3>
+<span class="text-[10px] font-label-bold text-primary flex items-center gap-1 cursor-pointer">
+                    VIEW ALL <span class="material-symbols-outlined text-[14px]" data-icon="keyboard_arrow_right">keyboard_arrow_right</span>
+</span>
+</div>
+<div class="space-y-sm">
+<!-- Over Item -->
+<div class="bg-white rounded-xl p-md flex items-center gap-md border border-outline-variant shadow-sm">
+<div class="flex-shrink-0 w-12 h-12 rounded-full border-2 border-primary-container flex flex-col items-center justify-center">
+<span class="text-[10px] font-bold text-on-surface-variant">OV</span>
+<span class="font-headline-sm text-headline-sm text-primary leading-none">38</span>
+</div>
+<div class="flex-1">
+<div class="flex justify-between items-start mb-xs">
+<div>
+<span class="font-body-md text-body-md font-bold">A. Zampa</span>
+<span class="text-[10px] text-on-surface-variant ml-2">• 12 Runs</span>
+</div>
+<span class="material-symbols-outlined text-primary text-[18px]" data-icon="trending_up">trending_up</span>
+</div>
+<div class="flex gap-2">
+<span class="w-6 h-6 rounded-full bg-surface-container flex items-center justify-center text-[11px] font-bold">1</span>
+<span class="w-6 h-6 rounded-full bg-surface-container flex items-center justify-center text-[11px] font-bold">4</span>
+<span class="w-6 h-6 rounded-full bg-surface-container flex items-center justify-center text-[11px] font-bold">.</span>
+<span class="w-6 h-6 rounded-full bg-primary text-white flex items-center justify-center text-[11px] font-bold">6</span>
+<span class="w-6 h-6 rounded-full bg-surface-container flex items-center justify-center text-[11px] font-bold">1</span>
+<span class="w-6 h-6 rounded-full bg-surface-container flex items-center justify-center text-[11px] font-bold">.</span>
+</div>
+</div>
+</div>
+<!-- Over Item (Wicket) -->
+<div class="bg-white rounded-xl p-md flex items-center gap-md border border-outline-variant shadow-sm">
+<div class="flex-shrink-0 w-12 h-12 rounded-full border-2 border-outline-variant flex flex-col items-center justify-center">
+<span class="text-[10px] font-bold text-on-surface-variant">OV</span>
+<span class="font-headline-sm text-headline-sm text-on-surface leading-none">37</span>
+</div>
+<div class="flex-1">
+<div class="flex justify-between items-start mb-xs">
+<div>
+<span class="font-body-md text-body-md font-bold">M. Starc</span>
+<span class="text-[10px] text-on-surface-variant ml-2">• 4 Runs • 1 Wicket</span>
+</div>
+<span class="material-symbols-outlined text-error text-[18px]" data-icon="flag">flag</span>
+</div>
+<div class="flex gap-2">
+<span class="w-6 h-6 rounded-full bg-surface-container flex items-center justify-center text-[11px] font-bold">.</span>
+<span class="w-6 h-6 rounded-full bg-surface-container flex items-center justify-center text-[11px] font-bold">1</span>
+<span class="w-6 h-6 rounded-full bg-error text-white flex items-center justify-center text-[11px] font-bold">W</span>
+<span class="w-6 h-6 rounded-full bg-surface-container flex items-center justify-center text-[11px] font-bold">2</span>
+<span class="w-6 h-6 rounded-full bg-surface-container flex items-center justify-center text-[11px] font-bold">1</span>
+<span class="w-6 h-6 rounded-full bg-surface-container flex items-center justify-center text-[11px] font-bold">.</span>
+</div>
+</div>
+</div>
+</div>
+</section>
+</main>
+<!-- Bottom Navigation Bar -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 py-2 bg-surface dark:bg-surface-dim shadow-[0px_-4px_20px_rgba(26,33,56,0.08)] rounded-t-xl">
+<div class="flex flex-col items-center justify-center text-secondary dark:text-secondary-fixed-dim p-1 hover:bg-surface-container-low transition-all">
+<span class="material-symbols-outlined" data-icon="analytics">analytics</span>
+<span class="font-label-bold text-label-bold">Summary</span>
+</div>
+<!-- ACTIVE: Scoreboard -->
+<div class="flex flex-col items-center justify-center text-primary dark:text-primary-fixed-dim bg-primary-container/10 rounded-xl p-1 px-4 active:scale-90 duration-150">
+<span class="material-symbols-outlined" data-icon="scoreboard">scoreboard</span>
+<span class="font-label-bold text-label-bold">Scoreboard</span>
+</div>
+<div class="flex flex-col items-center justify-center text-secondary dark:text-secondary-fixed-dim p-1 hover:bg-surface-container-low transition-all">
+<span class="material-symbols-outlined" data-icon="groups">groups</span>
+<span class="font-label-bold text-label-bold">Teams</span>
+</div>
+<div class="flex flex-col items-center justify-center text-secondary dark:text-secondary-fixed-dim p-1 hover:bg-surface-container-low transition-all">
+<span class="material-symbols-outlined" data-icon="equalizer">equalizer</span>
+<span class="font-label-bold text-label-bold">Stats</span>
+</div>
+</nav>
+
+
+
+
+
+
+
+
+
+
+
+
+</body></html>

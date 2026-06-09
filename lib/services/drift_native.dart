@@ -8,6 +8,6 @@ DatabaseConnection connect() {
   return DatabaseConnection.delayed(Future(() async {
     final dbFolder = await getApplicationDocumentsDirectory();
     final file = File(p.join(dbFolder.path, 'db.sqlite'));
-    return NativeDatabase.createInBackground(file).createConnection();
+    return DatabaseConnection(NativeDatabase.createInBackground(file));
   }));
 }

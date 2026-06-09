@@ -288,6 +288,93 @@ class _ScoringScreenState extends ConsumerState<ScoringScreen> {
     });
   }
 
+  void _promptChangeBatter(bool isStriker) {
+    final currentBatter = isStriker ? _striker : _nonStriker;
+    if (currentBatter == null) return;
+    
+    final stats = _batterStats[currentBatter];
+    if (stats != null && (stats.runs > 0 || stats.balls > 0)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Cannot change $currentBatter because they have already faced balls. Use Retire instead.')),
+      );
+      return;
+    }
+
+    final unbatted = _battingPlayers
+        .where((p) => !_batterOrder.contains(p.name) && p.name != currentBatter)
+        .toList();
+
+    if (unbatted.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No other unbatted players available.')),
+      );
+      return;
+    }
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: const Color(0xFF0F172A),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return Container(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'CHANGE BATTER',
+                style: GoogleFonts.inter(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                  color: Colors.white,
+                ),
+              ),
+              const SizedBox(height: 10),
+              Text(
+                'Replace $currentBatter with:',
+                style: GoogleFonts.inter(color: Colors.grey, fontSize: 13),
+              ),
+              const SizedBox(height: 16),
+              Expanded(
+                child: ListView.builder(
+                  shrinkWrap: true,
+                  itemCount: unbatted.length,
+                  itemBuilder: (context, idx) {
+                    final p = unbatted[idx];
+                    return ListTile(
+                      title: Text(p.name,
+                          style: GoogleFonts.inter(color: Colors.white)),
+                      onTap: () {
+                        setState(() {
+                          _batterOrder.remove(currentBatter);
+                          _batterStats.remove(currentBatter);
+
+                          if (isStriker) {
+                            _striker = p.name;
+                          } else {
+                            _nonStriker = p.name;
+                          }
+                          
+                          _batterOrder.add(p.name);
+                          _batterStats[p.name] = BatterStats(name: p.name);
+                        });
+                        Navigator.pop(context);
+                        _commitState();
+                      },
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   void _promptRetireBatter() {
     final list =
         [_striker, _nonStriker].where((name) => name != null).map((n) => n!).toList();
@@ -308,7 +395,7 @@ class _ScoringScreenState extends ConsumerState<ScoringScreen> {
             children: [
               Text(
                 'CHOOSE BATTER TO RETIRE',
-                style: GoogleFonts.montserrat(
+                style: GoogleFonts.inter(
                   fontWeight: FontWeight.bold,
                   fontSize: 16,
                   color: Colors.white,
@@ -319,7 +406,7 @@ class _ScoringScreenState extends ConsumerState<ScoringScreen> {
                 children: list.map((name) {
                   return ListTile(
                     title: Text(name,
-                        style: GoogleFonts.montserrat(color: Colors.white)),
+                        style: GoogleFonts.inter(color: Colors.white)),
                     onTap: () {
                       Navigator.pop(context);
                       _retirePlayer(name);
@@ -360,7 +447,7 @@ class _ScoringScreenState extends ConsumerState<ScoringScreen> {
             children: [
               Text(
                 'SELECT INCOMING BATTER',
-                style: GoogleFonts.montserrat(
+                style: GoogleFonts.inter(
                   fontWeight: FontWeight.bold,
                   fontSize: 16,
                   color: Colors.white,
@@ -375,7 +462,7 @@ class _ScoringScreenState extends ConsumerState<ScoringScreen> {
                     final p = unbatted[idx];
                     return ListTile(
                       title: Text(p.name,
-                          style: GoogleFonts.montserrat(color: Colors.white)),
+                          style: GoogleFonts.inter(color: Colors.white)),
                       onTap: () {
                         setState(() {
                           _batterStats[name]?.isOut = true;
@@ -421,7 +508,7 @@ class _ScoringScreenState extends ConsumerState<ScoringScreen> {
             children: [
               Text(
                 'SELECT NEW BOWLER',
-                style: GoogleFonts.montserrat(
+                style: GoogleFonts.inter(
                   fontWeight: FontWeight.bold,
                   fontSize: 16,
                   color: Colors.white,
@@ -436,9 +523,9 @@ class _ScoringScreenState extends ConsumerState<ScoringScreen> {
                     final p = list[idx];
                     return ListTile(
                       title: Text(p.name,
-                          style: GoogleFonts.montserrat(color: Colors.white)),
+                          style: GoogleFonts.inter(color: Colors.white)),
                       subtitle: Text(p.role.displayName,
-                          style: GoogleFonts.montserrat(color: Colors.grey)),
+                          style: GoogleFonts.inter(color: Colors.grey)),
                       trailing: const Icon(Icons.arrow_forward_ios,
                           size: 14, color: Colors.grey),
                       onTap: () {
@@ -706,7 +793,7 @@ class _ScoringScreenState extends ConsumerState<ScoringScreen> {
             children: [
               Text(
                 'SELECT NEW BATTER',
-                style: GoogleFonts.montserrat(
+                style: GoogleFonts.inter(
                   fontWeight: FontWeight.bold,
                   fontSize: 16,
                   color: Colors.white,
@@ -716,7 +803,7 @@ class _ScoringScreenState extends ConsumerState<ScoringScreen> {
               Text(
                 'Select replacement for $outPlayerName',
                 style:
-                    GoogleFonts.montserrat(color: Colors.grey, fontSize: 13),
+                    GoogleFonts.inter(color: Colors.grey, fontSize: 13),
               ),
               const SizedBox(height: 16),
               Expanded(
@@ -727,7 +814,7 @@ class _ScoringScreenState extends ConsumerState<ScoringScreen> {
                     final p = unbatted[idx];
                     return ListTile(
                       title: Text(p.name,
-                          style: GoogleFonts.montserrat(color: Colors.white)),
+                          style: GoogleFonts.inter(color: Colors.white)),
                       onTap: () {
                         setState(() {
                           if (isStrikerOut) {
@@ -772,7 +859,7 @@ class _ScoringScreenState extends ConsumerState<ScoringScreen> {
             children: [
               Text(
                 'OVER COMPLETE! SELECT NEXT BOWLER',
-                style: GoogleFonts.montserrat(
+                style: GoogleFonts.inter(
                   fontWeight: FontWeight.bold,
                   fontSize: 16,
                   color: Colors.white,
@@ -787,9 +874,9 @@ class _ScoringScreenState extends ConsumerState<ScoringScreen> {
                     final p = list[idx];
                     return ListTile(
                       title: Text(p.name,
-                          style: GoogleFonts.montserrat(color: Colors.white)),
+                          style: GoogleFonts.inter(color: Colors.white)),
                       subtitle: Text(p.role.displayName,
-                          style: GoogleFonts.montserrat(color: Colors.grey)),
+                          style: GoogleFonts.inter(color: Colors.grey)),
                       onTap: () {
                         setState(() {
                           _currentBowler = p.name;
@@ -847,7 +934,7 @@ class _ScoringScreenState extends ConsumerState<ScoringScreen> {
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
           title: Text(
             'INNINGS COMPLETE!',
-            style: GoogleFonts.montserrat(
+            style: GoogleFonts.inter(
                 fontWeight: FontWeight.bold, color: Colors.white),
           ),
           content: Column(
@@ -856,12 +943,12 @@ class _ScoringScreenState extends ConsumerState<ScoringScreen> {
             children: [
               Text(
                 '$_battingTeam finished batting.',
-                style: GoogleFonts.montserrat(color: Colors.grey),
+                style: GoogleFonts.inter(color: Colors.grey),
               ),
               const SizedBox(height: 12),
               Text(
                 'Score: $_runs/$_wickets in ${(_ballsBowled ~/ 6)}.${(_ballsBowled % 6)} overs.',
-                style: GoogleFonts.oswald(
+                style: GoogleFonts.plusJakartaSans(
                     fontSize: 20,
                     color: const Color(0xFFCCFF00),
                     fontWeight: FontWeight.bold),
@@ -869,7 +956,7 @@ class _ScoringScreenState extends ConsumerState<ScoringScreen> {
               const SizedBox(height: 12),
               Text(
                 'Target for $nextTeam: ${_runs + 1} runs.',
-                style: GoogleFonts.montserrat(
+                style: GoogleFonts.inter(
                     color: Colors.white, fontWeight: FontWeight.bold),
               ),
             ],
@@ -886,7 +973,7 @@ class _ScoringScreenState extends ConsumerState<ScoringScreen> {
                 _startSecondInnings();
               },
               child: Text('Start 2nd Innings',
-                  style: GoogleFonts.montserrat(
+                  style: GoogleFonts.inter(
                       fontWeight: FontWeight.bold, color: Colors.white)),
             ),
           ],
@@ -1107,7 +1194,7 @@ class _ScoringScreenState extends ConsumerState<ScoringScreen> {
         children: [
           Text(
             'ADDITIONAL RUNS ON $_selectedAction',
-            style: GoogleFonts.montserrat(
+            style: GoogleFonts.inter(
               fontSize: 10,
               fontWeight: FontWeight.bold,
               color: Colors.grey[400],
@@ -1121,7 +1208,7 @@ class _ScoringScreenState extends ConsumerState<ScoringScreen> {
               return ChoiceChip(
                 label: Text(
                   '+$runs',
-                  style: GoogleFonts.oswald(
+                  style: GoogleFonts.plusJakartaSans(
                     color: isSel ? Colors.black : Colors.white,
                     fontWeight: FontWeight.bold,
                   ),
@@ -1151,7 +1238,7 @@ class _ScoringScreenState extends ConsumerState<ScoringScreen> {
               });
             },
             child: Text('Add Extra',
-                style: GoogleFonts.montserrat(
+                style: GoogleFonts.inter(
                     color: Colors.white, fontWeight: FontWeight.bold)),
           ),
         ],
@@ -1176,7 +1263,7 @@ class _ScoringScreenState extends ConsumerState<ScoringScreen> {
         children: [
           Text(
             'WICKET DETAILS',
-            style: GoogleFonts.montserrat(
+            style: GoogleFonts.inter(
               fontSize: 10,
               fontWeight: FontWeight.bold,
               color: Colors.grey[400],
@@ -1186,7 +1273,7 @@ class _ScoringScreenState extends ConsumerState<ScoringScreen> {
           // Wicket Type Dropdown
           Text(
             'Type',
-            style: GoogleFonts.montserrat(fontSize: 11, color: Colors.grey[500]),
+            style: GoogleFonts.inter(fontSize: 11, color: Colors.grey[500]),
           ),
           const SizedBox(height: 6),
           DropdownButtonFormField<String>(
@@ -1202,7 +1289,7 @@ class _ScoringScreenState extends ConsumerState<ScoringScreen> {
             items: wicketTypes
                 .map((w) => DropdownMenuItem(
                       value: w,
-                      child: Text(w, style: GoogleFonts.montserrat(color: Colors.white)),
+                      child: Text(w, style: GoogleFonts.inter(color: Colors.white)),
                     ))
                 .toList(),
             onChanged: (val) {
@@ -1215,7 +1302,7 @@ class _ScoringScreenState extends ConsumerState<ScoringScreen> {
           // Dismissed Batter Dropdown (only striker/non‑striker)
           Text(
             'Dismissed Batter',
-            style: GoogleFonts.montserrat(fontSize: 11, color: Colors.grey[500]),
+            style: GoogleFonts.inter(fontSize: 11, color: Colors.grey[500]),
           ),
           const SizedBox(height: 6),
           DropdownButtonFormField<String>(
@@ -1231,7 +1318,7 @@ class _ScoringScreenState extends ConsumerState<ScoringScreen> {
             items: batters
                 .map((b) => DropdownMenuItem(
                       value: b == _striker ? 'Striker' : 'Non-Striker',
-                      child: Text(b == _striker ? 'Striker ($b)' : 'Non-Striker ($b)', style: GoogleFonts.montserrat(color: Colors.white)),
+                      child: Text(b == _striker ? 'Striker ($b)' : 'Non-Striker ($b)', style: GoogleFonts.inter(color: Colors.white)),
                     ))
                 .toList(),
             onChanged: (val) {
@@ -1245,7 +1332,7 @@ class _ScoringScreenState extends ConsumerState<ScoringScreen> {
           if (_selectedWicketType == 'Caught' || _selectedWicketType == 'Run Out' || _selectedWicketType == 'Stumped') ...[
             Text(
               _selectedWicketType == 'Caught' ? 'Catcher' : 'Assisting Fielder',
-              style: GoogleFonts.montserrat(fontSize: 11, color: Colors.grey[500]),
+              style: GoogleFonts.inter(fontSize: 11, color: Colors.grey[500]),
             ),
             const SizedBox(height: 6),
             DropdownButtonFormField<String>(
@@ -1259,7 +1346,7 @@ class _ScoringScreenState extends ConsumerState<ScoringScreen> {
               ),
               initialValue: _selectedWicketFielder,
               items: _fieldingPlayers
-                  .map((f) => DropdownMenuItem(value: f.name, child: Text(f.name, style: GoogleFonts.montserrat(color: Colors.white))))
+                  .map((f) => DropdownMenuItem(value: f.name, child: Text(f.name, style: GoogleFonts.inter(color: Colors.white))))
                   .toList(),
               onChanged: (val) {
                 setState(() {
@@ -1285,7 +1372,7 @@ class _ScoringScreenState extends ConsumerState<ScoringScreen> {
               });
             },
             child: Text('Confirm Wicket',
-                style: GoogleFonts.montserrat(color: Colors.white, fontWeight: FontWeight.bold)),
+                style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.bold)),
           ),
         ],
       ),
@@ -1327,7 +1414,7 @@ class _ScoringScreenState extends ConsumerState<ScoringScreen> {
             children: [
               Text(
                 '${_setup.teamAName} vs ${_setup.teamBName}',
-                style: GoogleFonts.montserrat(
+                style: GoogleFonts.inter(
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
                   color: Colors.grey[400],
@@ -1354,7 +1441,7 @@ class _ScoringScreenState extends ConsumerState<ScoringScreen> {
                     const SizedBox(width: 4),
                     Text(
                       'LIVE',
-                      style: GoogleFonts.montserrat(
+                      style: GoogleFonts.inter(
                         fontSize: 10,
                         fontWeight: FontWeight.bold,
                         color: Colors.white,
@@ -1370,7 +1457,7 @@ class _ScoringScreenState extends ConsumerState<ScoringScreen> {
             _isSecondInnings
                 ? '2nd INNINGS (1st Inn: $_firstInningsRuns/$_firstInningsWickets)'
                 : '1st INNINGS',
-            style: GoogleFonts.montserrat(
+            style: GoogleFonts.inter(
               fontSize: 11,
               fontWeight: FontWeight.bold,
               color: Colors.redAccent,
@@ -1379,7 +1466,7 @@ class _ScoringScreenState extends ConsumerState<ScoringScreen> {
           const SizedBox(height: 2),
           Text(
             _battingTeam,
-            style: GoogleFonts.montserrat(
+            style: GoogleFonts.inter(
               fontSize: 18,
               fontWeight: FontWeight.bold,
               color: Colors.white,
@@ -1388,7 +1475,7 @@ class _ScoringScreenState extends ConsumerState<ScoringScreen> {
           const SizedBox(height: 8),
           Text(
             '$_runs/$_wickets',
-            style: GoogleFonts.oswald(
+            style: GoogleFonts.plusJakartaSans(
               fontSize: 48,
               fontWeight: FontWeight.w800,
               color: Colors.white,
@@ -1397,7 +1484,7 @@ class _ScoringScreenState extends ConsumerState<ScoringScreen> {
           ),
           Text(
             '(${(_ballsBowled ~/ 6)}.${(_ballsBowled % 6)} / ${_setup.overs} Overs)',
-            style: GoogleFonts.oswald(
+            style: GoogleFonts.plusJakartaSans(
               fontSize: 16,
               color: Colors.grey[400],
             ),
@@ -1431,7 +1518,7 @@ class _ScoringScreenState extends ConsumerState<ScoringScreen> {
         children: [
           Text(
             label,
-            style: GoogleFonts.montserrat(
+            style: GoogleFonts.inter(
               fontSize: 10,
               fontWeight: FontWeight.bold,
               color: Colors.grey[500],
@@ -1440,7 +1527,7 @@ class _ScoringScreenState extends ConsumerState<ScoringScreen> {
           const SizedBox(height: 4),
           Text(
             value,
-            style: GoogleFonts.oswald(
+            style: GoogleFonts.plusJakartaSans(
               fontSize: 18,
               fontWeight: FontWeight.bold,
               color: Colors.white,
@@ -1488,26 +1575,30 @@ class _ScoringScreenState extends ConsumerState<ScoringScreen> {
                     ),
                     const SizedBox(width: 8),
                     Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            _striker ?? 'Striker',
-                            style: GoogleFonts.montserrat(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 14,
-                              color: Colors.white,
+                      child: GestureDetector(
+                        onTap: () => _promptChangeBatter(true),
+                        behavior: HitTestBehavior.opaque,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              '${_striker ?? 'Striker'} *',
+                              style: GoogleFonts.inter(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 14,
+                                color: Colors.white,
+                              ),
+                              overflow: TextOverflow.ellipsis,
                             ),
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          Text(
-                            '${strikerStats.runs} (${strikerStats.balls}) • 4s:${strikerStats.fours} 6s:${strikerStats.sixes}',
-                            style: GoogleFonts.oswald(
-                              fontSize: 12,
-                              color: Colors.grey[400],
+                            Text(
+                              '${strikerStats.runs} (${strikerStats.balls}) • 4s:${strikerStats.fours} 6s:${strikerStats.sixes}',
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: 12,
+                                color: Colors.grey[400],
+                              ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
                     ),
                   ],
@@ -1530,26 +1621,30 @@ class _ScoringScreenState extends ConsumerState<ScoringScreen> {
                 ],
               ),
               Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Text(
-                      _nonStriker ?? 'Non-Striker',
-                      style: GoogleFonts.montserrat(
-                        fontWeight: FontWeight.w500,
-                        fontSize: 14,
-                        color: Colors.grey[300],
+                child: GestureDetector(
+                  onTap: () => _promptChangeBatter(false),
+                  behavior: HitTestBehavior.opaque,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Text(
+                        _nonStriker ?? 'Non-Striker',
+                        style: GoogleFonts.inter(
+                          fontWeight: FontWeight.w500,
+                          fontSize: 14,
+                          color: Colors.grey[300],
+                        ),
+                        overflow: TextOverflow.ellipsis,
                       ),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    Text(
-                      '${nonStrikerStats.runs} (${nonStrikerStats.balls}) • 4s:${nonStrikerStats.fours} 6s:${nonStrikerStats.sixes}',
-                      style: GoogleFonts.oswald(
-                        fontSize: 12,
-                        color: Colors.grey[400],
+                      Text(
+                        '${nonStrikerStats.runs} (${nonStrikerStats.balls}) • 4s:${nonStrikerStats.fours} 6s:${nonStrikerStats.sixes}',
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 12,
+                          color: Colors.grey[400],
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ],
@@ -1567,7 +1662,7 @@ class _ScoringScreenState extends ConsumerState<ScoringScreen> {
                   children: [
                     Text(
                       'BOWLER',
-                      style: GoogleFonts.montserrat(
+                      style: GoogleFonts.inter(
                           fontSize: 10,
                           fontWeight: FontWeight.bold,
                           color: Colors.grey[400]),
@@ -1575,7 +1670,7 @@ class _ScoringScreenState extends ConsumerState<ScoringScreen> {
                     const SizedBox(height: 2),
                     Text(
                       _currentBowler ?? 'Bowler',
-                      style: GoogleFonts.montserrat(
+                      style: GoogleFonts.inter(
                           fontWeight: FontWeight.bold,
                           fontSize: 14,
                           color: Colors.white),
@@ -1586,7 +1681,7 @@ class _ScoringScreenState extends ConsumerState<ScoringScreen> {
               ),
               Text(
                 '${bowlerStats.oversDisplay} - M:${bowlerStats.maidens} - R:${bowlerStats.runsConceded} - W:${bowlerStats.wickets}',
-                style: GoogleFonts.oswald(
+                style: GoogleFonts.plusJakartaSans(
                     fontSize: 14,
                     fontWeight: FontWeight.bold,
                     color: Colors.white),
@@ -1604,7 +1699,7 @@ class _ScoringScreenState extends ConsumerState<ScoringScreen> {
                 ),
                 child: Text(
                   'Change',
-                  style: GoogleFonts.montserrat(
+                  style: GoogleFonts.inter(
                       fontSize: 11,
                       fontWeight: FontWeight.bold,
                       color: const Color(0xFFCCFF00)),
@@ -1662,7 +1757,7 @@ class _ScoringScreenState extends ConsumerState<ScoringScreen> {
             children: [
               Text(
                 'THIS OVER: $overDisplay',
-                style: GoogleFonts.montserrat(
+                style: GoogleFonts.inter(
                   fontSize: 10,
                   fontWeight: FontWeight.bold,
                   color: Colors.grey[400],
@@ -1670,7 +1765,7 @@ class _ScoringScreenState extends ConsumerState<ScoringScreen> {
               ),
               Text(
                 'Runs: $overRuns',
-                style: GoogleFonts.oswald(
+                style: GoogleFonts.plusJakartaSans(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
                   color: const Color(0xFFCCFF00),
@@ -1711,7 +1806,7 @@ class _ScoringScreenState extends ConsumerState<ScoringScreen> {
                     alignment: Alignment.center,
                     child: Text(
                       ball,
-                      style: GoogleFonts.oswald(
+                      style: GoogleFonts.plusJakartaSans(
                         fontWeight: FontWeight.bold,
                         fontSize: 13,
                         color: fg,
@@ -1790,7 +1885,7 @@ class _ScoringScreenState extends ConsumerState<ScoringScreen> {
           alignment: Alignment.center,
           child: Text(
             action,
-            style: GoogleFonts.oswald(
+            style: GoogleFonts.plusJakartaSans(
               fontSize: 22,
               fontWeight: FontWeight.bold,
               color: textColor,
@@ -1854,7 +1949,7 @@ class _ScoringScreenState extends ConsumerState<ScoringScreen> {
         ),
         title: Text(
           'LIVE MATCH SCORER',
-          style: GoogleFonts.montserrat(
+          style: GoogleFonts.inter(
             fontSize: 16,
             fontWeight: FontWeight.bold,
             color: Colors.white,
@@ -1884,35 +1979,38 @@ class _ScoringScreenState extends ConsumerState<ScoringScreen> {
             ),
           ),
 
-          // Confirm button
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
-            child: SizedBox(
-              width: double.infinity,
-              height: 48,
-              child: ElevatedButton(
-                onPressed: _confirmBallOutcome,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.red,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                  elevation: 4,
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(Icons.play_arrow, color: Colors.white, size: 18),
-                    const SizedBox(width: 8),
-                    Text(
-                      'Next Ball',
-                      style: GoogleFonts.montserrat(
-                        fontSize: 15,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
+          // Confirm button — SafeArea ensures it clears the system nav bar
+          SafeArea(
+            top: false,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+              child: SizedBox(
+                width: double.infinity,
+                height: 48,
+                child: ElevatedButton(
+                  onPressed: _confirmBallOutcome,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.red,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
                     ),
-                  ],
+                    elevation: 4,
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.play_arrow, color: Colors.white, size: 18),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Next Ball',
+                        style: GoogleFonts.inter(
+                          fontSize: 15,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),

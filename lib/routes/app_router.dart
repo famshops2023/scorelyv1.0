@@ -6,7 +6,6 @@ import '../features/match/create_team_screen.dart';
 import '../features/match/match_setup_screen.dart';
 import '../features/match/match_details_screen.dart';
 import '../features/scoring/scoring_screen.dart';
-import '../features/scoreboard/scoreboard_screen.dart';
 import '../features/export/export_screen.dart';
 import '../features/history/history_screen.dart';
 import '../features/settings/settings_screen.dart';
@@ -55,10 +54,7 @@ final goRouter = GoRouter(
         return ScoringScreen(setupData: data);
       },
     ),
-    GoRoute(
-      path: '/scoreboard',
-      builder: (context, state) => const ScoreboardScreen(),
-    ),
+
     GoRoute(
       path: '/export',
       builder: (context, state) {
