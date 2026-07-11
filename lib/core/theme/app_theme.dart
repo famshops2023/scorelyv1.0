@@ -42,6 +42,11 @@ class AppTheme {
           ),
         ),
       ),
+      textSelectionTheme: const TextSelectionThemeData(
+        cursorColor: Color(0xFF1A2138),
+        selectionColor: Color(0x551A2138),
+        selectionHandleColor: Color(0xFF1A2138),
+      ),
     );
   }
 }

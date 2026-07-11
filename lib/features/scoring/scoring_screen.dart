@@ -173,6 +173,10 @@ class _ScoringScreenState extends ConsumerState<ScoringScreen> {
           maxOversPerBowler: 4,
           powerplayOvers: 6,
           battingFirstTeam: 'Team Alpha',
+          matchType: 'T20',
+          ballType: 'Leather',
+          venue: 'Demo Stadium',
+          matchDate: DateTime.now(),
         );
 
     _battingTeam = _setup.battingFirstTeam;
@@ -1180,69 +1184,100 @@ class _ScoringScreenState extends ConsumerState<ScoringScreen> {
 
   // --- Sub-panel Builders ---
 
-  Widget _buildExtrasSubPanel() {
-    return Container(
-      margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: const Color(0xFF1E293B),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'ADDITIONAL RUNS ON $_selectedAction',
-            style: GoogleFonts.inter(
-              fontSize: 10,
-              fontWeight: FontWeight.bold,
-              color: Colors.grey[400],
-            ),
-          ),
-          const SizedBox(height: 10),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [0, 1, 2, 3, 4, 6].map((runs) {
-              final isSel = _selectedExtraRuns == runs;
-              return ChoiceChip(
-                label: Text(
-                  '+$runs',
-                  style: GoogleFonts.plusJakartaSans(
-                    color: isSel ? Colors.black : Colors.white,
-                    fontWeight: FontWeight.bold,
-                  ),
+  void _showExtrasPopup(String action) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return Dialog(
+              backgroundColor: const Color(0xFF1E293B),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              child: Padding(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'ADDITIONAL RUNS ON $action',
+                      style: GoogleFonts.inter(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.grey[400],
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      alignment: WrapAlignment.center,
+                      children: [0, 1, 2, 3, 4, 6].map((runs) {
+                        final isSel = _selectedExtraRuns == runs;
+                        return ChoiceChip(
+                          label: Text(
+                            '+$runs',
+                            style: GoogleFonts.plusJakartaSans(
+                              color: isSel ? Colors.black : Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          selected: isSel,
+                          selectedColor: const Color(0xFFCCFF00),
+                          backgroundColor: const Color(0xFF0F172A),
+                          onSelected: (val) {
+                            setDialogState(() {
+                              _selectedExtraRuns = runs;
+                            });
+                            setState(() {
+                              _selectedExtraRuns = runs;
+                            });
+                          },
+                        );
+                      }).toList(),
+                    ),
+                    const SizedBox(height: 24),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        TextButton(
+                          onPressed: () {
+                            setState(() {
+                              _selectedAction = null;
+                              _selectedExtraRuns = 0;
+                            });
+                            Navigator.pop(context);
+                          },
+                          child: Text('Cancel', style: GoogleFonts.inter(color: Colors.white)),
+                        ),
+                        const SizedBox(width: 8),
+                        ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF202A46),
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12)),
+                          ),
+                          onPressed: () {
+                            Navigator.pop(context);
+                            _confirmBallOutcome();
+                            setState(() {
+                              _selectedAction = null;
+                            });
+                          },
+                          child: Text('Add Extra',
+                              style: GoogleFonts.inter(
+                                  color: Colors.white, fontWeight: FontWeight.bold)),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
-                selected: isSel,
-                selectedColor: const Color(0xFFCCFF00),
-                backgroundColor: const Color(0xFF0F172A),
-                onSelected: (val) {
-                  setState(() {
-                    _selectedExtraRuns = runs;
-                  });
-                },
-              );
-            }).toList(),
-          ),
-          const SizedBox(height: 8),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF202A46),
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12)),
-            ),
-            onPressed: () {
-              _confirmBallOutcome();
-              setState(() {
-                _selectedAction = null;
-              });
-            },
-            child: Text('Add Extra',
-                style: GoogleFonts.inter(
-                    color: Colors.white, fontWeight: FontWeight.bold)),
-          ),
-        ],
-      ),
+              ),
+            );
+          },
+        );
+      },
     );
   }
 
@@ -1386,10 +1421,20 @@ class _ScoringScreenState extends ConsumerState<ScoringScreen> {
 
     String rrrText = '---';
     String targetText = '---';
+    String needsText = '';
     if (_isSecondInnings && _target != null) {
       targetText = '$_target';
       int remainingRuns = _target! - _runs;
       int remainingBalls = (_setup.overs * 6) - _ballsBowled;
+      
+      if (remainingRuns <= 0) {
+        needsText = '$_battingTeam Won';
+      } else if (remainingBalls <= 0) {
+        needsText = '$_battingTeam Lost by $remainingRuns runs';
+      } else {
+        needsText = 'Need $remainingRuns runs in $remainingBalls balls';
+      }
+
       if (remainingBalls > 0) {
         double rrr = (remainingRuns / (remainingBalls / 6));
         rrrText = rrr.toStringAsFixed(2);
@@ -1489,6 +1534,17 @@ class _ScoringScreenState extends ConsumerState<ScoringScreen> {
               color: Colors.grey[400],
             ),
           ),
+          if (_isSecondInnings && needsText.isNotEmpty) ...[
+            const SizedBox(height: 6),
+            Text(
+              needsText,
+              style: GoogleFonts.inter(
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+                color: const Color(0xFFCCFF00),
+              ),
+            ),
+          ],
           const SizedBox(height: 12),
           Row(
             children: [
@@ -1861,6 +1917,10 @@ class _ScoringScreenState extends ConsumerState<ScoringScreen> {
             _selectedWicketBatter = 'Striker';
             _selectedWicketFielder = null;
           });
+
+          if (action == 'WD' || action == 'NB' || action == 'B' || action == 'LB') {
+            _showExtrasPopup(action);
+          }
         },
         child: Container(
           margin: const EdgeInsets.all(6),
@@ -1932,10 +1992,6 @@ class _ScoringScreenState extends ConsumerState<ScoringScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final showExtrasPanel = _selectedAction == 'WD' ||
-        _selectedAction == 'NB' ||
-        _selectedAction == 'B' ||
-        _selectedAction == 'LB';
     final showWicketPanel = _selectedAction == 'W';
 
     return Scaffold(
@@ -1950,7 +2006,7 @@ class _ScoringScreenState extends ConsumerState<ScoringScreen> {
         title: Text(
           'LIVE MATCH SCORER',
           style: GoogleFonts.inter(
-            fontSize: 16,
+            fontSize: 18,
             fontWeight: FontWeight.bold,
             color: Colors.white,
             letterSpacing: 1.0,
@@ -1972,7 +2028,6 @@ class _ScoringScreenState extends ConsumerState<ScoringScreen> {
                   const SizedBox(height: 12),
                   _buildQuickTapActionBoard(),
                   const SizedBox(height: 12),
-                  if (showExtrasPanel) _buildExtrasSubPanel(),
                   if (showWicketPanel) _buildWicketSubPanel(),
                 ],
               ),

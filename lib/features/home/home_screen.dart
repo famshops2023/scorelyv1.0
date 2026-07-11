@@ -70,7 +70,7 @@ class HomeScreen extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: HomeColors.surface,
-      appBar: _buildAppBar(),
+      appBar: _buildAppBar(context),
       body: SingleChildScrollView(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 17.0, vertical: 20.0),
@@ -81,7 +81,7 @@ class HomeScreen extends ConsumerWidget {
               const SizedBox(height: 20),
               _buildQuickMatchCard(context),
               const SizedBox(height: 14),
-              _buildScheduleMatchCard(),
+              _buildScheduleMatchCard(context),
               const SizedBox(height: 27),
               _buildLiveMatchSection(context, ref, liveAsync),
               const SizedBox(height: 27),
@@ -96,7 +96,7 @@ class HomeScreen extends ConsumerWidget {
     );
   }
 
-  AppBar _buildAppBar() {
+  AppBar _buildAppBar(BuildContext context) {
     return AppBar(
       backgroundColor: HomeColors.appbarBg,
       elevation: 0,
@@ -161,6 +161,13 @@ class HomeScreen extends ConsumerWidget {
             ),
           ],
         ),
+        IconButton(
+          icon: const Icon(Icons.account_circle, color: Colors.white, size: 28),
+          onPressed: () {
+            context.push('/profile');
+          },
+        ),
+        const SizedBox(width: 8),
       ],
     );
   }
@@ -262,9 +269,11 @@ class HomeScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildScheduleMatchCard() {
-    return Container(
-      width: double.infinity,
+  Widget _buildScheduleMatchCard(BuildContext context) {
+    return GestureDetector(
+      onTap: () => context.push('/match-setup'),
+      child: Container(
+        width: double.infinity,
       decoration: BoxDecoration(
         color: HomeColors.secondaryContainer,
         borderRadius: BorderRadius.circular(16),
@@ -296,6 +305,7 @@ class HomeScreen extends ConsumerWidget {
           ),
         ],
       ),
+    ),
     );
   }
 
@@ -494,12 +504,18 @@ class HomeScreen extends ConsumerWidget {
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
               _buildNavItem(Icons.home, 'Home', true),
-              _buildNavItem(Icons.bar_chart, 'Stats', false),
+              GestureDetector(
+                onTap: () => context.push('/teams'),
+                child: _buildNavItem(Icons.people_alt, 'Teams', false),
+              ),
               GestureDetector(
                 onTap: () => context.push('/history'),
                 child: _buildNavItem(Icons.history, 'History', false),
               ),
-              _buildNavItem(Icons.person_outline, 'Profile', false),
+              GestureDetector(
+                onTap: () => context.push('/profile'),
+                child: _buildNavItem(Icons.person_outline, 'Profile', false),
+              ),
             ],
           ),
         );

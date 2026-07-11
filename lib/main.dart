@@ -1,3 +1,5 @@
+import 'dart:async';
+import 'package:app_links/app_links.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -23,8 +25,43 @@ void main() {
   );
 }
 
-class ScorelyApp extends StatelessWidget {
+class ScorelyApp extends StatefulWidget {
   const ScorelyApp({super.key});
+
+  @override
+  State<ScorelyApp> createState() => _ScorelyAppState();
+}
+
+class _ScorelyAppState extends State<ScorelyApp> {
+  late AppLinks _appLinks;
+  StreamSubscription<Uri>? _linkSubscription;
+
+  @override
+  void initState() {
+    super.initState();
+    _initDeepLinks();
+  }
+
+  Future<void> _initDeepLinks() async {
+    _appLinks = AppLinks();
+
+    // Handle incoming links while the app is in the background or foreground
+    _linkSubscription = _appLinks.uriLinkStream.listen((uri) {
+      // Example uri: https://scorely.com/joinTeam?teamId=123
+      if (uri.path.isNotEmpty) {
+        final query = uri.hasQuery ? '?${uri.query}' : '';
+        goRouter.go('${uri.path}$query');
+      }
+    }, onError: (err) {
+      debugPrint('Deep link error: $err');
+    });
+  }
+
+  @override
+  void dispose() {
+    _linkSubscription?.cancel();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {

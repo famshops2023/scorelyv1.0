@@ -183,9 +183,9 @@ class _MatchStatScreenState extends ConsumerState<MatchStatScreen> {
         ),
         title: Text(
           _appBarTitle,
-          style: GoogleFonts.plusJakartaSans(
+          style: GoogleFonts.inter(
             color: Colors.white,
-            fontSize: 20,
+            fontSize: 18,
             fontWeight: FontWeight.bold,
           ),
         ),
@@ -215,6 +215,7 @@ class _MatchStatScreenState extends ConsumerState<MatchStatScreen> {
                 final teamB = _teamB?.name ?? 'Team B';
                 final matchResult = _getMatchResultText();
                 final shareText = 'Check out this match on Scorely!\n\n$teamA vs $teamB\nResult: $matchResult\n\nDownload Scorely to see full match statistics!';
+                // ignore: deprecated_member_use
                 Share.share(shareText);
               }
             },

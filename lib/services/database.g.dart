@@ -44,6 +44,18 @@ class $MatchesTable extends Matches
     type: DriftSqlType.int,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _matchTypeMeta = const VerificationMeta(
+    'matchType',
+  );
+  @override
+  late final GeneratedColumn<String> matchType = GeneratedColumn<String>(
+    'match_type',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('T20'),
+  );
   static const VerificationMeta _teamAIdMeta = const VerificationMeta(
     'teamAId',
   );
@@ -217,6 +229,7 @@ class $MatchesTable extends Matches
     id,
     matchTitle,
     totalOvers,
+    matchType,
     teamAId,
     teamBId,
     createdAt,
@@ -262,6 +275,12 @@ class $MatchesTable extends Matches
       );
     } else if (isInserting) {
       context.missing(_totalOversMeta);
+    }
+    if (data.containsKey('match_type')) {
+      context.handle(
+        _matchTypeMeta,
+        matchType.isAcceptableOrUnknown(data['match_type']!, _matchTypeMeta),
+      );
     }
     if (data.containsKey('team_a_id')) {
       context.handle(
@@ -395,6 +414,10 @@ class $MatchesTable extends Matches
         DriftSqlType.int,
         data['${effectivePrefix}total_overs'],
       )!,
+      matchType: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}match_type'],
+      )!,
       teamAId: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
         data['${effectivePrefix}team_a_id'],
@@ -464,6 +487,7 @@ class CricketMatch extends DataClass implements Insertable<CricketMatch> {
   final int id;
   final String matchTitle;
   final int totalOvers;
+  final String matchType;
   final int? teamAId;
   final int? teamBId;
   final DateTime createdAt;
@@ -482,6 +506,7 @@ class CricketMatch extends DataClass implements Insertable<CricketMatch> {
     required this.id,
     required this.matchTitle,
     required this.totalOvers,
+    required this.matchType,
     this.teamAId,
     this.teamBId,
     required this.createdAt,
@@ -503,6 +528,7 @@ class CricketMatch extends DataClass implements Insertable<CricketMatch> {
     map['id'] = Variable<int>(id);
     map['match_title'] = Variable<String>(matchTitle);
     map['total_overs'] = Variable<int>(totalOvers);
+    map['match_type'] = Variable<String>(matchType);
     if (!nullToAbsent || teamAId != null) {
       map['team_a_id'] = Variable<int>(teamAId);
     }
@@ -531,6 +557,7 @@ class CricketMatch extends DataClass implements Insertable<CricketMatch> {
       id: Value(id),
       matchTitle: Value(matchTitle),
       totalOvers: Value(totalOvers),
+      matchType: Value(matchType),
       teamAId: teamAId == null && nullToAbsent
           ? const Value.absent()
           : Value(teamAId),
@@ -563,6 +590,7 @@ class CricketMatch extends DataClass implements Insertable<CricketMatch> {
       id: serializer.fromJson<int>(json['id']),
       matchTitle: serializer.fromJson<String>(json['matchTitle']),
       totalOvers: serializer.fromJson<int>(json['totalOvers']),
+      matchType: serializer.fromJson<String>(json['matchType']),
       teamAId: serializer.fromJson<int?>(json['teamAId']),
       teamBId: serializer.fromJson<int?>(json['teamBId']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
@@ -586,6 +614,7 @@ class CricketMatch extends DataClass implements Insertable<CricketMatch> {
       'id': serializer.toJson<int>(id),
       'matchTitle': serializer.toJson<String>(matchTitle),
       'totalOvers': serializer.toJson<int>(totalOvers),
+      'matchType': serializer.toJson<String>(matchType),
       'teamAId': serializer.toJson<int?>(teamAId),
       'teamBId': serializer.toJson<int?>(teamBId),
       'createdAt': serializer.toJson<DateTime>(createdAt),
@@ -607,6 +636,7 @@ class CricketMatch extends DataClass implements Insertable<CricketMatch> {
     int? id,
     String? matchTitle,
     int? totalOvers,
+    String? matchType,
     Value<int?> teamAId = const Value.absent(),
     Value<int?> teamBId = const Value.absent(),
     DateTime? createdAt,
@@ -625,6 +655,7 @@ class CricketMatch extends DataClass implements Insertable<CricketMatch> {
     id: id ?? this.id,
     matchTitle: matchTitle ?? this.matchTitle,
     totalOvers: totalOvers ?? this.totalOvers,
+    matchType: matchType ?? this.matchType,
     teamAId: teamAId.present ? teamAId.value : this.teamAId,
     teamBId: teamBId.present ? teamBId.value : this.teamBId,
     createdAt: createdAt ?? this.createdAt,
@@ -651,6 +682,7 @@ class CricketMatch extends DataClass implements Insertable<CricketMatch> {
       totalOvers: data.totalOvers.present
           ? data.totalOvers.value
           : this.totalOvers,
+      matchType: data.matchType.present ? data.matchType.value : this.matchType,
       teamAId: data.teamAId.present ? data.teamAId.value : this.teamAId,
       teamBId: data.teamBId.present ? data.teamBId.value : this.teamBId,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
@@ -692,6 +724,7 @@ class CricketMatch extends DataClass implements Insertable<CricketMatch> {
           ..write('id: $id, ')
           ..write('matchTitle: $matchTitle, ')
           ..write('totalOvers: $totalOvers, ')
+          ..write('matchType: $matchType, ')
           ..write('teamAId: $teamAId, ')
           ..write('teamBId: $teamBId, ')
           ..write('createdAt: $createdAt, ')
@@ -715,6 +748,7 @@ class CricketMatch extends DataClass implements Insertable<CricketMatch> {
     id,
     matchTitle,
     totalOvers,
+    matchType,
     teamAId,
     teamBId,
     createdAt,
@@ -737,6 +771,7 @@ class CricketMatch extends DataClass implements Insertable<CricketMatch> {
           other.id == this.id &&
           other.matchTitle == this.matchTitle &&
           other.totalOvers == this.totalOvers &&
+          other.matchType == this.matchType &&
           other.teamAId == this.teamAId &&
           other.teamBId == this.teamBId &&
           other.createdAt == this.createdAt &&
@@ -757,6 +792,7 @@ class MatchesCompanion extends UpdateCompanion<CricketMatch> {
   final Value<int> id;
   final Value<String> matchTitle;
   final Value<int> totalOvers;
+  final Value<String> matchType;
   final Value<int?> teamAId;
   final Value<int?> teamBId;
   final Value<DateTime> createdAt;
@@ -775,6 +811,7 @@ class MatchesCompanion extends UpdateCompanion<CricketMatch> {
     this.id = const Value.absent(),
     this.matchTitle = const Value.absent(),
     this.totalOvers = const Value.absent(),
+    this.matchType = const Value.absent(),
     this.teamAId = const Value.absent(),
     this.teamBId = const Value.absent(),
     this.createdAt = const Value.absent(),
@@ -794,6 +831,7 @@ class MatchesCompanion extends UpdateCompanion<CricketMatch> {
     this.id = const Value.absent(),
     required String matchTitle,
     required int totalOvers,
+    this.matchType = const Value.absent(),
     this.teamAId = const Value.absent(),
     this.teamBId = const Value.absent(),
     this.createdAt = const Value.absent(),
@@ -814,6 +852,7 @@ class MatchesCompanion extends UpdateCompanion<CricketMatch> {
     Expression<int>? id,
     Expression<String>? matchTitle,
     Expression<int>? totalOvers,
+    Expression<String>? matchType,
     Expression<int>? teamAId,
     Expression<int>? teamBId,
     Expression<DateTime>? createdAt,
@@ -833,6 +872,7 @@ class MatchesCompanion extends UpdateCompanion<CricketMatch> {
       if (id != null) 'id': id,
       if (matchTitle != null) 'match_title': matchTitle,
       if (totalOvers != null) 'total_overs': totalOvers,
+      if (matchType != null) 'match_type': matchType,
       if (teamAId != null) 'team_a_id': teamAId,
       if (teamBId != null) 'team_b_id': teamBId,
       if (createdAt != null) 'created_at': createdAt,
@@ -854,6 +894,7 @@ class MatchesCompanion extends UpdateCompanion<CricketMatch> {
     Value<int>? id,
     Value<String>? matchTitle,
     Value<int>? totalOvers,
+    Value<String>? matchType,
     Value<int?>? teamAId,
     Value<int?>? teamBId,
     Value<DateTime>? createdAt,
@@ -873,6 +914,7 @@ class MatchesCompanion extends UpdateCompanion<CricketMatch> {
       id: id ?? this.id,
       matchTitle: matchTitle ?? this.matchTitle,
       totalOvers: totalOvers ?? this.totalOvers,
+      matchType: matchType ?? this.matchType,
       teamAId: teamAId ?? this.teamAId,
       teamBId: teamBId ?? this.teamBId,
       createdAt: createdAt ?? this.createdAt,
@@ -901,6 +943,9 @@ class MatchesCompanion extends UpdateCompanion<CricketMatch> {
     }
     if (totalOvers.present) {
       map['total_overs'] = Variable<int>(totalOvers.value);
+    }
+    if (matchType.present) {
+      map['match_type'] = Variable<String>(matchType.value);
     }
     if (teamAId.present) {
       map['team_a_id'] = Variable<int>(teamAId.value);
@@ -953,6 +998,7 @@ class MatchesCompanion extends UpdateCompanion<CricketMatch> {
           ..write('id: $id, ')
           ..write('matchTitle: $matchTitle, ')
           ..write('totalOvers: $totalOvers, ')
+          ..write('matchType: $matchType, ')
           ..write('teamAId: $teamAId, ')
           ..write('teamBId: $teamBId, ')
           ..write('createdAt: $createdAt, ')
@@ -2418,6 +2464,7 @@ typedef $$MatchesTableCreateCompanionBuilder =
       Value<int> id,
       required String matchTitle,
       required int totalOvers,
+      Value<String> matchType,
       Value<int?> teamAId,
       Value<int?> teamBId,
       Value<DateTime> createdAt,
@@ -2438,6 +2485,7 @@ typedef $$MatchesTableUpdateCompanionBuilder =
       Value<int> id,
       Value<String> matchTitle,
       Value<int> totalOvers,
+      Value<String> matchType,
       Value<int?> teamAId,
       Value<int?> teamBId,
       Value<DateTime> createdAt,
@@ -2475,6 +2523,11 @@ class $$MatchesTableFilterComposer
 
   ColumnFilters<int> get totalOvers => $composableBuilder(
     column: $table.totalOvers,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get matchType => $composableBuilder(
+    column: $table.matchType,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -2573,6 +2626,11 @@ class $$MatchesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get matchType => $composableBuilder(
+    column: $table.matchType,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<int> get teamAId => $composableBuilder(
     column: $table.teamAId,
     builder: (column) => ColumnOrderings(column),
@@ -2665,6 +2723,9 @@ class $$MatchesTableAnnotationComposer
     column: $table.totalOvers,
     builder: (column) => column,
   );
+
+  GeneratedColumn<String> get matchType =>
+      $composableBuilder(column: $table.matchType, builder: (column) => column);
 
   GeneratedColumn<int> get teamAId =>
       $composableBuilder(column: $table.teamAId, builder: (column) => column);
@@ -2761,6 +2822,7 @@ class $$MatchesTableTableManager
                 Value<int> id = const Value.absent(),
                 Value<String> matchTitle = const Value.absent(),
                 Value<int> totalOvers = const Value.absent(),
+                Value<String> matchType = const Value.absent(),
                 Value<int?> teamAId = const Value.absent(),
                 Value<int?> teamBId = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
@@ -2779,6 +2841,7 @@ class $$MatchesTableTableManager
                 id: id,
                 matchTitle: matchTitle,
                 totalOvers: totalOvers,
+                matchType: matchType,
                 teamAId: teamAId,
                 teamBId: teamBId,
                 createdAt: createdAt,
@@ -2799,6 +2862,7 @@ class $$MatchesTableTableManager
                 Value<int> id = const Value.absent(),
                 required String matchTitle,
                 required int totalOvers,
+                Value<String> matchType = const Value.absent(),
                 Value<int?> teamAId = const Value.absent(),
                 Value<int?> teamBId = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
@@ -2817,6 +2881,7 @@ class $$MatchesTableTableManager
                 id: id,
                 matchTitle: matchTitle,
                 totalOvers: totalOvers,
+                matchType: matchType,
                 teamAId: teamAId,
                 teamBId: teamBId,
                 createdAt: createdAt,

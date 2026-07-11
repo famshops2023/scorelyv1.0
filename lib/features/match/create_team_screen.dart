@@ -226,11 +226,11 @@ class _CreateTeamScreenState extends State<CreateTeamScreen> {
         elevation: 0,
         centerTitle: false,
         title: Text(
-          'CREATE TEAM',
-          style: GoogleFonts.plusJakartaSans(
+          'SQUAD SETUP',
+          style: GoogleFonts.inter(
             color: Colors.white,
             fontWeight: FontWeight.w700,
-            fontSize: 24,
+            fontSize: 18,
           ),
         ),
         leading: IconButton(

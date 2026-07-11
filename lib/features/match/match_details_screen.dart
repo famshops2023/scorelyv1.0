@@ -13,24 +13,12 @@ class MatchDetailsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final overs = setupData.overs;
+    // Use the explicitly selected match type
+    String format = setupData.matchType;
 
-    // Determine format label
-    String format;
-    if (overs <= 5) {
-      format = 'Tape Ball';
-    } else if (overs <= 10) {
-      format = 'T10';
-    } else if (overs <= 20) {
-      format = 'T20';
-    } else if (overs <= 40) {
-      format = 'One Day';
-    } else {
-      format = 'Test';
-    }
-
-    final now = DateTime.now();
-    final dateString = '${now.day.toString().padLeft(2, '0')}/${now.month.toString().padLeft(2, '0')}/${now.year} | ${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}';
+    final now = setupData.matchDate;
+    final dateString =
+        '${now.day.toString().padLeft(2, '0')}/${now.month.toString().padLeft(2, '0')}/${now.year} | ${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}';
 
     return Container(
       decoration: const BoxDecoration(
@@ -51,8 +39,8 @@ class MatchDetailsScreen extends StatelessWidget {
           ),
           title: Text(
             'MATCH DETAILS',
-            style: GoogleFonts.plusJakartaSans(
-              fontSize: 24, // Reduced slightly from 28 to fit common phone sizes
+            style: GoogleFonts.inter(
+              fontSize: 18,
               fontWeight: FontWeight.w700,
               color: Colors.white,
               letterSpacing: 1.0,
@@ -79,10 +67,13 @@ class MatchDetailsScreen extends StatelessWidget {
                         textAlign: TextAlign.center,
                       ),
                     ),
-                    
+
                     // Team Logos Comparison
                     Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 8,
+                      ),
                       child: Stack(
                         alignment: Alignment.center,
                         children: [
@@ -98,20 +89,45 @@ class MatchDetailsScreen extends StatelessWidget {
                                       decoration: BoxDecoration(
                                         color: Colors.white,
                                         borderRadius: BorderRadius.circular(12),
-                                        border: const Border(left: BorderSide(color: Color(0xFFBA0013), width: 4)),
-                                        boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 10, offset: Offset(0, 4))],
+                                        border: const Border(
+                                          left: BorderSide(
+                                            color: Color(0xFFBA0013),
+                                            width: 4,
+                                          ),
+                                        ),
+                                        boxShadow: const [
+                                          BoxShadow(
+                                            color: Colors.black26,
+                                            blurRadius: 10,
+                                            offset: Offset(0, 4),
+                                          ),
+                                        ],
                                       ),
                                       child: AspectRatio(
                                         aspectRatio: 1,
                                         child: Container(
                                           decoration: BoxDecoration(
                                             color: const Color(0xFF191C1E),
-                                            borderRadius: BorderRadius.circular(8),
+                                            borderRadius: BorderRadius.circular(
+                                              8,
+                                            ),
                                           ),
                                           alignment: Alignment.center,
                                           child: Text(
-                                            setupData.teamAName.substring(0, min(2, setupData.teamAName.length)).toUpperCase(),
-                                            style: GoogleFonts.plusJakartaSans(fontSize: 32, fontWeight: FontWeight.bold, color: Colors.white),
+                                            setupData.teamAName
+                                                .substring(
+                                                  0,
+                                                  min(
+                                                    2,
+                                                    setupData.teamAName.length,
+                                                  ),
+                                                )
+                                                .toUpperCase(),
+                                            style: GoogleFonts.plusJakartaSans(
+                                              fontSize: 32,
+                                              fontWeight: FontWeight.bold,
+                                              color: Colors.white,
+                                            ),
                                           ),
                                         ),
                                       ),
@@ -119,7 +135,12 @@ class MatchDetailsScreen extends StatelessWidget {
                                     const SizedBox(height: 12),
                                     Text(
                                       setupData.teamAName.toUpperCase(),
-                                      style: GoogleFonts.plusJakartaSans(fontSize: 18, fontWeight: FontWeight.w600, color: Colors.white, height: 1.2),
+                                      style: GoogleFonts.plusJakartaSans(
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.w600,
+                                        color: Colors.white,
+                                        height: 1.2,
+                                      ),
                                       textAlign: TextAlign.center,
                                       maxLines: 2,
                                     ),
@@ -136,20 +157,45 @@ class MatchDetailsScreen extends StatelessWidget {
                                       decoration: BoxDecoration(
                                         color: Colors.white,
                                         borderRadius: BorderRadius.circular(12),
-                                        border: const Border(left: BorderSide(color: Color(0xFF575D78), width: 4)),
-                                        boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 10, offset: Offset(0, 4))],
+                                        border: const Border(
+                                          left: BorderSide(
+                                            color: Color(0xFF575D78),
+                                            width: 4,
+                                          ),
+                                        ),
+                                        boxShadow: const [
+                                          BoxShadow(
+                                            color: Colors.black26,
+                                            blurRadius: 10,
+                                            offset: Offset(0, 4),
+                                          ),
+                                        ],
                                       ),
                                       child: AspectRatio(
                                         aspectRatio: 1,
                                         child: Container(
                                           decoration: BoxDecoration(
                                             color: const Color(0xFF191C1E),
-                                            borderRadius: BorderRadius.circular(8),
+                                            borderRadius: BorderRadius.circular(
+                                              8,
+                                            ),
                                           ),
                                           alignment: Alignment.center,
                                           child: Text(
-                                            setupData.teamBName.substring(0, min(2, setupData.teamBName.length)).toUpperCase(),
-                                            style: GoogleFonts.plusJakartaSans(fontSize: 32, fontWeight: FontWeight.bold, color: Colors.white),
+                                            setupData.teamBName
+                                                .substring(
+                                                  0,
+                                                  min(
+                                                    2,
+                                                    setupData.teamBName.length,
+                                                  ),
+                                                )
+                                                .toUpperCase(),
+                                            style: GoogleFonts.plusJakartaSans(
+                                              fontSize: 32,
+                                              fontWeight: FontWeight.bold,
+                                              color: Colors.white,
+                                            ),
                                           ),
                                         ),
                                       ),
@@ -157,7 +203,12 @@ class MatchDetailsScreen extends StatelessWidget {
                                     const SizedBox(height: 12),
                                     Text(
                                       setupData.teamBName.toUpperCase(),
-                                      style: GoogleFonts.plusJakartaSans(fontSize: 18, fontWeight: FontWeight.w600, color: Colors.white, height: 1.2),
+                                      style: GoogleFonts.plusJakartaSans(
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.w600,
+                                        color: Colors.white,
+                                        height: 1.2,
+                                      ),
                                       textAlign: TextAlign.center,
                                       maxLines: 2,
                                     ),
@@ -177,8 +228,17 @@ class MatchDetailsScreen extends StatelessWidget {
                                 begin: Alignment.topLeft,
                                 end: Alignment.bottomRight,
                               ),
-                              border: Border.all(color: const Color(0xFF131B31), width: 4),
-                              boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 10, offset: Offset(0, 4))],
+                              border: Border.all(
+                                color: const Color(0xFF131B31),
+                                width: 4,
+                              ),
+                              boxShadow: const [
+                                BoxShadow(
+                                  color: Colors.black26,
+                                  blurRadius: 10,
+                                  offset: Offset(0, 4),
+                                ),
+                              ],
                             ),
                             alignment: Alignment.center,
                             child: Text(
@@ -195,15 +255,24 @@ class MatchDetailsScreen extends StatelessWidget {
                         ],
                       ),
                     ),
-                    
+
                     // Match Info Details Card
                     Container(
-                      margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+                      margin: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 24,
+                      ),
                       padding: const EdgeInsets.all(24),
                       decoration: BoxDecoration(
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(12),
-                        boxShadow: const [BoxShadow(color: Color.fromRGBO(26, 33, 56, 0.08), blurRadius: 20, offset: Offset(0, 4))],
+                        boxShadow: const [
+                          BoxShadow(
+                            color: Color.fromRGBO(26, 33, 56, 0.08),
+                            blurRadius: 20,
+                            offset: Offset(0, 4),
+                          ),
+                        ],
                       ),
                       child: Column(
                         children: [
@@ -218,15 +287,35 @@ class MatchDetailsScreen extends StatelessWidget {
                                   borderRadius: BorderRadius.circular(8),
                                 ),
                                 alignment: Alignment.center,
-                                child: const Icon(Icons.stadium_outlined, color: Color(0xFFBA0013), size: 24),
+                                child: const Icon(
+                                  Icons.stadium_outlined,
+                                  color: Color(0xFFBA0013),
+                                  size: 24,
+                                ),
                               ),
                               const SizedBox(width: 16),
                               Expanded(
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    Text('VENUE', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold, color: const Color(0xFF5D3F3C), letterSpacing: 0.5)),
-                                    Text('Coimbatore Stadium', style: GoogleFonts.plusJakartaSans(fontSize: 20, fontWeight: FontWeight.w600, color: const Color(0xFF191C1E), height: 1.2)),
+                                    Text(
+                                      'VENUE',
+                                      style: GoogleFonts.inter(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.bold,
+                                        color: const Color(0xFF5D3F3C),
+                                        letterSpacing: 0.5,
+                                      ),
+                                    ),
+                                    Text(
+                                      setupData.venue,
+                                      style: GoogleFonts.plusJakartaSans(
+                                        fontSize: 20,
+                                        fontWeight: FontWeight.w600,
+                                        color: const Color(0xFF191C1E),
+                                        height: 1.2,
+                                      ),
+                                    ),
                                   ],
                                 ),
                               ),
@@ -234,7 +323,11 @@ class MatchDetailsScreen extends StatelessWidget {
                           ),
                           const Padding(
                             padding: EdgeInsets.symmetric(vertical: 16),
-                            child: Divider(color: Color(0xFFE6E8EB), height: 1, thickness: 1),
+                            child: Divider(
+                              color: Color(0xFFE6E8EB),
+                              height: 1,
+                              thickness: 1,
+                            ),
                           ),
                           // Grid Details
                           Row(
@@ -243,13 +336,32 @@ class MatchDetailsScreen extends StatelessWidget {
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    Text('DATE & TIME', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold, color: const Color(0xFF5D3F3C), letterSpacing: 0.5)),
+                                    Text(
+                                      'DATE & TIME',
+                                      style: GoogleFonts.inter(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.bold,
+                                        color: const Color(0xFF5D3F3C),
+                                        letterSpacing: 0.5,
+                                      ),
+                                    ),
                                     const SizedBox(height: 4),
                                     Row(
                                       children: [
-                                        const Icon(Icons.calendar_today, size: 16, color: Color(0xFF575D78)),
+                                        const Icon(
+                                          Icons.calendar_today,
+                                          size: 16,
+                                          color: Color(0xFF575D78),
+                                        ),
                                         const SizedBox(width: 4),
-                                        Text(dateString, style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.bold, color: const Color(0xFF191C1E))),
+                                        Text(
+                                          dateString,
+                                          style: GoogleFonts.inter(
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.bold,
+                                            color: const Color(0xFF191C1E),
+                                          ),
+                                        ),
                                       ],
                                     ),
                                   ],
@@ -259,13 +371,32 @@ class MatchDetailsScreen extends StatelessWidget {
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    Text('FORMAT', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold, color: const Color(0xFF5D3F3C), letterSpacing: 0.5)),
+                                    Text(
+                                      'FORMAT',
+                                      style: GoogleFonts.inter(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.bold,
+                                        color: const Color(0xFF5D3F3C),
+                                        letterSpacing: 0.5,
+                                      ),
+                                    ),
                                     const SizedBox(height: 4),
                                     Row(
                                       children: [
-                                        const Icon(Icons.sports_cricket, size: 16, color: Color(0xFF575D78)),
+                                        const Icon(
+                                          Icons.sports_cricket,
+                                          size: 16,
+                                          color: Color(0xFF575D78),
+                                        ),
                                         const SizedBox(width: 4),
-                                        Text('$format Cup Final', style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.bold, color: const Color(0xFF191C1E))),
+                                        Text(
+                                          '$format',
+                                          style: GoogleFonts.inter(
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.bold,
+                                            color: const Color(0xFF191C1E),
+                                          ),
+                                        ),
                                       ],
                                     ),
                                   ],
@@ -280,13 +411,35 @@ class MatchDetailsScreen extends StatelessWidget {
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    Text('BALL TYPE', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold, color: const Color(0xFF5D3F3C), letterSpacing: 0.5)),
+                                    Text(
+                                      'BALL TYPE',
+                                      style: GoogleFonts.inter(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.bold,
+                                        color: const Color(0xFF5D3F3C),
+                                        letterSpacing: 0.5,
+                                      ),
+                                    ),
                                     const SizedBox(height: 4),
                                     Row(
                                       children: [
-                                        Container(width: 8, height: 8, decoration: const BoxDecoration(color: Color(0xFFBA0013), shape: BoxShape.circle)),
+                                        Container(
+                                          width: 8,
+                                          height: 8,
+                                          decoration: const BoxDecoration(
+                                            color: Color(0xFFBA0013),
+                                            shape: BoxShape.circle,
+                                          ),
+                                        ),
                                         const SizedBox(width: 6),
-                                        Text('Leather', style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.bold, color: const Color(0xFF191C1E))),
+                                        Text(
+                                          setupData.ballType,
+                                          style: GoogleFonts.inter(
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.bold,
+                                            color: const Color(0xFF191C1E),
+                                          ),
+                                        ),
                                       ],
                                     ),
                                   ],
@@ -296,13 +449,32 @@ class MatchDetailsScreen extends StatelessWidget {
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    Text('TOTAL OVERS', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold, color: const Color(0xFF5D3F3C), letterSpacing: 0.5)),
+                                    Text(
+                                      'TOTAL OVERS',
+                                      style: GoogleFonts.inter(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.bold,
+                                        color: const Color(0xFF5D3F3C),
+                                        letterSpacing: 0.5,
+                                      ),
+                                    ),
                                     const SizedBox(height: 4),
                                     Row(
                                       children: [
-                                        const Icon(Icons.timer_outlined, size: 16, color: Color(0xFF575D78)),
+                                        const Icon(
+                                          Icons.timer_outlined,
+                                          size: 16,
+                                          color: Color(0xFF575D78),
+                                        ),
                                         const SizedBox(width: 4),
-                                        Text('${setupData.overs} Overs', style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.bold, color: const Color(0xFF191C1E))),
+                                        Text(
+                                          '${setupData.overs} Overs',
+                                          style: GoogleFonts.inter(
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.bold,
+                                            color: const Color(0xFF191C1E),
+                                          ),
+                                        ),
                                       ],
                                     ),
                                   ],
@@ -313,7 +485,7 @@ class MatchDetailsScreen extends StatelessWidget {
                         ],
                       ),
                     ),
-                    
+
                     // Map Placeholder & Share Match Banner
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -335,16 +507,36 @@ class MatchDetailsScreen extends StatelessWidget {
                                     opacity: 0.5,
                                     child: ColorFiltered(
                                       colorFilter: const ColorFilter.matrix([
-                                        0.2126, 0.7152, 0.0722, 0, 0,
-                                        0.2126, 0.7152, 0.0722, 0, 0,
-                                        0.2126, 0.7152, 0.0722, 0, 0,
-                                        0, 0, 0, 1, 0,
+                                        0.2126,
+                                        0.7152,
+                                        0.0722,
+                                        0,
+                                        0,
+                                        0.2126,
+                                        0.7152,
+                                        0.0722,
+                                        0,
+                                        0,
+                                        0.2126,
+                                        0.7152,
+                                        0.0722,
+                                        0,
+                                        0,
+                                        0,
+                                        0,
+                                        0,
+                                        1,
+                                        0,
                                       ]),
                                       child: Container(
                                         decoration: BoxDecoration(
-                                          borderRadius: BorderRadius.circular(12),
+                                          borderRadius: BorderRadius.circular(
+                                            12,
+                                          ),
                                           image: const DecorationImage(
-                                            image: AssetImage('assets/images/scorely_icon.png'),
+                                            image: AssetImage(
+                                              'assets/images/scorely_icon.png',
+                                            ),
                                             fit: BoxFit.cover,
                                           ),
                                         ),
@@ -359,20 +551,37 @@ class MatchDetailsScreen extends StatelessWidget {
                                     gradient: const LinearGradient(
                                       begin: Alignment.bottomCenter,
                                       end: Alignment.topCenter,
-                                      colors: [Color(0xFF131B31), Colors.transparent],
+                                      colors: [
+                                        Color(0xFF131B31),
+                                        Colors.transparent,
+                                      ],
                                     ),
                                   ),
                                 ),
                                 Positioned(
                                   bottom: 12,
                                   left: 12,
+                                  right: 12,
                                   child: Row(
                                     children: [
-                                      const Icon(Icons.location_on, color: Colors.white70, size: 14),
+                                      const Icon(
+                                        Icons.location_on,
+                                        color: Colors.white70,
+                                        size: 14,
+                                      ),
                                       const SizedBox(width: 4),
-                                      Text(
-                                        'COIMBATORE STADIUM DISTRICT',
-                                        style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white70, letterSpacing: 0.5),
+                                      Expanded(
+                                        child: Text(
+                                          setupData.venue.toUpperCase(),
+                                          style: GoogleFonts.inter(
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.bold,
+                                            color: Colors.white70,
+                                            letterSpacing: 0.5,
+                                          ),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
                                       ),
                                     ],
                                   ),
@@ -394,18 +603,39 @@ class MatchDetailsScreen extends StatelessWidget {
                                           height: 40,
                                           decoration: BoxDecoration(
                                             color: Colors.white,
-                                            borderRadius: BorderRadius.circular(6),
+                                            borderRadius: BorderRadius.circular(
+                                              6,
+                                            ),
                                           ),
                                           alignment: Alignment.center,
-                                          child: const Icon(Icons.qr_code_2, color: Colors.black, size: 32),
+                                          child: const Icon(
+                                            Icons.qr_code_2,
+                                            color: Colors.black,
+                                            size: 32,
+                                          ),
                                         ),
                                         const SizedBox(width: 8),
                                         Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
                                           mainAxisSize: MainAxisSize.min,
                                           children: [
-                                            Text('SCAN FOR', style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white)),
-                                            Text('LOCATION', style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white)),
+                                            Text(
+                                              'SCAN FOR',
+                                              style: GoogleFonts.inter(
+                                                fontSize: 10,
+                                                fontWeight: FontWeight.bold,
+                                                color: Colors.white,
+                                              ),
+                                            ),
+                                            Text(
+                                              'LOCATION',
+                                              style: GoogleFonts.inter(
+                                                fontSize: 10,
+                                                fontWeight: FontWeight.bold,
+                                                color: Colors.white,
+                                              ),
+                                            ),
                                           ],
                                         ),
                                       ],
@@ -420,19 +650,37 @@ class MatchDetailsScreen extends StatelessWidget {
                           OutlinedButton(
                             onPressed: () {},
                             style: OutlinedButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
-                              backgroundColor: Colors.white.withValues(alpha: 0.1),
-                              side: BorderSide(color: Colors.white.withValues(alpha: 0.2)),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              padding: const EdgeInsets.symmetric(
+                                vertical: 16,
+                                horizontal: 24,
+                              ),
+                              backgroundColor: Colors.white.withValues(
+                                alpha: 0.1,
+                              ),
+                              side: BorderSide(
+                                color: Colors.white.withValues(alpha: 0.2),
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
                             ),
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                const Icon(Icons.share, color: Colors.white, size: 20),
+                                const Icon(
+                                  Icons.share,
+                                  color: Colors.white,
+                                  size: 20,
+                                ),
                                 const SizedBox(width: 8),
                                 Text(
                                   'SHARE MATCH BANNER',
-                                  style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white, letterSpacing: 1.0),
+                                  style: GoogleFonts.inter(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.white,
+                                    letterSpacing: 1.0,
+                                  ),
                                 ),
                               ],
                             ),
@@ -456,15 +704,20 @@ class MatchDetailsScreen extends StatelessWidget {
                   height: 64,
                   child: ElevatedButton(
                     onPressed: () {
-                      context.push('/scoring', extra: setupData);
+                      context.push('/toss', extra: setupData);
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFFBA0013),
                       elevation: 8,
-                      shadowColor: const Color(0xFFBA0013).withValues(alpha: 0.5),
+                      shadowColor: const Color(
+                        0xFFBA0013,
+                      ).withValues(alpha: 0.5),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
-                        side: BorderSide(color: Colors.white.withValues(alpha: 0.2), width: 1),
+                        side: BorderSide(
+                          color: Colors.white.withValues(alpha: 0.2),
+                          width: 1,
+                        ),
                       ),
                     ),
                     child: Row(
@@ -480,7 +733,11 @@ class MatchDetailsScreen extends StatelessWidget {
                           ),
                         ),
                         const SizedBox(width: 12),
-                        const Icon(Icons.play_arrow, color: Colors.white, size: 28),
+                        const Icon(
+                          Icons.play_arrow,
+                          color: Colors.white,
+                          size: 28,
+                        ),
                       ],
                     ),
                   ),

@@ -83,9 +83,9 @@ class _MatchResultScreenState extends State<MatchResultScreen> {
         ),
         title: Text(
           '${widget.resultData.team1Name} vs ${widget.resultData.team2Name}',
-          style: GoogleFonts.plusJakartaSans(
+          style: GoogleFonts.inter(
             color: Colors.white,
-            fontSize: 20,
+            fontSize: 18,
             fontWeight: FontWeight.w700,
           ),
         ),

@@ -11,6 +11,7 @@ class Matches extends Table {
   IntColumn get id => integer().autoIncrement()();
   TextColumn get matchTitle => text()();
   IntColumn get totalOvers => integer()();
+  TextColumn get matchType => text().withDefault(const Constant('T20'))();
 
   IntColumn get teamAId => integer().nullable()();
   IntColumn get teamBId => integer().nullable()();
