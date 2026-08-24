@@ -30,6 +30,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   String _bowlingStyle = 'Right-arm Fast';
   String _gender = 'Prefer not to say';
   String? _profileImagePath;
+  String _profileId = '';
 
   final List<String> _playingRoles = [
     'Batsman',
@@ -57,6 +58,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   void initState() {
     super.initState();
     final profile = ref.read(profileProvider);
+    _profileId = profile.id;
     _nameController = TextEditingController(text: profile.name);
     _locationController = TextEditingController(text: profile.location);
     _dobController = TextEditingController(text: profile.dateOfBirth);
@@ -133,6 +135,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   void _saveProfile() {
     if (_formKey.currentState!.validate()) {
       final updatedProfile = UserProfile(
+        id: _profileId,
         name: _nameController.text,
         role: _roleController.text,
         location: _locationController.text,
@@ -173,7 +176,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.settings, color: Colors.white, size: 20),
-            onPressed: () {},
+            onPressed: () => context.push('/settings'),
           ),
           const SizedBox(width: 8),
         ],
@@ -259,7 +262,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      'ID: 98234-CRIC', // Static mock ID
+                      'ID: $_profileId',
                       style: GoogleFonts.inter(
                         fontSize: 12,
                         color: const Color(0xFF575D78),

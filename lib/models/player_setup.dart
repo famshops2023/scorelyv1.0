@@ -57,4 +57,23 @@ class PlayerSetupData {
       isCaptain: isCaptain ?? this.isCaptain,
     );
   }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'name': name,
+      'role': role.toString(),
+      'isCaptain': isCaptain,
+    };
+  }
+
+  factory PlayerSetupData.fromJson(Map<String, dynamic> json) {
+    return PlayerSetupData(
+      name: json['name'] as String? ?? '',
+      role: PlayerRole.values.firstWhere(
+        (e) => e.toString() == (json['role'] as String?),
+        orElse: () => PlayerRole.batsman,
+      ),
+      isCaptain: json['isCaptain'] as bool? ?? false,
+    );
+  }
 }

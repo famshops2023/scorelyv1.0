@@ -41,7 +41,7 @@ class _EditSquadScreenState extends ConsumerState<EditSquadScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final teams = ref.read(teamsProvider);
+      final teams = ref.read(teamsProvider).value ?? [];
       final team = teams.firstWhere(
         (t) => t.id == widget.teamId,
         orElse: () => _team,

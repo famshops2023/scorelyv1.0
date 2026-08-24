@@ -1,4 +1,4 @@
-import 'dart:convert';
+// ignore_for_file: avoid_print
 import 'package:http/http.dart' as http;
 
 void main() async {
@@ -9,11 +9,14 @@ void main() async {
   };
 
   try {
-    var res = await http.get(Uri.parse(url + 'teams?select=*'), headers: headers);
+    var res = await http.get(
+      Uri.parse('${url}teams?select=*'),
+      headers: headers,
+    );
     print('Teams: ${res.statusCode}');
     print(res.body);
 
-    res = await http.get(Uri.parse(url + 'players?select=*'), headers: headers);
+    res = await http.get(Uri.parse('${url}players?select=*'), headers: headers);
     print('Players: ${res.statusCode}');
     print(res.body);
   } catch (e) {

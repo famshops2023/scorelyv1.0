@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 
 import 'providers/teams_provider.dart';
 
@@ -27,7 +28,8 @@ class _TeamsScreenState extends ConsumerState<TeamsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final allTeams = ref.watch(teamsProvider);
+    final teamsAsync = ref.watch(teamsProvider);
+    final allTeams = teamsAsync.value ?? [];
     final myTeams = ref.watch(myTeamsProvider);
     final currentUserId = ref.watch(currentUserIdProvider);
 
@@ -184,27 +186,44 @@ class _TeamsScreenState extends ConsumerState<TeamsScreen> {
                       width: 1,
                     ),
                   ),
-                  child: TextField(
-                    controller: _searchController,
-                    onChanged: (val) => setState(() => _searchQuery = val),
-                    cursorColor: const Color(0xFF1A2138),
-                    style: GoogleFonts.inter(
-                      color: const Color(0xFF1A2138),
-                      fontSize: 14,
-                    ),
-                    decoration: InputDecoration(
-                      hintText: 'Search teams, players, or IDs...',
-                      hintStyle: GoogleFonts.inter(
-                        color: const Color(0xFF8E95A5),
-                        fontSize: 14,
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: _searchController,
+                          onChanged: (val) => setState(() => _searchQuery = val),
+                          cursorColor: const Color(0xFF1A2138),
+                          style: GoogleFonts.inter(
+                            color: const Color(0xFF1A2138),
+                            fontSize: 14,
+                          ),
+                          decoration: InputDecoration(
+                            hintText: 'Search teams, players, or IDs...',
+                            hintStyle: GoogleFonts.inter(
+                              color: const Color(0xFF8E95A5),
+                              fontSize: 14,
+                            ),
+                            prefixIcon: const Icon(
+                              Icons.search,
+                              color: Color(0xFF8E95A5),
+                            ),
+                            border: InputBorder.none,
+                            contentPadding: const EdgeInsets.symmetric(vertical: 14),
+                          ),
+                        ),
                       ),
-                      prefixIcon: const Icon(
-                        Icons.search,
-                        color: Color(0xFF8E95A5),
+                      IconButton(
+                        icon: const Icon(Icons.qr_code_scanner, color: Color(0xFF8E95A5)),
+                        onPressed: () async {
+                          final result = await context.push<String>('/team-scanner');
+                          if (result != null && result.isNotEmpty) {
+                            _searchController.text = result;
+                            setState(() => _searchQuery = result);
+                          }
+                        },
                       ),
-                      border: InputBorder.none,
-                      contentPadding: const EdgeInsets.symmetric(vertical: 14),
-                    ),
+                      const SizedBox(width: 8),
+                    ],
                   ),
                 ),
               ],
@@ -263,97 +282,6 @@ class _TeamsScreenState extends ConsumerState<TeamsScreen> {
                   isSelectionMode: widget.isSelectionMode,
                 );
               },
-            ),
-          ),
-        ],
-      ),
-      bottomNavigationBar: _buildBottomNav(context),
-    );
-  }
-
-  Widget _buildBottomNav(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, _) {
-        final bottomInset = MediaQuery.of(context).viewPadding.bottom;
-        return Container(
-          padding: EdgeInsets.only(
-            bottom: 12 + bottomInset,
-            top: 10,
-            left: 14,
-            right: 14,
-          ),
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-            boxShadow: [
-              BoxShadow(
-                color: Color.fromRGBO(26, 33, 56, 0.05),
-                blurRadius: 20,
-                offset: Offset(0, -4),
-              ),
-            ],
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              GestureDetector(
-                onTap: () => context.push('/home'),
-                child: _buildNavItem(Icons.home, 'Home', false),
-              ),
-              _buildNavItem(Icons.people_alt, 'Teams', true),
-              GestureDetector(
-                onTap: () => context.push('/history'),
-                child: _buildNavItem(Icons.history, 'History', false),
-              ),
-              GestureDetector(
-                onTap: () => context.push('/profile'),
-                child: _buildNavItem(Icons.person_outline, 'Profile', false),
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildNavItem(IconData icon, String label, bool isActive) {
-    if (isActive) {
-      return Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
-        decoration: BoxDecoration(
-          color: const Color(0xFFFFE8E6),
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, color: const Color(0xFFBA0013), size: 20),
-            const SizedBox(height: 3),
-            Text(
-              label,
-              style: GoogleFonts.inter(
-                fontSize: 10,
-                fontWeight: FontWeight.w700,
-                color: const Color(0xFFBA0013),
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, color: const Color(0xFF575D78), size: 20),
-          const SizedBox(height: 3),
-          Text(
-            label,
-            style: GoogleFonts.inter(
-              fontSize: 10,
-              fontWeight: FontWeight.w600,
-              color: const Color(0xFF575D78),
             ),
           ),
         ],
@@ -527,6 +455,22 @@ class _TeamCard extends StatelessWidget {
                           constraints: const BoxConstraints(),
                           padding: const EdgeInsets.all(8),
                           icon: const Icon(
+                            Icons.qr_code,
+                            color: Color(0xFF575D78),
+                            size: 18,
+                          ),
+                          onPressed: () {
+                            showModalBottomSheet(
+                              context: context,
+                              backgroundColor: Colors.transparent,
+                              builder: (context) => _buildQRBottomSheet(context, team),
+                            );
+                          },
+                        ),
+                        IconButton(
+                          constraints: const BoxConstraints(),
+                          padding: const EdgeInsets.all(8),
+                          icon: const Icon(
                             Icons.remove_red_eye_outlined,
                             color: Color(0xFF575D78),
                             size: 18,
@@ -564,6 +508,98 @@ class _TeamCard extends StatelessWidget {
         ),
       ),
     ),
+    );
+  }
+
+  Widget _buildQRBottomSheet(BuildContext context, TeamData team) {
+    // Prefer the human-readable team code for the QR payload; fallback to UUID
+    final qrData = team.teamCode.isNotEmpty ? team.teamCode : team.id;
+    return Container(
+      padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Drag handle
+          Container(
+            width: 40,
+            height: 4,
+            decoration: BoxDecoration(
+              color: const Color(0xFFDDE0E8),
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Text(
+                  '${team.name} QR Code',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                    color: const Color(0xFF191C1E),
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              IconButton(
+                icon: const Icon(Icons.close, color: Color(0xFF575D78)),
+                onPressed: () => Navigator.pop(context),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Scan this code to find this team in Discovery',
+            style: GoogleFonts.inter(
+              fontSize: 13,
+              color: const Color(0xFF575D78),
+            ),
+          ),
+          const SizedBox(height: 24),
+          Center(
+            child: QrImageView(
+              data: qrData,
+              version: QrVersions.auto,
+              size: 200.0,
+              backgroundColor: Colors.white,
+            ),
+          ),
+          const SizedBox(height: 16),
+          // Team code label below QR
+          if (team.teamCode.isNotEmpty)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF7F9FC),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: const Color(0xFFDDE0E8)),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.tag, size: 16, color: Color(0xFF575D78)),
+                  const SizedBox(width: 6),
+                  Text(
+                    team.teamCode,
+                    style: GoogleFonts.inter(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      color: const Color(0xFF191C1E),
+                      letterSpacing: 1.2,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          const SizedBox(height: 24),
+        ],
+      ),
     );
   }
 }

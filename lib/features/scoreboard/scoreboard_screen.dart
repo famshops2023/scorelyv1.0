@@ -429,7 +429,7 @@ class _ScoreboardScreenState extends State<ScoreboardScreen> {
             ],
           ),
         ),
-        ...sortedOvers.take(5).map((overNumber) {
+        ...sortedOvers.map((overNumber) {
           final overBalls = oversMap[overNumber]!;
           int overRuns = 0;
           int overWickets = 0;
@@ -485,19 +485,23 @@ class _ScoreboardScreenState extends State<ScoreboardScreen> {
                         runSpacing: 8,
                         children: overBalls.map((b) {
                           final isWicket = b.isWicket;
-                          final isSix = !isWicket && b.runs == 6;
-                          final isDot = !isWicket && b.runs == 0;
-                          
-                          Color bgColor = const Color(0xFFECEEF1);
+                          final isSix  = !isWicket && b.runs == 6;
+                          final isFour = !isWicket && b.runs == 4;
+                          final isDot  = !isWicket && b.runs == 0;
+
+                          Color bgColor   = const Color(0xFFECEEF1);
                           Color textColor = const Color(0xFF191C1E);
                           String label = '${b.runs}';
-                          
+
                           if (isWicket) {
-                            bgColor = const Color(0xFFBA0013);
+                            bgColor   = const Color(0xFFBA0013);
                             textColor = Colors.white;
                             label = 'W';
                           } else if (isSix) {
-                            bgColor = const Color(0xFFBA0013);
+                            bgColor   = const Color(0xFF006B1B); // Green for 6
+                            textColor = Colors.white;
+                          } else if (isFour) {
+                            bgColor   = const Color(0xFF1565C0); // Blue for 4
                             textColor = Colors.white;
                           } else if (isDot) {
                             label = '.';

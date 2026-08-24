@@ -1,6 +1,8 @@
 import 'dart:convert';
 
 class UserProfile {
+  String id;
+  String email;        // InsForge auth email
   String name;
   String role;
   String location;
@@ -12,8 +14,12 @@ class UserProfile {
   String bowlingStyle;
   String gender;
   String? profileImagePath;
+  bool isLoggedIn;     // true once authenticated via InsForge
+  String? accessToken; // InsForge JWT token (not persisted to prefs)
 
   UserProfile({
+    this.id = '',
+    this.email = '',
     this.name = 'Scorely User',
     this.role = 'Cricket Enthusiast',
     this.location = '',
@@ -25,10 +31,14 @@ class UserProfile {
     this.bowlingStyle = 'Right-arm Fast',
     this.gender = 'Prefer not to say',
     this.profileImagePath,
+    this.isLoggedIn = false,
+    this.accessToken,
   });
 
   Map<String, dynamic> toMap() {
     return {
+      'id': id,
+      'email': email,
       'name': name,
       'role': role,
       'location': location,
@@ -40,11 +50,15 @@ class UserProfile {
       'bowlingStyle': bowlingStyle,
       'gender': gender,
       'profileImagePath': profileImagePath,
+      'isLoggedIn': isLoggedIn,
+      // accessToken is intentionally NOT persisted
     };
   }
 
   factory UserProfile.fromMap(Map<String, dynamic> map) {
     return UserProfile(
+      id: map['id'] ?? '',
+      email: map['email'] ?? '',
       name: map['name'] ?? 'Scorely User',
       role: map['role'] ?? 'Cricket Enthusiast',
       location: map['location'] ?? '',
@@ -56,14 +70,18 @@ class UserProfile {
       bowlingStyle: map['bowlingStyle'] ?? 'Right-arm Fast',
       gender: map['gender'] ?? 'Prefer not to say',
       profileImagePath: map['profileImagePath'],
+      isLoggedIn: map['isLoggedIn'] == true,
     );
   }
 
   String toJson() => json.encode(toMap());
 
-  factory UserProfile.fromJson(String source) => UserProfile.fromMap(json.decode(source));
+  factory UserProfile.fromJson(String source) =>
+      UserProfile.fromMap(json.decode(source));
 
   UserProfile copyWith({
+    String? id,
+    String? email,
     String? name,
     String? role,
     String? location,
@@ -75,8 +93,12 @@ class UserProfile {
     String? bowlingStyle,
     String? gender,
     String? profileImagePath,
+    bool? isLoggedIn,
+    String? accessToken,
   }) {
     return UserProfile(
+      id: id ?? this.id,
+      email: email ?? this.email,
       name: name ?? this.name,
       role: role ?? this.role,
       location: location ?? this.location,
@@ -88,6 +110,8 @@ class UserProfile {
       bowlingStyle: bowlingStyle ?? this.bowlingStyle,
       gender: gender ?? this.gender,
       profileImagePath: profileImagePath ?? this.profileImagePath,
+      isLoggedIn: isLoggedIn ?? this.isLoggedIn,
+      accessToken: accessToken ?? this.accessToken,
     );
   }
 }

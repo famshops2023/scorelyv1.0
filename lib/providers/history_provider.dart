@@ -26,6 +26,16 @@ class MatchHistoryNotifier extends Notifier<List<CricketMatch>> {
   Future<void> deleteMatch(int id) async {
     await _db.deleteMatchById(id);
     await loadMatches();
+    ref.invalidate(recentMatchesProvider);
+    ref.invalidate(liveMatchProvider);
+  }
+
+  Future<void> clearAllMatches() async {
+    await _db.delete(_db.matches).go();
+    await _db.delete(_db.ballEvents).go();
+    await loadMatches();
+    ref.invalidate(recentMatchesProvider);
+    ref.invalidate(liveMatchProvider);
   }
 }
 
@@ -66,4 +76,12 @@ final matchTeamNamesProvider =
     if (t != null) teamB = t.name;
   }
   return (teamA, teamB);
+});
+
+/// Count of completed matches not yet pushed to InsForge.
+/// Watched by the History screen to show a "Sync Pending" badge.
+final pendingSyncCountProvider = FutureProvider<int>((ref) async {
+  final db = ref.watch(databaseServiceProvider);
+  final pending = await db.getPendingSyncMatches();
+  return pending.length;
 });

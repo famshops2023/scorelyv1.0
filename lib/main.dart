@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'core/theme/app_theme.dart';
 import 'routes/app_router.dart';
+import 'services/sync_manager.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -25,20 +26,22 @@ void main() {
   );
 }
 
-class ScorelyApp extends StatefulWidget {
+class ScorelyApp extends ConsumerStatefulWidget {
   const ScorelyApp({super.key});
 
   @override
-  State<ScorelyApp> createState() => _ScorelyAppState();
+  ConsumerState<ScorelyApp> createState() => _ScorelyAppState();
 }
 
-class _ScorelyAppState extends State<ScorelyApp> {
+class _ScorelyAppState extends ConsumerState<ScorelyApp> {
   late AppLinks _appLinks;
   StreamSubscription<Uri>? _linkSubscription;
 
   @override
   void initState() {
     super.initState();
+    // Bootstrap sync manager so it starts listening for connectivity immediately.
+    ref.read(syncManagerProvider);
     _initDeepLinks();
   }
 

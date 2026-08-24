@@ -5,7 +5,8 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
 
 class DiscoveryItem {
-  final String id;
+  final String id;        // Human-readable code (team_code or player id)
+  final String rawId;     // Actual database UUID for navigation
   final String name;
   final String type; // 'team', 'player', 'tournament'
   final String location;
@@ -13,11 +14,12 @@ class DiscoveryItem {
 
   DiscoveryItem({
     required this.id,
+    String? rawId,
     required this.name,
     required this.type,
     required this.location,
     this.role,
-  });
+  }) : rawId = rawId ?? id;
 }
 
 class DiscoveryScreen extends StatefulWidget {
@@ -51,8 +53,8 @@ class _DiscoveryScreenState extends State<DiscoveryScreen> {
   Future<void> _fetchData() async {
     setState(() => _isLoading = true);
 
-    final url = 'https://ip53vj9s.ap-southeast.insforge.app/rest/v1/';
-    final headers = {
+    const baseUrl = 'https://ip53vj9s.ap-southeast.insforge.app/api/database/records';
+    const headers = {
       'apikey': 'ik_d23aa9a406864853f254a0722fc1e56b',
       'Authorization': 'Bearer ik_d23aa9a406864853f254a0722fc1e56b',
     };
@@ -60,24 +62,32 @@ class _DiscoveryScreenState extends State<DiscoveryScreen> {
     List<DiscoveryItem> fetchedItems = [];
 
     try {
-      // Try fetching teams
-      final teamsRes = await http.get(Uri.parse('${url}teams?select=*'), headers: headers);
+      // Fetch teams
+      final teamsRes = await http.get(
+        Uri.parse('$baseUrl/teams?select=*&order=created_at.desc'),
+        headers: headers,
+      );
       if (teamsRes.statusCode == 200) {
         final List<dynamic> data = json.decode(teamsRes.body);
         for (var t in data) {
+          final city = t['city'] as String? ?? '';
+          final state = t['state'] as String? ?? '';
+          final location = [city, state].where((s) => s.isNotEmpty).join(', ');
           fetchedItems.add(DiscoveryItem(
-            id: t['id']?.toString() ?? '',
+            id: t['team_code']?.toString() ?? t['id']?.toString() ?? '',
+            rawId: t['id']?.toString() ?? '',
             name: t['name'] ?? 'Unknown Team',
             type: 'team',
-            location: t['location'] ?? 'Unknown Location',
+            location: location.isNotEmpty ? location : 'Unknown Location',
           ));
         }
-      } else {
-        throw Exception('Failed to load teams');
       }
 
-      // Try fetching players
-      final playersRes = await http.get(Uri.parse('${url}players?select=*'), headers: headers);
+      // Fetch players
+      final playersRes = await http.get(
+        Uri.parse('$baseUrl/players?select=*'),
+        headers: headers,
+      );
       if (playersRes.statusCode == 200) {
         final List<dynamic> data = json.decode(playersRes.body);
         for (var p in data) {
@@ -85,20 +95,23 @@ class _DiscoveryScreenState extends State<DiscoveryScreen> {
             id: p['id']?.toString() ?? '',
             name: p['name'] ?? 'Unknown Player',
             type: 'player',
-            role: p['attribute'] ?? p['role'] ?? 'Unknown Role', // Added player attribute
-            location: p['location'] ?? 'Unknown Location',
+            role: p['attribute'] as String? ?? p['role'] as String? ?? 'Cricketer',
+            location: p['location'] as String? ?? 'Unknown Location',
           ));
         }
-      } else {
-        throw Exception('Failed to load players');
       }
-    } catch (e) {
-      // Fallback dummy data if API fails or endpoints don't exist yet
+    } catch (_) {
+      // ignored — show empty state
+    }
+
+    // Fallback to demo data only if nothing was fetched at all
+    if (fetchedItems.isEmpty) {
       fetchedItems = [
-        DiscoveryItem(id: 'TS-4421', name: 'Thunder Strikers', type: 'team', location: 'Mumbai, India'),
-        DiscoveryItem(id: 'AK-998', name: 'Arjun K.', type: 'player', role: 'All-rounder', location: 'Chennai, India'),
-        DiscoveryItem(id: 'RT-1102', name: 'Royal Titans', type: 'team', location: 'London, UK'),
-        DiscoveryItem(id: 'SJ-452', name: 'Sarah J.', type: 'player', role: 'Fast Bowler', location: 'Melbourne, AUS'),
+        DiscoveryItem(id: 'ST-1001', name: 'Thunder Strikers', type: 'team', location: 'Mumbai, India'),
+        DiscoveryItem(id: 'ST-1002', name: 'Royal Titans', type: 'team', location: 'Delhi, India'),
+        DiscoveryItem(id: 'ST-1003', name: 'Chennai Kings', type: 'team', location: 'Chennai, India'),
+        DiscoveryItem(id: 'P-001', name: 'Arjun Kumar', type: 'player', role: 'All-rounder', location: 'Chennai, India'),
+        DiscoveryItem(id: 'P-002', name: 'Ravi Sharma', type: 'player', role: 'Fast Bowler', location: 'Mumbai, India'),
       ];
     }
 
@@ -199,7 +212,7 @@ class _DiscoveryScreenState extends State<DiscoveryScreen> {
           // List
           Expanded(
             child: _isLoading
-                ? const Center(child: CircularProgressIndicator(color: Color(0xFFF22C33)))
+                ? const Center(child: CircularProgressIndicator(color: Color(0xFFBA0013)))
                 : ListView.builder(
                     padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
                     itemCount: _filteredItems.length,
@@ -222,7 +235,7 @@ class _DiscoveryScreenState extends State<DiscoveryScreen> {
         margin: const EdgeInsets.only(right: 8),
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
         decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFFF22C33) : const Color(0xFF1a1c20),
+          color: isSelected ? const Color(0xFFBA0013) : const Color(0xFF1a1c20),
           borderRadius: BorderRadius.circular(24),
         ),
         child: Text(
@@ -244,7 +257,11 @@ class _DiscoveryScreenState extends State<DiscoveryScreen> {
           context.pop(item.name);
         } else {
           if (item.type == 'team') {
-            context.push('/team-squad', extra: item.id);
+            // Use rawId (UUID) for team-squad navigation
+            context.push('/team-squad', extra: {
+              'teamId': item.rawId,
+              'readOnly': true,
+            });
           } else if (item.type == 'player') {
             context.push('/profile');
           }
@@ -271,7 +288,7 @@ class _DiscoveryScreenState extends State<DiscoveryScreen> {
               ),
               child: Center(
                 child: item.type == 'team'
-                    ? const Icon(Icons.shield, color: Color(0xFFF22C33), size: 32)
+                    ? const Icon(Icons.shield, color: Color(0xFFBA0013), size: 32)
                     : const Icon(Icons.person, color: Color(0xFFbcc7de), size: 32),
               ),
             ),

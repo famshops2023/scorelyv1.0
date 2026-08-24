@@ -68,6 +68,13 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   ),
                 ),
                 ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    elevation: 4,
+                  ),
                   onPressed: () {
                     if (_currentPage < _pages.length - 1) {
                       _pageController.nextPage(
@@ -78,7 +85,14 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                       context.go('/home');
                     }
                   },
-                  child: Text(_currentPage == _pages.length - 1 ? 'GET STARTED' : 'NEXT'),
+                  child: Text(
+                    _currentPage == _pages.length - 1 ? 'GET STARTED' : 'NEXT',
+                    style: const TextStyle(
+                      fontFamily: 'Plus Jakarta Sans',
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
                 ),
               ],
             ),

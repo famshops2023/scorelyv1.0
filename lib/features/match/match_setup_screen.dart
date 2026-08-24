@@ -1,9 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:uuid/uuid.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../models/player_setup.dart';
+import 'providers/quick_match_storage.dart';
+import 'helpers/live_match_promo.dart';
 
 class MatchSetupData {
+  final String id;
+  final String status;
   final String teamAName;
   final String teamBName;
   final List<PlayerSetupData> teamAPlayers;
@@ -17,8 +24,15 @@ class MatchSetupData {
   final String ballType;
   final String venue;
   final DateTime matchDate;
+  final bool isQuickMatch;
+  final String? teamAScorerName;
+  final String? teamAScorerId;
+  final String? teamBScorerName;
+  final String? teamBScorerId;
 
   const MatchSetupData({
+    this.id = '',
+    this.status = 'draft',
     required this.teamAName,
     required this.teamBName,
     required this.teamAPlayers,
@@ -32,14 +46,33 @@ class MatchSetupData {
     required this.ballType,
     required this.venue,
     required this.matchDate,
+    this.isQuickMatch = false,
+    this.teamAScorerName,
+    this.teamAScorerId,
+    this.teamBScorerName,
+    this.teamBScorerId,
   });
 
-  MatchSetupData copyWith({String? tossWonBy, String? battingFirstTeam}) {
+  MatchSetupData copyWith({
+    String? id,
+    String? status,
+    List<PlayerSetupData>? teamAPlayers,
+    List<PlayerSetupData>? teamBPlayers,
+    String? tossWonBy,
+    String? battingFirstTeam,
+    bool? isQuickMatch,
+    String? teamAScorerName,
+    String? teamAScorerId,
+    String? teamBScorerName,
+    String? teamBScorerId,
+  }) {
     return MatchSetupData(
+      id: id ?? this.id,
+      status: status ?? this.status,
       teamAName: teamAName,
       teamBName: teamBName,
-      teamAPlayers: teamAPlayers,
-      teamBPlayers: teamBPlayers,
+      teamAPlayers: teamAPlayers ?? this.teamAPlayers,
+      teamBPlayers: teamBPlayers ?? this.teamBPlayers,
       overs: overs,
       maxOversPerBowler: maxOversPerBowler,
       powerplayOvers: powerplayOvers,
@@ -49,19 +82,74 @@ class MatchSetupData {
       matchDate: matchDate,
       tossWonBy: tossWonBy ?? this.tossWonBy,
       battingFirstTeam: battingFirstTeam ?? this.battingFirstTeam,
+      isQuickMatch: isQuickMatch ?? this.isQuickMatch,
+      teamAScorerName: teamAScorerName ?? this.teamAScorerName,
+      teamAScorerId: teamAScorerId ?? this.teamAScorerId,
+      teamBScorerName: teamBScorerName ?? this.teamBScorerName,
+      teamBScorerId: teamBScorerId ?? this.teamBScorerId,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'status': status,
+      'teamAName': teamAName,
+      'teamBName': teamBName,
+      'teamAPlayers': teamAPlayers.map((p) => p.toJson()).toList(),
+      'teamBPlayers': teamBPlayers.map((p) => p.toJson()).toList(),
+      'overs': overs,
+      'tossWonBy': tossWonBy,
+      'maxOversPerBowler': maxOversPerBowler,
+      'powerplayOvers': powerplayOvers,
+      'battingFirstTeam': battingFirstTeam,
+      'matchType': matchType,
+      'ballType': ballType,
+      'venue': venue,
+      'matchDate': matchDate.toIso8601String(),
+      'isQuickMatch': isQuickMatch,
+      'teamAScorerName': teamAScorerName,
+      'teamAScorerId': teamAScorerId,
+      'teamBScorerName': teamBScorerName,
+      'teamBScorerId': teamBScorerId,
+    };
+  }
+
+  factory MatchSetupData.fromJson(Map<String, dynamic> json) {
+    return MatchSetupData(
+      id: json['id'] as String? ?? '',
+      status: json['status'] as String? ?? 'draft',
+      teamAName: json['teamAName'] as String? ?? '',
+      teamBName: json['teamBName'] as String? ?? '',
+      teamAPlayers: (json['teamAPlayers'] as List?)?.map((p) => PlayerSetupData.fromJson(p)).toList() ?? [],
+      teamBPlayers: (json['teamBPlayers'] as List?)?.map((p) => PlayerSetupData.fromJson(p)).toList() ?? [],
+      overs: json['overs'] as int? ?? 20,
+      tossWonBy: json['tossWonBy'] as String? ?? '',
+      maxOversPerBowler: json['maxOversPerBowler'] as int? ?? 4,
+      powerplayOvers: json['powerplayOvers'] as int? ?? 6,
+      battingFirstTeam: json['battingFirstTeam'] as String? ?? '',
+      matchType: json['matchType'] as String? ?? 'T20',
+      ballType: json['ballType'] as String? ?? 'Tennis',
+      venue: json['venue'] as String? ?? '',
+      matchDate: json['matchDate'] != null ? DateTime.parse(json['matchDate']) : DateTime.now(),
+      isQuickMatch: json['isQuickMatch'] as bool? ?? false,
+      teamAScorerName: json['teamAScorerName'] as String?,
+      teamAScorerId: json['teamAScorerId'] as String?,
+      teamBScorerName: json['teamBScorerName'] as String?,
+      teamBScorerId: json['teamBScorerId'] as String?,
     );
   }
 }
 
-class MatchSetupScreen extends StatefulWidget {
+class MatchSetupScreen extends ConsumerStatefulWidget {
   final Map<String, dynamic>? initialData;
   const MatchSetupScreen({super.key, this.initialData});
 
   @override
-  State<MatchSetupScreen> createState() => _MatchSetupScreenState();
+  ConsumerState<MatchSetupScreen> createState() => _MatchSetupScreenState();
 }
 
-class _MatchSetupScreenState extends State<MatchSetupScreen> {
+class _MatchSetupScreenState extends ConsumerState<MatchSetupScreen> {
   late TextEditingController _teamAController;
   late TextEditingController _teamBController;
   late TextEditingController _venueController;
@@ -77,6 +165,8 @@ class _MatchSetupScreenState extends State<MatchSetupScreen> {
   bool _isNow = true;
   DateTime _selectedDate = DateTime.now();
   TimeOfDay _selectedTime = TimeOfDay.now();
+  
+  bool _isQuickMatch = false;
 
   @override
   void initState() {
@@ -92,6 +182,33 @@ class _MatchSetupScreenState extends State<MatchSetupScreen> {
     );
     _teamAPlayers = widget.initialData?['teamAPlayers'] ?? [];
     _teamBPlayers = widget.initialData?['teamBPlayers'] ?? [];
+    
+    _isQuickMatch = widget.initialData?['isQuickMatch'] ?? false;
+    if (_isQuickMatch) {
+      _matchType = widget.initialData?['matchType'] ?? 'Box/Turf'; // Default for quick match
+    } else {
+      _matchType = widget.initialData?['matchType'] ?? 'T20';
+    }
+    
+    _ballType = widget.initialData?['ballType'] ?? 'Leather';
+
+    _loadDefaultOvers();
+  }
+
+  Future<void> _loadDefaultOvers() async {
+    final int defaultOvers;
+    if (widget.initialData?['overs'] != null) {
+      defaultOvers = widget.initialData!['overs'] as int;
+    } else {
+      final prefs = await SharedPreferences.getInstance();
+      defaultOvers = prefs.getInt('settings_default_overs') ?? 20;
+    }
+    if (mounted) {
+      setState(() {
+        _overs = defaultOvers;
+        _updateDependentOvers();
+      });
+    }
   }
 
   void _updateDependentOvers() {
@@ -114,12 +231,19 @@ class _MatchSetupScreenState extends State<MatchSetupScreen> {
   }
 
   void _startMatch() {
-    final String teamAName = _teamAController.text.trim().isNotEmpty
-        ? _teamAController.text.trim()
-        : 'Team A';
-    final String teamBName = _teamBController.text.trim().isNotEmpty
-        ? _teamBController.text.trim()
-        : 'Team B';
+    final String teamAName = _teamAController.text.trim();
+    final String teamBName = _teamBController.text.trim();
+    
+    if (teamAName.isEmpty || teamBName.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Both Team A and Team B must be selected'),
+          backgroundColor: Color(0xFFBA0013),
+        ),
+      );
+      return;
+    }
+
     final String venue = _venueController.text.trim().isNotEmpty
         ? _venueController.text.trim()
         : 'Unknown Venue';
@@ -135,6 +259,7 @@ class _MatchSetupScreenState extends State<MatchSetupScreen> {
           );
 
     final data = MatchSetupData(
+      id: const Uuid().v4(),
       teamAName: teamAName,
       teamBName: teamBName,
       teamAPlayers: _teamAPlayers,
@@ -148,8 +273,15 @@ class _MatchSetupScreenState extends State<MatchSetupScreen> {
       ballType: _ballType,
       venue: venue,
       matchDate: matchDate,
+      isQuickMatch: _isQuickMatch,
     );
-    context.push('/match-details', extra: data);
+    
+    if (_isQuickMatch) {
+      QuickMatchStorage.saveQuickMatch(data);
+      proceedToToss(context, ref, data);
+    } else {
+      context.push('/match-details', extra: data);
+    }
   }
 
   @override
@@ -225,24 +357,28 @@ class _MatchSetupScreenState extends State<MatchSetupScreen> {
             _buildVenueInput(),
             const SizedBox(height: 24),
 
-            _buildSectionTitle('DATE & TIME'),
-            const SizedBox(height: 12),
-            _buildDateTimeNowToggle(),
-            const SizedBox(height: 24),
+            if (!_isQuickMatch) ...[
+              _buildSectionTitle('DATE & TIME'),
+              const SizedBox(height: 12),
+              _buildDateTimeNowToggle(),
+              const SizedBox(height: 24),
+            ],
 
             Row(
               children: [
                 Expanded(
-                  child: _buildCounterCard('OVERS/BOWLER', _maxOversPerBowler, (
-                    val,
-                  ) {
-                    setState(() => _maxOversPerBowler = val);
+                  child: _buildCounterCard('OVERS/BOWLER', _maxOversPerBowler, (val) {
+                    if (val <= _overs) {
+                      setState(() => _maxOversPerBowler = val);
+                    }
                   }),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: _buildCounterCard('POWERPLAY', _powerplayOvers, (val) {
-                    setState(() => _powerplayOvers = val);
+                    if (val <= _overs) {
+                      setState(() => _powerplayOvers = val);
+                    }
                   }),
                 ),
               ],
@@ -268,7 +404,7 @@ class _MatchSetupScreenState extends State<MatchSetupScreen> {
                   size: 20,
                 ),
                 label: Text(
-                  'INITIALIZE MATCH',
+                  _isQuickMatch ? 'START MATCH' : 'SCHEDULE MATCH',
                   style: GoogleFonts.plusJakartaSans(
                     fontSize: 14,
                     fontWeight: FontWeight.w700,
@@ -349,6 +485,7 @@ class _MatchSetupScreenState extends State<MatchSetupScreen> {
                   ),
                   TextField(
                     controller: controller,
+                    readOnly: _isQuickMatch,
                     decoration: InputDecoration(
                       hintText: hint,
                       hintStyle: GoogleFonts.inter(
@@ -375,23 +512,24 @@ class _MatchSetupScreenState extends State<MatchSetupScreen> {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                GestureDetector(
-                  onTap: () async {
-                    final selectedTeam = await context.push<String>(
-                      '/teams',
-                      extra: true,
-                    ); // true = selection mode
-                    if (selectedTeam != null && selectedTeam.isNotEmpty) {
-                      controller.text = selectedTeam;
-                    }
-                  },
-                  child: const Icon(
-                    Icons.search,
-                    color: Color(0xFFBA0013),
-                    size: 24,
+                if (!_isQuickMatch) ...[
+                  GestureDetector(
+                    onTap: () async {
+                      final selectedTeam = await context.push<String>(
+                        '/teams-select',
+                      );
+                      if (selectedTeam != null && selectedTeam.isNotEmpty) {
+                        controller.text = selectedTeam;
+                      }
+                    },
+                    child: const Icon(
+                      Icons.search,
+                      color: Color(0xFFBA0013),
+                      size: 24,
+                    ),
                   ),
-                ),
-                const SizedBox(width: 8),
+                  const SizedBox(width: 8),
+                ],
                 const Icon(
                   Icons.sports_cricket,
                   color: Color(0xFFBFC5E4),
@@ -535,6 +673,16 @@ class _MatchSetupScreenState extends State<MatchSetupScreen> {
   }
 
   Widget _buildMatchTypeSection() {
+    if (_isQuickMatch) {
+      return Row(
+        children: [
+          Expanded(child: _buildMatchTypeChip('Box/Turf')),
+          const SizedBox(width: 8),
+          Expanded(child: _buildMatchTypeChip('Limited Overs')),
+        ],
+      );
+    }
+
     return Column(
       children: [
         Row(
@@ -549,11 +697,7 @@ class _MatchSetupScreenState extends State<MatchSetupScreen> {
           ],
         ),
         const SizedBox(height: 8),
-        Row(
-          children: [
-            Expanded(child: _buildMatchTypeChip('Limited Overs')),
-          ],
-        ),
+        Row(children: [Expanded(child: _buildMatchTypeChip('Limited Overs'))]),
       ],
     );
   }
@@ -561,17 +705,11 @@ class _MatchSetupScreenState extends State<MatchSetupScreen> {
   Widget _buildBallTypeSection() {
     return Row(
       children: [
-        Expanded(
-          child: _buildBallChip('Leather', Icons.sports_baseball),
-        ),
+        Expanded(child: _buildBallChip('Leather', Icons.sports_baseball)),
         const SizedBox(width: 8),
-        Expanded(
-          child: _buildBallChip('Tennis', Icons.sports_tennis),
-        ),
+        Expanded(child: _buildBallChip('Tennis', Icons.sports_tennis)),
         const SizedBox(width: 8),
-        Expanded(
-          child: _buildBallChip('Other', Icons.sports_cricket),
-        ),
+        Expanded(child: _buildBallChip('Other', Icons.sports_cricket)),
       ],
     );
   }
@@ -586,7 +724,9 @@ class _MatchSetupScreenState extends State<MatchSetupScreen> {
           color: isSelected ? const Color(0xFFBA0013) : Colors.white,
           borderRadius: BorderRadius.circular(8),
           border: Border.all(
-            color: isSelected ? const Color(0xFFBA0013) : const Color(0xFFECEEF1),
+            color: isSelected
+                ? const Color(0xFFBA0013)
+                : const Color(0xFFECEEF1),
           ),
           boxShadow: isSelected
               ? [
@@ -939,10 +1079,10 @@ class _MatchSetupScreenState extends State<MatchSetupScreen> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
-                _buildNavItem(Icons.home_outlined, 'Home', true),
-                _buildNavItem(Icons.groups_outlined, 'Teams', false),
-                _buildNavItem(Icons.history, 'History', false),
-                _buildNavItem(Icons.person_outline, 'Profile', false),
+                _buildNavItem(Icons.home_outlined, 'Home', true, onTap: () => context.go('/home')),
+                _buildNavItem(Icons.groups_outlined, 'Teams', false, onTap: () => context.go('/teams')),
+                _buildNavItem(Icons.history, 'History', false, onTap: () => context.go('/history')),
+                _buildNavItem(Icons.person_outline, 'Profile', false, onTap: () => context.go('/profile')),
               ],
             ),
           ),
@@ -951,27 +1091,31 @@ class _MatchSetupScreenState extends State<MatchSetupScreen> {
     );
   }
 
-  Widget _buildNavItem(IconData icon, String label, bool isSelected) {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Icon(
-          icon,
-          color: isSelected ? const Color(0xFFBA0013) : const Color(0xFF575D78),
-          size: 24,
-        ),
-        const SizedBox(height: 4),
-        Text(
-          label,
-          style: GoogleFonts.inter(
-            fontSize: 10,
-            fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-            color: isSelected
-                ? const Color(0xFFBA0013)
-                : const Color(0xFF575D78),
+  Widget _buildNavItem(IconData icon, String label, bool isSelected, {VoidCallback? onTap}) {
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            icon,
+            color: isSelected ? const Color(0xFFBA0013) : const Color(0xFF575D78),
+            size: 24,
           ),
-        ),
-      ],
+          const SizedBox(height: 4),
+          Text(
+            label,
+            style: GoogleFonts.inter(
+              fontSize: 10,
+              fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+              color: isSelected
+                  ? const Color(0xFFBA0013)
+                  : const Color(0xFF575D78),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

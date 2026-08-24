@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:http/http.dart' as http;
+import 'package:google_fonts/google_fonts.dart';
 import '../../core/theme/colors.dart';
 
 class JoinTeamHandler extends StatefulWidget {
@@ -35,8 +36,8 @@ class _JoinTeamHandlerState extends State<JoinTeamHandler> {
         url,
         headers: {
           'Content-Type': 'application/json',
-          // Replace with real anon key / auth header in prod
-          'Authorization': 'Bearer YOUR_ANON_OR_AUTH_TOKEN', 
+          'apikey': 'ik_d23aa9a406864853f254a0722fc1e56b',
+          'Authorization': 'Bearer ik_d23aa9a406864853f254a0722fc1e56b', 
         },
         body: jsonEncode({
           'team_id': widget.teamId,
@@ -79,19 +80,20 @@ class _JoinTeamHandlerState extends State<JoinTeamHandler> {
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
+    return Scaffold(
+      backgroundColor: AppColors.background,
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            CircularProgressIndicator(color: AppColors.primary),
-            SizedBox(height: 16),
+            const CircularProgressIndicator(color: AppColors.primary),
+            const SizedBox(height: 16),
             Text(
               'Joining team...',
-              style: TextStyle(
-                fontFamily: 'Plus Jakarta Sans',
+              style: GoogleFonts.plusJakartaSans(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
+                color: AppColors.onBackground,
               ),
             ),
           ],

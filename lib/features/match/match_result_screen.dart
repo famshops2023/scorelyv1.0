@@ -2,20 +2,26 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:confetti/confetti.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:uuid/uuid.dart';
 import 'dart:math';
 
 import '../../models/match_result_data.dart';
+import '../teams/providers/teams_provider.dart';
+import 'match_setup_screen.dart';
 
-class MatchResultScreen extends StatefulWidget {
+import 'package:share_plus/share_plus.dart';
+
+class MatchResultScreen extends ConsumerStatefulWidget {
   final MatchResultData resultData;
 
   const MatchResultScreen({super.key, required this.resultData});
 
   @override
-  State<MatchResultScreen> createState() => _MatchResultScreenState();
+  ConsumerState<MatchResultScreen> createState() => _MatchResultScreenState();
 }
 
-class _MatchResultScreenState extends State<MatchResultScreen> {
+class _MatchResultScreenState extends ConsumerState<MatchResultScreen> {
   late ConfettiController _confettiController;
 
   @override
@@ -65,6 +71,14 @@ class _MatchResultScreenState extends State<MatchResultScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final teams = ref.watch(teamsProvider).value ?? [];
+    final winningTeamName = widget.resultData.winningTeam;
+    final winningTeam = teams.firstWhere(
+      (t) => t.name.toLowerCase() == winningTeamName?.toLowerCase(),
+      orElse: () => TeamData(id: '', name: '', location: '', dateActive: DateTime.now(), members: []),
+    );
+    final String? logoUrl = winningTeam.id.isNotEmpty ? winningTeam.logoUrl : null;
+
     return Scaffold(
       backgroundColor: const Color(0xFFF7F9FC),
       appBar: AppBar(
@@ -97,7 +111,7 @@ class _MatchResultScreenState extends State<MatchResultScreen> {
               padding: const EdgeInsets.only(left: 20, right: 20, top: 24, bottom: 120),
               child: Column(
                 children: [
-                  _buildCelebrationCard(),
+                  _buildCelebrationCard(logoUrl),
                   const SizedBox(height: 24),
                   _buildSummaryStatsGrid(),
                   const SizedBox(height: 24),
@@ -134,7 +148,7 @@ class _MatchResultScreenState extends State<MatchResultScreen> {
     );
   }
 
-  Widget _buildCelebrationCard() {
+  Widget _buildCelebrationCard(String? logoUrl) {
     final hasWinner = widget.resultData.winningTeam != null;
     final winnerName = widget.resultData.winningTeam ?? 'DRAW';
     // Use tournament format or default
@@ -188,6 +202,45 @@ class _MatchResultScreenState extends State<MatchResultScreen> {
                     color: Colors.white.withValues(alpha: 0.8),
                   ),
                 ),
+                const SizedBox(height: 6),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(
+                        widget.resultData.ballType.toUpperCase(),
+                        style: GoogleFonts.inter(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w800,
+                          color: Colors.white,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(
+                        widget.resultData.format.toUpperCase(),
+                        style: GoogleFonts.inter(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w800,
+                          color: Colors.white,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ],
             ),
           ),
@@ -217,13 +270,21 @@ class _MatchResultScreenState extends State<MatchResultScreen> {
                         ],
                       ),
                       child: ClipOval(
-                        child: Image.asset(
-                          'assets/images/scorely_icon.png',
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) {
-                            return const Icon(Icons.sports_cricket, size: 64, color: Colors.grey);
-                          },
-                        ),
+                        child: logoUrl != null
+                            ? Image.network(
+                                logoUrl,
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) {
+                                  return const Icon(Icons.sports_cricket, size: 64, color: Colors.grey);
+                                },
+                              )
+                            : Image.asset(
+                                'assets/images/scorely_icon.png',
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) {
+                                  return const Icon(Icons.sports_cricket, size: 64, color: Colors.grey);
+                                },
+                              ),
                       ),
                     ),
                     Positioned(
@@ -433,7 +494,27 @@ class _MatchResultScreenState extends State<MatchResultScreen> {
           height: 50,
           child: ElevatedButton(
             onPressed: () {
-              // Share logic
+              final winnerName = widget.resultData.winningTeam ?? 'The team';
+              final team1 = widget.resultData.innings1Team;
+              final team2 = widget.resultData.innings2Team;
+              final score1 = widget.resultData.innings1Score;
+              final score2 = widget.resultData.innings2Score;
+              final overs1 = widget.resultData.innings1Overs;
+              final overs2 = widget.resultData.innings2Overs;
+              final format = widget.resultData.format;
+              final venue = widget.resultData.venue;
+              final status = widget.resultData.matchStatusText.replaceAll('\n', ' ');
+
+              final shareText =
+                  '🏏 Match Result – Scorely\n\n'
+                  '$team1 vs $team2\n'
+                  '📍 $venue | $format\n\n'
+                  '1st Innings: $team1  $score1 ($overs1)\n'
+                  '2nd Innings: $team2  $score2 ($overs2)\n\n'
+                  '🏆 $winnerName $status\n\n'
+                  'Track live cricket scores with Scorely!';
+
+              SharePlus.instance.share(ShareParams(text: shareText));
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFFBA0013),
@@ -466,7 +547,13 @@ class _MatchResultScreenState extends State<MatchResultScreen> {
           height: 50,
           child: ElevatedButton(
             onPressed: () {
-              context.go('/home');
+              showDialog(
+                context: context,
+                builder: (context) => CloneSetupDialog(
+                  previousSetup: widget.resultData.setupData,
+                  ref: ref,
+                ),
+              );
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.white,
@@ -511,13 +598,22 @@ class _MatchResultScreenState extends State<MatchResultScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
               _buildNavItem(Icons.analytics_outlined, 'Summary', isActive: true, onTap: () {
-                context.go('/match-stats', extra: widget.resultData.matchId);
+                context.go('/match-stats', extra: {
+                  'matchId': widget.resultData.matchId,
+                  'initialIndex': 3,
+                });
               }),
               _buildNavItem(Icons.sports_cricket_outlined, 'Scoreboard', onTap: () {
-                context.go('/match-stats', extra: widget.resultData.matchId);
+                context.go('/match-stats', extra: {
+                  'matchId': widget.resultData.matchId,
+                  'initialIndex': 1,
+                });
               }),
               _buildNavItem(Icons.groups_outlined, 'Squad', onTap: () {
-                context.go('/match-stats', extra: widget.resultData.matchId);
+                context.go('/match-stats', extra: {
+                  'matchId': widget.resultData.matchId,
+                  'initialIndex': 2,
+                });
               }),
               _buildNavItem(Icons.home_outlined, 'Home', onTap: () {
                 context.go('/home');
@@ -557,5 +653,298 @@ class _MatchResultScreenState extends State<MatchResultScreen> {
         ),
       ),
     );
+  }
+}
+
+class CloneSetupDialog extends StatefulWidget {
+  final MatchSetupData? previousSetup;
+  final WidgetRef ref;
+
+  const CloneSetupDialog({super.key, required this.previousSetup, required this.ref});
+
+  @override
+  State<CloneSetupDialog> createState() => _CloneSetupDialogState();
+}
+
+class _CloneSetupDialogState extends State<CloneSetupDialog> {
+  bool _matchSetupChecked = true;
+  bool _teamSquadChecked = true;
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+      backgroundColor: Colors.white,
+      insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+      child: Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Top Circle Icon
+            Container(
+              width: 72,
+              height: 72,
+              decoration: const BoxDecoration(
+                color: Color(0xFFFDEBED),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.assignment_outlined,
+                color: Color(0xFFBA0013),
+                size: 32,
+              ),
+            ),
+            const SizedBox(height: 20),
+            // Title
+            Text(
+              'CLONE PREVIOUS SETUP?',
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 20,
+                fontWeight: FontWeight.w800,
+                color: const Color(0xFF191C1E),
+                letterSpacing: -0.5,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 8),
+            // Subtitle
+            Text(
+              'Would you like to use the settings and squads from your last match?',
+              style: GoogleFonts.inter(
+                fontSize: 14,
+                fontWeight: FontWeight.w400,
+                color: const Color(0xFF575D78),
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 24),
+            // Option 1: Match Setup
+            _buildOptionCard(
+              title: 'Match Setup',
+              description: 'Overs, ball type, match format',
+              icon: Icons.settings_outlined,
+              isSelected: _matchSetupChecked,
+              onTap: () {
+                setState(() {
+                  _matchSetupChecked = !_matchSetupChecked;
+                });
+              },
+            ),
+            const SizedBox(height: 12),
+            // Option 2: Team Squad
+            _buildOptionCard(
+              title: 'Team Squad',
+              description: 'Players list and assigned roles',
+              icon: Icons.people_outline,
+              isSelected: _teamSquadChecked,
+              onTap: () {
+                setState(() {
+                  _teamSquadChecked = !_teamSquadChecked;
+                });
+              },
+            ),
+            const SizedBox(height: 32),
+            // Bottom Action Buttons
+            Row(
+              children: [
+                Expanded(
+                  child: SizedBox(
+                    height: 48,
+                    child: OutlinedButton(
+                      onPressed: () => Navigator.pop(context),
+                      style: OutlinedButton.styleFrom(
+                        side: const BorderSide(color: Color(0xFFD8DADD), width: 1.5),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: Text(
+                        'CANCEL',
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                          color: const Color(0xFF575D78),
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: SizedBox(
+                    height: 48,
+                    child: ElevatedButton(
+                      onPressed: () {
+                        Navigator.pop(context);
+                        _handleCloneAction();
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFFBA0013),
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: Text(
+                        'CLONE SETUP',
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            )
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildOptionCard({
+    required String title,
+    required String description,
+    required IconData icon,
+    required bool isSelected,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: const Color(0xFFF7F9FC),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: isSelected ? const Color(0xFFBA0013) : const Color(0xFFECEEF1),
+            width: isSelected ? 1.5 : 1,
+          ),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(icon, color: const Color(0xFF575D78), size: 20),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                      color: const Color(0xFF191C1E),
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    description,
+                    style: GoogleFonts.inter(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w400,
+                      color: const Color(0xFF8E95A5),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            Icon(
+              isSelected ? Icons.check_circle : Icons.radio_button_unchecked,
+              color: isSelected ? const Color(0xFFBA0013) : const Color(0xFFD8DADD),
+              size: 24,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _handleCloneAction() {
+    final setup = widget.previousSetup;
+    if (setup == null) {
+      context.go('/home');
+      return;
+    }
+
+    if (_matchSetupChecked && _teamSquadChecked) {
+      // Both checked: Go to Toss directly carrying setup & squads
+      final newSetup = setup.copyWith(
+        id: const Uuid().v4(),
+        status: 'draft',
+        tossWonBy: '',
+        battingFirstTeam: '',
+      );
+      // Bypass the 'Go Live' popup for cloned matches
+      context.push('/toss', extra: newSetup);
+    } else if (!_matchSetupChecked && _teamSquadChecked) {
+      // Team Squad checked, Match Setup unchecked: Go to Match Setup Screen prefilled to edit settings
+      final extraData = {
+        'teamAName': setup.teamAName,
+        'teamBName': setup.teamBName,
+        'teamAPlayers': setup.teamAPlayers,
+        'teamBPlayers': setup.teamBPlayers,
+        'isQuickMatch': setup.isQuickMatch,
+      };
+      context.go('/match-setup', extra: extraData);
+    } else if (_matchSetupChecked && !_teamSquadChecked) {
+      // Match Setup checked, Team Squad unchecked:
+      // Quick Match: Squad setup screen (CreateTeamScreen)
+      // Scheduled Match: Select 11s screen (TeamSquadScreen)
+      final newSetup = setup.copyWith(
+        id: const Uuid().v4(),
+        status: 'draft',
+        tossWonBy: '',
+        battingFirstTeam: '',
+        teamAPlayers: [],
+        teamBPlayers: [],
+      );
+
+      if (setup.isQuickMatch) {
+        context.go('/create-team', extra: {
+          'isQuickMatch': true,
+          'overs': setup.overs,
+          'matchType': setup.matchType,
+          'ballType': setup.ballType,
+        });
+      } else {
+        // Scheduled match: Go to select 11's for team A. We look up teamA id in teamsProvider
+        final teams = widget.ref.read(teamsProvider).value ?? [];
+        final teamA = teams.firstWhere(
+          (t) => t.name.toLowerCase() == setup.teamAName.toLowerCase(),
+          orElse: () => TeamData(id: '', name: '', location: '', dateActive: DateTime.now(), members: []),
+        );
+        if (teamA.id.isNotEmpty) {
+          context.go('/team-squad', extra: {
+            'teamId': teamA.id,
+            'readOnly': false,
+            'singleSelectionMode': false,
+            'setupData': newSetup,
+            'isSelectingPlayingXi': true,
+            'teamType': 'A',
+          });
+        } else {
+          // Fallback if team id is empty/not found: go to Match Setup Screen
+          context.go('/match-setup', extra: newSetup.toJson());
+        }
+      }
+    } else {
+      // Both unchecked: Go to home screen
+      context.go('/home');
+    }
   }
 }

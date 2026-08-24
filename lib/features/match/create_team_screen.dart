@@ -4,7 +4,14 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../models/player_setup.dart';
 
 class CreateTeamScreen extends StatefulWidget {
-  const CreateTeamScreen({super.key});
+  final bool isQuickMatch;
+  final Map<String, dynamic>? initialData;
+  
+  const CreateTeamScreen({
+    super.key,
+    this.isQuickMatch = false,
+    this.initialData,
+  });
 
   @override
   State<CreateTeamScreen> createState() => _CreateTeamScreenState();
@@ -66,6 +73,7 @@ class _CreateTeamScreenState extends State<CreateTeamScreen> {
             style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.bold),
           ),
           content: TextField(
+            cursorColor: const Color(0xFFBA0013),
             controller: dialogController,
             autofocus: true,
             decoration: const InputDecoration(
@@ -204,6 +212,7 @@ class _CreateTeamScreenState extends State<CreateTeamScreen> {
     }
 
     final data = {
+      if (widget.initialData != null) ...widget.initialData!,
       'teamAName': _teamAController.text.trim().isEmpty
           ? 'Team A'
           : _teamAController.text.trim(),
@@ -212,6 +221,7 @@ class _CreateTeamScreenState extends State<CreateTeamScreen> {
           : _teamBController.text.trim(),
       'teamAPlayers': _teamAPlayers,
       'teamBPlayers': _teamBPlayers,
+      'isQuickMatch': widget.isQuickMatch,
     };
 
     context.push('/match-setup', extra: data);
@@ -234,37 +244,11 @@ class _CreateTeamScreenState extends State<CreateTeamScreen> {
           ),
         ),
         leading: IconButton(
-          icon: const Icon(Icons.menu, color: Color(0xFFBA0013), size: 28),
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
           onPressed: () {
             context.pop();
           },
         ),
-        actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 16.0),
-            child: Center(
-              child: Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(color: const Color(0xFFECEEF1), width: 2),
-                ),
-                child: ClipOval(
-                  child: Image.network(
-                    'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=120',
-                    fit: BoxFit.cover,
-                    width: 40,
-                    height: 40,
-                    errorBuilder: (context, error, stackTrace) {
-                      return const Icon(Icons.person, color: Color(0xFF575D78));
-                    },
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ],
       ),
       body: Column(
         children: [
@@ -585,6 +569,7 @@ class _CreateTeamScreenState extends State<CreateTeamScreen> {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 17.0, vertical: 3.0),
       child: TextField(
+        cursorColor: Colors.white,
         controller: _playerInputController,
         style: GoogleFonts.inter(
           color: const Color(0xFF191C1E),

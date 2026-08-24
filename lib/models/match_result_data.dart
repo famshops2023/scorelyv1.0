@@ -1,3 +1,5 @@
+import '../features/match/match_setup_screen.dart';
+
 class MatchResultData {
   final int? matchId;
   final String? winningTeam;
@@ -17,6 +19,8 @@ class MatchResultData {
   final String innings2Team;
   final String innings2Score;
   final String innings2Overs;
+  final String ballType;
+  final MatchSetupData? setupData;
 
   const MatchResultData({
     this.matchId,
@@ -37,5 +41,7 @@ class MatchResultData {
     required this.innings2Team,
     required this.innings2Score,
     required this.innings2Overs,
+    required this.ballType,
+    this.setupData,
   });
 }

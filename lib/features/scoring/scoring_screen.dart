@@ -3,10 +3,13 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../match/match_setup_screen.dart';
+import '../match/opening_lineup_screen.dart';
 import '../../models/player_setup.dart';
 import '../../models/match_result_data.dart';
 import '../../models/match_stats.dart';
 import '../../services/database.dart';
+import '../../services/sync_manager.dart';
+import '../../services/live_scoring_service.dart';
 import 'package:drift/drift.dart' as drift;
 import '../../providers/history_provider.dart';
 
@@ -91,7 +94,8 @@ class MatchState {
 
 class ScoringScreen extends ConsumerStatefulWidget {
   final MatchSetupData? setupData;
-  const ScoringScreen({super.key, this.setupData});
+  final OpeningLineupResult? lineup;
+  const ScoringScreen({super.key, this.setupData, this.lineup});
 
   @override
   ConsumerState<ScoringScreen> createState() => _ScoringScreenState();
@@ -148,7 +152,8 @@ class _ScoringScreenState extends ConsumerState<ScoringScreen> {
   String? _selectedWicketBatter; // Striker, Non-Striker
   String? _selectedWicketFielder; // Catcher or assister
 
-
+  // Live scoring service — only active for scheduled (non-quick) matches
+  final LiveScoringService _liveService = LiveScoringService();
 
   @override
   void initState() {
@@ -210,6 +215,18 @@ class _ScoringScreenState extends ConsumerState<ScoringScreen> {
 
     // Save initial state in history
     _commitState();
+
+    // Init live scoring push for scheduled matches
+    final insForgeId = _setup.id;
+    if (!_setup.isQuickMatch && insForgeId.isNotEmpty) {
+      _liveService.init(insForgeId);
+    }
+  }
+
+  @override
+  void dispose() {
+    _liveService.dispose();
+    super.dispose();
   }
 
   // --- Undo/Redo Engine ---
@@ -235,6 +252,83 @@ class _ScoringScreenState extends ConsumerState<ScoringScreen> {
       localBalls: List.from(_localBalls),
     ));
     _historyIndex = _history.length - 1;
+
+    // Push live update to InsForge for scheduled matches
+    if (!_setup.isQuickMatch && _setup.id.isNotEmpty) {
+      _pushLiveUpdate();
+    }
+  }
+
+  /// Builds the live score blob and pushes it to InsForge.
+  void _pushLiveUpdate() {
+    final innings1TeamName = _firstInningsTeam.isEmpty ? _setup.battingFirstTeam : _firstInningsTeam;
+    final batting1st = innings1TeamName == _setup.teamAName;
+
+    // Build current_batters list
+    final List<Map<String, dynamic>> currentBatters = [];
+    if (_striker != null) {
+      final bs = _batterStats[_striker!];
+      currentBatters.add({
+        'name': _striker,
+        'runs': bs?.runs ?? 0,
+        'balls': bs?.balls ?? 0,
+        'fours': bs?.fours ?? 0,
+        'sixes': bs?.sixes ?? 0,
+        'is_striker': true,
+      });
+    }
+    if (_nonStriker != null) {
+      final bs = _batterStats[_nonStriker!];
+      currentBatters.add({
+        'name': _nonStriker,
+        'runs': bs?.runs ?? 0,
+        'balls': bs?.balls ?? 0,
+        'fours': bs?.fours ?? 0,
+        'sixes': bs?.sixes ?? 0,
+        'is_striker': false,
+      });
+    }
+
+    // Build current_bowler map
+    final Map<String, dynamic> currentBowler = {};
+    if (_currentBowler != null) {
+      final bw = _bowlerStats[_currentBowler!];
+      currentBowler['name'] = _currentBowler;
+      currentBowler['overs'] = bw?.oversDisplay ?? '0.0';
+      currentBowler['runs'] = bw?.runsConceded ?? 0;
+      currentBowler['wickets'] = bw?.wickets ?? 0;
+    }
+
+    // Scores
+    final String teamAScore = _isSecondInnings
+        ? '$_firstInningsRuns/$_firstInningsWickets'
+        : '$_runs/$_wickets';
+    final String teamAOvers = _isSecondInnings
+        ? _firstInningsOvers
+        : '${_ballsBowled ~/ 6}.${_ballsBowled % 6}';
+    final String teamBScore = _isSecondInnings ? '$_runs/$_wickets' : 'Yet to bat';
+    final String teamBOvers = _isSecondInnings ? '${_ballsBowled ~/ 6}.${_ballsBowled % 6}' : '';
+
+    // last 6 balls of this over
+    final String last6 = _thisOver.join(' ');
+
+    final blob = <String, dynamic>{
+      'team_a_score': batting1st ? teamAScore : teamBScore,
+      'team_a_overs': batting1st ? teamAOvers : teamBOvers,
+      'team_b_score': batting1st ? teamBScore : teamAScore,
+      'team_b_overs': batting1st ? teamBOvers : teamAOvers,
+      'innings': _isSecondInnings ? 2 : 1,
+      'last_6_balls': last6,
+      'current_batters': currentBatters,
+      'current_bowler': currentBowler,
+      'scorer_id': _setup.teamAScorerName ?? '',
+      'team_a_player_ids': _setup.teamAPlayers.map((p) => p.name).toList(),
+      'team_b_player_ids': _setup.teamBPlayers.map((p) => p.name).toList(),
+      'format': _setup.matchType,
+      'venue': _setup.venue,
+    };
+
+    _liveService.pushLiveUpdate(blob);
   }
 
   void _undo() {
@@ -566,9 +660,19 @@ class _ScoringScreenState extends ConsumerState<ScoringScreen> {
       return;
     }
 
-    setState(() {
-      final action = _selectedAction!;
+    final action = _selectedAction!;
 
+    // Wides and No-Balls do not count as legal deliveries.
+    // If the innings is already over (all legal balls bowled), block them.
+    if ((action == 'WD' || action == 'NB') && _isInningsOver()) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+            content: Text('Innings is complete — no more balls can be bowled.')),
+      );
+      return;
+    }
+
+    setState(() {
       if (action == 'W') {
         _processWicketConfirm();
       } else if (action == 'WD') {
@@ -594,6 +698,7 @@ class _ScoringScreenState extends ConsumerState<ScoringScreen> {
   }
 
   void _processNormalRunsConfirm(int r) {
+    final facingBatter = _striker ?? 'Unknown'; // capture BEFORE any swap
     if (_striker != null) {
       _batterStats[_striker!]?.runs += r;
       _batterStats[_striker!]?.balls += 1;
@@ -618,7 +723,7 @@ class _ScoringScreenState extends ConsumerState<ScoringScreen> {
       _nonStriker = temp;
     }
 
-    _localBalls.add(LocalBallEvent(runs: r, isWicket: false, isExtra: false, batterName: _striker ?? 'Unknown', bowlerName: _currentBowler ?? 'Unknown'));
+    _localBalls.add(LocalBallEvent(runs: r, isWicket: false, isExtra: false, batterName: facingBatter, bowlerName: _currentBowler ?? 'Unknown'));
     _commitState();
 
     if (_ballsBowled % 6 == 0 && !_isInningsOver()) {
@@ -632,6 +737,7 @@ class _ScoringScreenState extends ConsumerState<ScoringScreen> {
 
   void _processWideConfirm() {
     final penalty = 1 + _selectedExtraRuns;
+    final facingBatter = _striker ?? 'Unknown'; // capture BEFORE any swap
     _runs += penalty;
     _extraRuns += penalty;
 
@@ -649,13 +755,14 @@ class _ScoringScreenState extends ConsumerState<ScoringScreen> {
       _nonStriker = temp;
     }
 
-    _localBalls.add(LocalBallEvent(runs: penalty, isWicket: false, isExtra: true, extraType: 'Wide', batterName: _striker ?? 'Unknown', bowlerName: _currentBowler ?? 'Unknown'));
+    _localBalls.add(LocalBallEvent(runs: penalty, isWicket: false, isExtra: true, extraType: 'Wide', batterName: facingBatter, bowlerName: _currentBowler ?? 'Unknown'));
     _commitState();
   }
 
   void _processNoBallConfirm() {
     final penalty = 1;
     final batterRuns = _selectedExtraRuns;
+    final facingBatter = _striker ?? 'Unknown'; // capture BEFORE any swap
     _runs += penalty + batterRuns;
     _extraRuns += penalty;
 
@@ -680,7 +787,7 @@ class _ScoringScreenState extends ConsumerState<ScoringScreen> {
       _nonStriker = temp;
     }
 
-    _localBalls.add(LocalBallEvent(runs: penalty + batterRuns, isWicket: false, isExtra: true, extraType: 'NoBall', batterName: _striker ?? 'Unknown', bowlerName: _currentBowler ?? 'Unknown'));
+    _localBalls.add(LocalBallEvent(runs: penalty + batterRuns, isWicket: false, isExtra: true, extraType: 'NoBall', batterName: facingBatter, bowlerName: _currentBowler ?? 'Unknown'));
     _commitState();
   }
 
@@ -743,10 +850,12 @@ class _ScoringScreenState extends ConsumerState<ScoringScreen> {
     _localBalls.add(LocalBallEvent(runs: 0, isWicket: true, wicketType: _selectedWicketType, isExtra: false, batterName: outPlayerName, bowlerName: _currentBowler ?? 'Unknown'));
     _commitState();
 
-    _promptIncomingBatter(outPlayerName, isStrikerOut);
+    if (!_isInningsOver()) {
+      _promptIncomingBatter(outPlayerName, isStrikerOut);
 
-    if (_ballsBowled % 6 == 0 && !_isInningsOver()) {
-      _promptOverCompleteBowlerChange();
+      if (_ballsBowled % 6 == 0) {
+        _promptOverCompleteBowlerChange();
+      }
     }
   }
 
@@ -954,7 +1063,7 @@ class _ScoringScreenState extends ConsumerState<ScoringScreen> {
                 'Score: $_runs/$_wickets in ${(_ballsBowled ~/ 6)}.${(_ballsBowled % 6)} overs.',
                 style: GoogleFonts.plusJakartaSans(
                     fontSize: 20,
-                    color: const Color(0xFFCCFF00),
+                    color: const Color(0xFF00E676),
                     fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 12),
@@ -968,7 +1077,7 @@ class _ScoringScreenState extends ConsumerState<ScoringScreen> {
           actions: [
             ElevatedButton(
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red,
+                backgroundColor: Color(0xFFBA0013),
                 shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12)),
               ),
@@ -1109,6 +1218,10 @@ class _ScoringScreenState extends ConsumerState<ScoringScreen> {
         matchId = await db.into(db.matches).insert(MatchesCompanion.insert(
           matchTitle: '${_setup.teamAName} vs ${_setup.teamBName}',
           totalOvers: _setup.overs,
+          matchType: drift.Value(_setup.matchType),
+          ballType: drift.Value(_setup.ballType),
+          venue: drift.Value(_setup.venue),
+          isQuickMatch: drift.Value(_setup.isQuickMatch),
           isCompleted: const drift.Value(true),
           winnerTeamName: drift.Value(winner),
           teamAId: drift.Value(tAId),
@@ -1124,10 +1237,15 @@ class _ScoringScreenState extends ConsumerState<ScoringScreen> {
         ));
 
         // 4. Insert Balls
-        List<LocalBallEvent> allBalls = [..._firstInningsBallsList, ..._localBalls];
-        for (var lb in allBalls) {
+        int legalBalls1 = 0;
+        for (var lb in _firstInningsBallsList) {
+          final overNum = legalBalls1 ~/ 6;
+          final ballNum = (legalBalls1 % 6) + 1;
           await db.into(db.ballEvents).insert(BallEventsCompanion.insert(
             matchId: matchId!,
+            inningsNumber: const drift.Value(1),
+            overNumber: drift.Value(overNum),
+            ballNumber: drift.Value(ballNum),
             runs: drift.Value(lb.runs),
             isWicket: drift.Value(lb.isWicket),
             wicketType: drift.Value(lb.wicketType),
@@ -1135,11 +1253,49 @@ class _ScoringScreenState extends ConsumerState<ScoringScreen> {
             extraType: drift.Value(lb.extraType),
             batterId: playerMap[lb.batterName] ?? 0,
             bowlerId: playerMap[lb.bowlerName] ?? 0,
+            batterName: drift.Value(lb.batterName),
+            bowlerName: drift.Value(lb.bowlerName),
           ));
+          if (!lb.isExtra || lb.extraType == 'Bye' || lb.extraType == 'LegBye') {
+            legalBalls1++;
+          }
+        }
+
+        int legalBalls2 = 0;
+        for (var lb in _localBalls) {
+          final overNum = legalBalls2 ~/ 6;
+          final ballNum = (legalBalls2 % 6) + 1;
+          await db.into(db.ballEvents).insert(BallEventsCompanion.insert(
+            matchId: matchId!,
+            inningsNumber: const drift.Value(2),
+            overNumber: drift.Value(overNum),
+            ballNumber: drift.Value(ballNum),
+            runs: drift.Value(lb.runs),
+            isWicket: drift.Value(lb.isWicket),
+            wicketType: drift.Value(lb.wicketType),
+            isExtra: drift.Value(lb.isExtra),
+            extraType: drift.Value(lb.extraType),
+            batterId: playerMap[lb.batterName] ?? 0,
+            bowlerId: playerMap[lb.bowlerName] ?? 0,
+            batterName: drift.Value(lb.batterName),
+            bowlerName: drift.Value(lb.bowlerName),
+          ));
+          if (!lb.isExtra || lb.extraType == 'Bye' || lb.extraType == 'LegBye') {
+            legalBalls2++;
+          }
         }
       });
 
       await ref.read(matchHistoryProvider.notifier).loadMatches();
+      // Trigger an immediate sync attempt — SyncManager will retry later on reconnect if this fails.
+      if (matchId != null) {
+        ref.read(syncManagerProvider).onMatchCompleted(matchId!);
+      }
+
+      // Mark scheduled match as completed in InsForge
+      if (!_setup.isQuickMatch && _setup.id.isNotEmpty) {
+        _liveService.markMatchCompleted(winner);
+      }
     } catch (e) {
       debugPrint('Error saving match: $e');
       if (mounted) {
@@ -1177,6 +1333,7 @@ class _ScoringScreenState extends ConsumerState<ScoringScreen> {
         innings2Team: _battingTeam,
         innings2Score: '$_runs/$_wickets',
         innings2Overs: '${_ballsBowled ~/ 6}.${_ballsBowled % 6} overs',
+        ballType: _setup.ballType,
       );
       context.go('/match-result', extra: data);
     }
@@ -1224,7 +1381,7 @@ class _ScoringScreenState extends ConsumerState<ScoringScreen> {
                             ),
                           ),
                           selected: isSel,
-                          selectedColor: const Color(0xFFCCFF00),
+                          selectedColor: const Color(0xFFBA0013),
                           backgroundColor: const Color(0xFF0F172A),
                           onSelected: (val) {
                             setDialogState(() {
@@ -1312,6 +1469,7 @@ class _ScoringScreenState extends ConsumerState<ScoringScreen> {
           ),
           const SizedBox(height: 6),
           DropdownButtonFormField<String>(
+            dropdownColor: const Color(0xFF0F172A),
             decoration: InputDecoration(
               filled: true,
               fillColor: const Color(0xFF0F172A),
@@ -1341,6 +1499,7 @@ class _ScoringScreenState extends ConsumerState<ScoringScreen> {
           ),
           const SizedBox(height: 6),
           DropdownButtonFormField<String>(
+            dropdownColor: const Color(0xFF0F172A),
             decoration: InputDecoration(
               filled: true,
               fillColor: const Color(0xFF0F172A),
@@ -1371,6 +1530,7 @@ class _ScoringScreenState extends ConsumerState<ScoringScreen> {
             ),
             const SizedBox(height: 6),
             DropdownButtonFormField<String>(
+              dropdownColor: const Color(0xFF0F172A),
               decoration: InputDecoration(
                 filled: true,
                 fillColor: const Color(0xFF0F172A),
@@ -1449,7 +1609,7 @@ class _ScoringScreenState extends ConsumerState<ScoringScreen> {
       decoration: const BoxDecoration(
         color: Color(0xFF131824),
         border: Border(
-          bottom: BorderSide(color: Colors.redAccent, width: 2),
+          bottom: BorderSide(color: Color(0xFFBA0013), width: 2),
         ),
       ),
       child: Column(
@@ -1458,7 +1618,7 @@ class _ScoringScreenState extends ConsumerState<ScoringScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                '${_setup.teamAName} vs ${_setup.teamBName}',
+                '${_setup.teamAName.toUpperCase()} VS ${_setup.teamBName.toUpperCase()}',
                 style: GoogleFonts.inter(
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
@@ -1469,11 +1629,11 @@ class _ScoringScreenState extends ConsumerState<ScoringScreen> {
                 padding:
                     const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
-                  color: Colors.red,
+                  color: Color(0xFFBA0013),
                   borderRadius: BorderRadius.circular(12),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.red.withValues(alpha: 0.5),
+                      color: Color(0xFFBA0013).withValues(alpha: 0.5),
                       blurRadius: 8,
                       spreadRadius: 1,
                     )
@@ -1505,12 +1665,12 @@ class _ScoringScreenState extends ConsumerState<ScoringScreen> {
             style: GoogleFonts.inter(
               fontSize: 11,
               fontWeight: FontWeight.bold,
-              color: Colors.redAccent,
+              color: Color(0xFFBA0013),
             ),
           ),
           const SizedBox(height: 2),
           Text(
-            _battingTeam,
+            _battingTeam.toUpperCase(),
             style: GoogleFonts.inter(
               fontSize: 18,
               fontWeight: FontWeight.bold,
@@ -1541,7 +1701,7 @@ class _ScoringScreenState extends ConsumerState<ScoringScreen> {
               style: GoogleFonts.inter(
                 fontSize: 14,
                 fontWeight: FontWeight.bold,
-                color: const Color(0xFFCCFF00),
+                color: const Color(0xFF00E676),
               ),
             ),
           ],
@@ -1622,7 +1782,7 @@ class _ScoringScreenState extends ConsumerState<ScoringScreen> {
                       width: 6,
                       height: 35,
                       decoration: const BoxDecoration(
-                        color: Color(0xFFCCFF00),
+                        color: Color(0xFF00E676),
                         borderRadius: BorderRadius.only(
                           topLeft: Radius.circular(3),
                           bottomLeft: Radius.circular(3),
@@ -1638,7 +1798,7 @@ class _ScoringScreenState extends ConsumerState<ScoringScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              '${_striker ?? 'Striker'} *',
+                              '${(_striker ?? 'Striker').toUpperCase()} *',
                               style: GoogleFonts.inter(
                                 fontWeight: FontWeight.bold,
                                 fontSize: 14,
@@ -1664,13 +1824,13 @@ class _ScoringScreenState extends ConsumerState<ScoringScreen> {
                 children: [
                   IconButton(
                     icon: const Icon(Icons.swap_calls,
-                        color: Color(0xFFCCFF00), size: 22),
+                        color: Color(0xFF00E676), size: 22),
                     tooltip: 'Swap Strike',
                     onPressed: _swapStrike,
                   ),
                   IconButton(
                     icon: const Icon(Icons.exit_to_app,
-                        color: Colors.redAccent, size: 22),
+                        color: Color(0xFFBA0013), size: 22),
                     tooltip: 'Retire Batter',
                     onPressed: _promptRetireBatter,
                   ),
@@ -1684,7 +1844,7 @@ class _ScoringScreenState extends ConsumerState<ScoringScreen> {
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
                       Text(
-                        _nonStriker ?? 'Non-Striker',
+                        (_nonStriker ?? 'Non-Striker').toUpperCase(),
                         style: GoogleFonts.inter(
                           fontWeight: FontWeight.w500,
                           fontSize: 14,
@@ -1725,7 +1885,7 @@ class _ScoringScreenState extends ConsumerState<ScoringScreen> {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      _currentBowler ?? 'Bowler',
+                      (_currentBowler ?? 'Bowler').toUpperCase(),
                       style: GoogleFonts.inter(
                           fontWeight: FontWeight.bold,
                           fontSize: 14,
@@ -1758,7 +1918,7 @@ class _ScoringScreenState extends ConsumerState<ScoringScreen> {
                   style: GoogleFonts.inter(
                       fontSize: 11,
                       fontWeight: FontWeight.bold,
-                      color: const Color(0xFFCCFF00)),
+                      color: const Color(0xFF00E676)),
                 ),
               ),
             ],
@@ -1824,7 +1984,7 @@ class _ScoringScreenState extends ConsumerState<ScoringScreen> {
                 style: GoogleFonts.plusJakartaSans(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
-                  color: const Color(0xFFCCFF00),
+                  color: const Color(0xFF00E676),
                 ),
               ),
             ],
@@ -1838,10 +1998,10 @@ class _ScoringScreenState extends ConsumerState<ScoringScreen> {
                   Color fg = Colors.white;
 
                   if (ball == 'W') {
-                    bg = Colors.red;
+                    bg = Color(0xFFBA0013);
                     fg = Colors.white;
                   } else if (ball == '4' || ball == '6') {
-                    bg = const Color(0xFFCCFF00);
+                    bg = const Color(0xFF00E676);
                     fg = Colors.black;
                   } else if (ball == '.') {
                     bg = const Color(0xFF334155);
@@ -1896,15 +2056,15 @@ class _ScoringScreenState extends ConsumerState<ScoringScreen> {
 
   Widget _buildActionButton(String action) {
     final isSelected = _selectedAction == action;
-    Color buttonBg = isSelected ? const Color(0xFFCCFF00) : const Color(0xFF202A46);
+    Color buttonBg = isSelected ? const Color(0xFF00E676) : const Color(0xFF202A46);
     Color textColor = isSelected ? Colors.black : Colors.white;
 
     if (action == 'W' && !isSelected) {
-      buttonBg = Colors.red.withValues(alpha: 0.15);
-      textColor = Colors.redAccent;
+      buttonBg = Color(0xFFBA0013).withValues(alpha: 0.15);
+      textColor = Color(0xFFBA0013);
     } else if ((action == '4' || action == '6') && !isSelected) {
-      buttonBg = const Color(0xFFCCFF00).withValues(alpha: 0.15);
-      textColor = const Color(0xFFCCFF00);
+      buttonBg = const Color(0xFF00E676).withValues(alpha: 0.15);
+      textColor = const Color(0xFF00E676);
     }
 
     return Expanded(
@@ -1935,7 +2095,7 @@ class _ScoringScreenState extends ConsumerState<ScoringScreen> {
             boxShadow: isSelected
                 ? [
                     BoxShadow(
-                      color: const Color(0xFFCCFF00).withValues(alpha: 0.3),
+                      color: const Color(0xFF00E676).withValues(alpha: 0.3),
                       blurRadius: 8,
                       spreadRadius: 2,
                     )
@@ -2045,7 +2205,7 @@ class _ScoringScreenState extends ConsumerState<ScoringScreen> {
                 child: ElevatedButton(
                   onPressed: _confirmBallOutcome,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.red,
+                    backgroundColor: Color(0xFFBA0013),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(14),
                     ),

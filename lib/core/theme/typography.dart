@@ -3,21 +3,21 @@ import 'package:google_fonts/google_fonts.dart';
 import 'colors.dart';
 
 class AppTypography {
-  static TextStyle get displayLarge => GoogleFonts.barlowCondensed(
+  static TextStyle get displayLarge => GoogleFonts.plusJakartaSans(
         fontSize: 64,
         fontWeight: FontWeight.w800,
         color: AppColors.onBackground,
         height: 1.0,
       );
 
-  static TextStyle get headlineLarge => GoogleFonts.barlowCondensed(
+  static TextStyle get headlineLarge => GoogleFonts.plusJakartaSans(
         fontSize: 32,
         fontWeight: FontWeight.w700,
         color: AppColors.onBackground,
         height: 1.2,
       );
 
-  static TextStyle get headlineMedium => GoogleFonts.barlowCondensed(
+  static TextStyle get headlineMedium => GoogleFonts.plusJakartaSans(
         fontSize: 24,
         fontWeight: FontWeight.w700,
         color: AppColors.onBackground,
@@ -45,14 +45,14 @@ class AppTypography {
         height: 1.5,
       );
 
-  static TextStyle get labelCaps => GoogleFonts.jetBrainsMono(
+  static TextStyle get labelCaps => GoogleFonts.inter(
         fontSize: 12,
         fontWeight: FontWeight.w700,
         color: AppColors.primary,
         letterSpacing: 1.2,
       );
 
-  static TextStyle get scoreDisplay => GoogleFonts.barlowCondensed(
+  static TextStyle get scoreDisplay => GoogleFonts.plusJakartaSans(
         fontSize: 48,
         fontWeight: FontWeight.w800,
         color: AppColors.primary,

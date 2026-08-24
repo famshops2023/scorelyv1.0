@@ -15,7 +15,8 @@ import 'package:share_plus/share_plus.dart';
 
 class MatchStatScreen extends ConsumerStatefulWidget {
   final int? matchId;
-  const MatchStatScreen({super.key, this.matchId});
+  final int? initialIndex;
+  const MatchStatScreen({super.key, this.matchId, this.initialIndex});
   
   @override
   ConsumerState<MatchStatScreen> createState() => _MatchStatScreenState();
@@ -45,6 +46,9 @@ class _MatchStatScreenState extends ConsumerState<MatchStatScreen> {
   @override
   void initState() {
     super.initState();
+    if (widget.initialIndex != null) {
+      _selectedIndex = widget.initialIndex!;
+    }
     _loadMatch();
   }
 
@@ -93,41 +97,60 @@ class _MatchStatScreenState extends ConsumerState<MatchStatScreen> {
     _innings2CumulativeRuns = [];
     _innings1Balls = [];
     _innings2Balls = [];
-    
-    final teamBPlayerIds = _teamBPlayers.map((e) => e.id).toSet();
-    bool teamABattedFirst = true;
-    if (_balls.isNotEmpty) {
-      if (teamBPlayerIds.contains(_balls.first.batterId)) teamABattedFirst = false;
-    }
-    
-    final innings1Batters = teamABattedFirst ? _teamAPlayers.map((e) => e.id).toSet() : teamBPlayerIds;
-    final innings2Batters = teamABattedFirst ? teamBPlayerIds : _teamAPlayers.map((e) => e.id).toSet();
 
-    int currentOver = 0;
+    // Primary: split by inningsNumber column (schema v3+)
+    final byInnings = <int, List<BallEvent>>{};
+    for (var b in _balls) {
+      byInnings.putIfAbsent(b.inningsNumber, () => []).add(b);
+    }
+
+    if (byInnings.containsKey(1) || byInnings.containsKey(2)) {
+      // Use inningsNumber-based split
+      _innings1Balls = byInnings[1] ?? [];
+      _innings2Balls = byInnings[2] ?? [];
+    } else {
+      // Legacy fallback: split by batterId ownership
+      final teamBPlayerIds = _teamBPlayers.map((e) => e.id).toSet();
+      bool teamABattedFirst = true;
+      if (_balls.isNotEmpty) {
+        if (teamBPlayerIds.contains(_balls.first.batterId)) teamABattedFirst = false;
+      }
+      final innings1Batters = teamABattedFirst
+          ? _teamAPlayers.map((e) => e.id).toSet()
+          : teamBPlayerIds;
+      final innings2Batters = teamABattedFirst
+          ? teamBPlayerIds
+          : _teamAPlayers.map((e) => e.id).toSet();
+      _innings1Balls = _balls.where((b) => innings1Batters.contains(b.batterId)).toList();
+      _innings2Balls = _balls.where((b) => innings2Batters.contains(b.batterId)).toList();
+    }
+
+    // Build cumulative run lists
     int currentRuns = 0;
-    for (var ball in _balls.where((b) => innings1Batters.contains(b.batterId))) {
-      _innings1Balls.add(ball);
+    int currentOver = -1;
+    for (var ball in _innings1Balls) {
       currentRuns += ball.runs;
       if (ball.overNumber > currentOver) {
         _innings1CumulativeRuns.add(currentRuns);
         currentOver = ball.overNumber;
       }
     }
-    if (currentRuns > 0 && (_innings1CumulativeRuns.isEmpty || _innings1CumulativeRuns.last != currentRuns)) {
+    if (currentRuns > 0 &&
+        (_innings1CumulativeRuns.isEmpty || _innings1CumulativeRuns.last != currentRuns)) {
       _innings1CumulativeRuns.add(currentRuns);
     }
 
-    currentOver = 0;
     currentRuns = 0;
-    for (var ball in _balls.where((b) => innings2Batters.contains(b.batterId))) {
-      _innings2Balls.add(ball);
+    currentOver = -1;
+    for (var ball in _innings2Balls) {
       currentRuns += ball.runs;
       if (ball.overNumber > currentOver) {
         _innings2CumulativeRuns.add(currentRuns);
         currentOver = ball.overNumber;
       }
     }
-    if (currentRuns > 0 && (_innings2CumulativeRuns.isEmpty || _innings2CumulativeRuns.last != currentRuns)) {
+    if (currentRuns > 0 &&
+        (_innings2CumulativeRuns.isEmpty || _innings2CumulativeRuns.last != currentRuns)) {
       _innings2CumulativeRuns.add(currentRuns);
     }
   }
@@ -135,12 +158,18 @@ class _MatchStatScreenState extends ConsumerState<MatchStatScreen> {
   String _getMatchResultText() {
     if (_match?.winnerTeamName == null) return 'Match Tied / No Result';
     final winnerName = _match!.winnerTeamName;
-    
+
+    // Guard: stats may not be loaded yet
+    if (_innings1 == null || _innings2 == null) return '$winnerName won';
+
     final innings1 = _innings1!;
     final innings2 = _innings2!;
     
     if (innings2.totalRuns > innings1.totalRuns) {
-      final wicketsLeft = 10 - innings2.totalWickets;
+      final teamAName = _teamA?.name ?? _match!.matchTitle.split(' vs ').first;
+      int playersCount = innings2.teamName == teamAName ? _teamAPlayers.length : _teamBPlayers.length;
+      if (playersCount == 0) playersCount = 11; // Fallback
+      final wicketsLeft = (playersCount - 1) - innings2.totalWickets;
       return '$winnerName won by $wicketsLeft wickets';
     } else if (innings1.totalRuns > innings2.totalRuns) {
       final runsMargin = innings1.totalRuns - innings2.totalRuns;
@@ -209,16 +238,19 @@ class _MatchStatScreenState extends ConsumerState<MatchStatScreen> {
           ),
           IconButton(
             icon: const Icon(Icons.share, color: Colors.white, size: 20),
-            onPressed: () {
-              if (_match != null) {
-                final teamA = _teamA?.name ?? 'Team A';
-                final teamB = _teamB?.name ?? 'Team B';
-                final matchResult = _getMatchResultText();
-                final shareText = 'Check out this match on Scorely!\n\n$teamA vs $teamB\nResult: $matchResult\n\nDownload Scorely to see full match statistics!';
-                // ignore: deprecated_member_use
-                Share.share(shareText);
-              }
-            },
+            tooltip: 'Share',
+            onPressed: _match == null
+                ? null
+                : () {
+                    final teamA = _teamA?.name ?? 'Team A';
+                    final teamB = _teamB?.name ?? 'Team B';
+                    final matchResult = _getMatchResultText();
+                    final shareText =
+                        'Check out this match on Scorely!\n\n'
+                        '$teamA vs $teamB\nResult: $matchResult\n\n'
+                        'Download Scorely to see full match statistics!';
+                    SharePlus.instance.share(ShareParams(text: shareText));
+                  },
           ),
         ],
       ),
@@ -419,6 +451,10 @@ class _MatchStatScreenState extends ConsumerState<MatchStatScreen> {
   Widget _buildMatchDetailsCard() {
     final tossText = '${_innings1?.teamName ?? 'Team 1'} batted first';
     final dateText = '${_match!.createdAt.day} ${_getMonth(_match!.createdAt.month)}, ${_match!.createdAt.year}';
+    final formatText = _match!.matchType.isNotEmpty ? _match!.matchType : 'T${_match!.totalOvers}';
+    final venueText = _match!.venue.isNotEmpty ? _match!.venue : 'Local Ground';
+    final ballTypeText = _match!.ballType.isNotEmpty ? _match!.ballType : 'Leather';
+    final matchSourceText = _match!.isQuickMatch ? 'Quick Match (Offline)' : 'Scheduled Match (InsForge)';
     
     return Container(
       padding: const EdgeInsets.all(16),
@@ -438,6 +474,22 @@ class _MatchStatScreenState extends ConsumerState<MatchStatScreen> {
               Container(width: 4, height: 16, decoration: BoxDecoration(color: const Color(0xFFBA0013), borderRadius: BorderRadius.circular(2))),
               const SizedBox(width: 8),
               Text('MATCH DETAILS', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold, color: const Color(0xFF191C1E), letterSpacing: 1.0)),
+              const Spacer(),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: _match!.isQuickMatch ? const Color(0xFFE8F5E9) : const Color(0xFFE3F2FD),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text(
+                  matchSourceText,
+                  style: GoogleFonts.inter(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                    color: _match!.isQuickMatch ? const Color(0xFF2E7D32) : const Color(0xFF1565C0),
+                  ),
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 16),
@@ -448,13 +500,17 @@ class _MatchStatScreenState extends ConsumerState<MatchStatScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('TOSS', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold, color: const Color(0xFF575D78), letterSpacing: 1.0)),
+                    Text('TOSS', style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.bold, color: const Color(0xFF575D78), letterSpacing: 1.0)),
                     const SizedBox(height: 4),
-                    Text(tossText, style: GoogleFonts.inter(fontSize: 14, color: const Color(0xFF191C1E))),
-                    const SizedBox(height: 16),
-                    Text('DATE', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold, color: const Color(0xFF575D78), letterSpacing: 1.0)),
+                    Text(tossText, style: GoogleFonts.inter(fontSize: 13, color: const Color(0xFF191C1E))),
+                    const SizedBox(height: 14),
+                    Text('DATE', style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.bold, color: const Color(0xFF575D78), letterSpacing: 1.0)),
                     const SizedBox(height: 4),
-                    Text(dateText, style: GoogleFonts.inter(fontSize: 14, color: const Color(0xFF191C1E))),
+                    Text(dateText, style: GoogleFonts.inter(fontSize: 13, color: const Color(0xFF191C1E))),
+                    const SizedBox(height: 14),
+                    Text('BALL TYPE', style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.bold, color: const Color(0xFF575D78), letterSpacing: 1.0)),
+                    const SizedBox(height: 4),
+                    Text(ballTypeText, style: GoogleFonts.inter(fontSize: 13, color: const Color(0xFF191C1E))),
                   ],
                 ),
               ),
@@ -463,13 +519,13 @@ class _MatchStatScreenState extends ConsumerState<MatchStatScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('FORMAT', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold, color: const Color(0xFF575D78), letterSpacing: 1.0)),
+                    Text('FORMAT', style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.bold, color: const Color(0xFF575D78), letterSpacing: 1.0)),
                     const SizedBox(height: 4),
-                    Text('T${_match!.totalOvers}', style: GoogleFonts.inter(fontSize: 14, color: const Color(0xFF191C1E))),
-                    const SizedBox(height: 16),
-                    Text('VENUE', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold, color: const Color(0xFF575D78), letterSpacing: 1.0)),
+                    Text(formatText, style: GoogleFonts.inter(fontSize: 13, color: const Color(0xFF191C1E))),
+                    const SizedBox(height: 14),
+                    Text('VENUE', style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.bold, color: const Color(0xFF575D78), letterSpacing: 1.0)),
                     const SizedBox(height: 4),
-                    Text('Local Ground', style: GoogleFonts.inter(fontSize: 14, color: const Color(0xFF191C1E))),
+                    Text(venueText, style: GoogleFonts.inter(fontSize: 13, color: const Color(0xFF191C1E))),
                   ],
                 ),
               ),
@@ -733,11 +789,18 @@ class _MatchStatScreenState extends ConsumerState<MatchStatScreen> {
     double fielding = 0.5;
     
     if (overallMvp.playerName != 'No MVP') {
-      strikeRate = normalize(overallMvp.totalPoints.toDouble(), 100) * 0.9;
-      consistency = normalize(overallMvp.totalPoints.toDouble(), 120) * 0.8;
-      impact = normalize(overallMvp.totalPoints.toDouble(), 80) * 1.0;
-      bowling = normalize(overallMvp.totalPoints.toDouble(), 150) * 0.6;
-      fielding = normalize(overallMvp.totalPoints.toDouble(), 200) * 0.4;
+      BatterStats? mvpBatter = _innings1?.batterStats[overallMvp.playerName] ?? _innings2?.batterStats[overallMvp.playerName];
+      BowlerStats? mvpBowler = _innings1?.bowlerStats[overallMvp.playerName] ?? _innings2?.bowlerStats[overallMvp.playerName];
+      
+      double srValue = mvpBatter?.strikeRate ?? 0.0;
+      int runsValue = mvpBatter?.runs ?? 0;
+      int wicketsValue = mvpBowler?.wickets ?? 0;
+
+      strikeRate = normalize(srValue, 250.0);
+      consistency = normalize(runsValue.toDouble(), 100.0);
+      bowling = normalize(wicketsValue.toDouble(), 5.0);
+      impact = normalize(overallMvp.totalPoints.toDouble(), 150.0);
+      fielding = 0.5; // Placeholder
     }
 
     return Container(
@@ -821,9 +884,9 @@ class _MatchStatScreenState extends ConsumerState<MatchStatScreen> {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(14),
       child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Expanded(child: _squadCard(_teamA?.name ?? 'Team 1', teamA, Colors.redAccent)),
+        Expanded(child: _squadCard(_teamA?.name ?? 'Team 1', teamA, const Color(0xFFBA0013))),
         const SizedBox(width: 10),
-        Expanded(child: _squadCard(_teamB?.name ?? 'Team 2', teamB, Colors.blueAccent)),
+        Expanded(child: _squadCard(_teamB?.name ?? 'Team 2', teamB, const Color(0xFF1A2138))),
       ]),
     );
   }

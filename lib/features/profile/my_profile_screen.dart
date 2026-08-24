@@ -31,10 +31,7 @@ class MyProfileScreen extends ConsumerWidget {
       appBar: AppBar(
         backgroundColor: const Color(0xFF1A2138),
         elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white, size: 24),
-          onPressed: () => context.pop(),
-        ),
+        automaticallyImplyLeading: false,
         title: Text(
           'MY PROFILE',
           style: GoogleFonts.inter(
@@ -58,8 +55,7 @@ class MyProfileScreen extends ConsumerWidget {
                   '📍 ${profile.location}\n\n'
                   'Matches Played: $totalMatches\n\n'
                   'Download Scorely to track your cricket stats!';
-              // ignore: deprecated_member_use
-              Share.share(shareText);
+              SharePlus.instance.share(ShareParams(text: shareText));
             },
           ),
           IconButton(
@@ -73,6 +69,34 @@ class MyProfileScreen extends ConsumerWidget {
               );
             },
           ),
+          profile.isLoggedIn
+              ? IconButton(
+                  tooltip: 'Sign Out',
+                  icon: const Icon(Icons.logout, color: Colors.white70, size: 20),
+                  onPressed: () async {
+                    final confirmed = await showDialog<bool>(
+                      context: context,
+                      builder: (dialogContext) => AlertDialog(
+                        backgroundColor: const Color(0xFF1A2138),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                        title: Text('Sign Out?', style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.bold)),
+                        content: Text('You will lose live scoring broadcast until you sign back in.', style: GoogleFonts.inter(color: Colors.white70, fontSize: 13)),
+                        actions: [
+                          TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: Text('Cancel', style: GoogleFonts.inter(color: Colors.white54))),
+                          TextButton(onPressed: () => Navigator.pop(dialogContext, true), child: Text('Sign Out', style: GoogleFonts.inter(color: const Color(0xFFBA0013), fontWeight: FontWeight.bold))),
+                        ],
+                      ),
+                    );
+                    if (confirmed == true) {
+                      await ref.read(profileProvider.notifier).signOut();
+                    }
+                  },
+                )
+              : IconButton(
+                  tooltip: 'Sign In for Live Scoring',
+                  icon: const Icon(Icons.login, color: Color(0xFFFFA500), size: 20),
+                  onPressed: () => context.push('/login'),
+                ),
           const SizedBox(width: 8),
         ],
       ),
@@ -144,7 +168,7 @@ class MyProfileScreen extends ConsumerWidget {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    'ID: 98234-CRIC',
+                    'ID: ${profile.id}',
                     style: GoogleFonts.inter(
                       fontSize: 12,
                       color: Colors.white.withValues(alpha: 0.6),
@@ -170,6 +194,45 @@ class MyProfileScreen extends ConsumerWidget {
                         style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white),
                       ),
                     ],
+                  ),
+                  const SizedBox(height: 12),
+                  // Auth status badge
+                  GestureDetector(
+                    onTap: profile.isLoggedIn ? null : () => context.push('/login'),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
+                      decoration: BoxDecoration(
+                        color: profile.isLoggedIn
+                            ? const Color(0xFF006B1B).withValues(alpha: 0.2)
+                            : const Color(0xFFFFA500).withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color: profile.isLoggedIn
+                              ? const Color(0xFF006B1B).withValues(alpha: 0.5)
+                              : const Color(0xFFFFA500).withValues(alpha: 0.5),
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            profile.isLoggedIn ? Icons.wifi_tethering : Icons.login,
+                            size: 13,
+                            color: profile.isLoggedIn ? const Color(0xFF4CAF50) : const Color(0xFFFFA500),
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            profile.isLoggedIn ? 'LIVE SCORER' : 'TAP TO SIGN IN',
+                            style: GoogleFonts.inter(
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold,
+                              color: profile.isLoggedIn ? const Color(0xFF4CAF50) : const Color(0xFFFFA500),
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
                   const SizedBox(height: 12),
                   Wrap(
@@ -260,9 +323,12 @@ class MyProfileScreen extends ConsumerWidget {
                         'Scorer Performance',
                         style: GoogleFonts.plusJakartaSans(fontSize: 18, fontWeight: FontWeight.bold, color: const Color(0xFF191C1E)),
                       ),
-                      Text(
-                        'View All',
-                        style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold, color: const Color(0xFFBA0013)),
+                      GestureDetector(
+                        onTap: () => context.push('/performance'),
+                        child: Text(
+                          'View All',
+                          style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold, color: const Color(0xFFBA0013)),
+                        ),
                       ),
                     ],
                   ),
@@ -500,7 +566,7 @@ class MyProfileScreen extends ConsumerWidget {
             ),
             GestureDetector(
               onTap: () {
-                context.go('/match-stats', extra: match.id);
+                context.push('/match-stats', extra: match.id);
               },
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,

@@ -1,18 +1,21 @@
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../match/match_setup_screen.dart';
+import '../teams/providers/teams_provider.dart';
+import 'helpers/live_match_promo.dart';
 
-class MatchDetailsScreen extends StatelessWidget {
+class MatchDetailsScreen extends ConsumerWidget {
   final MatchSetupData setupData;
 
   const MatchDetailsScreen({super.key, required this.setupData});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     // Use the explicitly selected match type
     String format = setupData.matchType;
 
@@ -390,7 +393,7 @@ class MatchDetailsScreen extends StatelessWidget {
                                         ),
                                         const SizedBox(width: 4),
                                         Text(
-                                          '$format',
+                                          format,
                                           style: GoogleFonts.inter(
                                             fontSize: 14,
                                             fontWeight: FontWeight.bold,
@@ -704,7 +707,25 @@ class MatchDetailsScreen extends StatelessWidget {
                   height: 64,
                   child: ElevatedButton(
                     onPressed: () {
-                      context.push('/toss', extra: setupData);
+                      final teams = ref.read(teamsProvider).value ?? [];
+
+                      final teamA = teams.firstWhere(
+                        (t) => t.name == setupData.teamAName,
+                        orElse: () => TeamData(id: '', name: '', location: '', dateActive: DateTime.now(), members: []),
+                      );
+                      
+                      if (teamA.id.isNotEmpty) {
+                        context.push('/team-squad', extra: {
+                          'teamId': teamA.id,
+                          'readOnly': false,
+                          'singleSelectionMode': false,
+                          'setupData': setupData,
+                          'isSelectingPlayingXi': true,
+                          'teamType': 'A',
+                        });
+                      } else {
+                        proceedToToss(context, ref, setupData);
+                      }
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFFBA0013),

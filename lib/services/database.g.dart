@@ -56,6 +56,43 @@ class $MatchesTable extends Matches
     requiredDuringInsert: false,
     defaultValue: const Constant('T20'),
   );
+  static const VerificationMeta _ballTypeMeta = const VerificationMeta(
+    'ballType',
+  );
+  @override
+  late final GeneratedColumn<String> ballType = GeneratedColumn<String>(
+    'ball_type',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('Leather'),
+  );
+  static const VerificationMeta _venueMeta = const VerificationMeta('venue');
+  @override
+  late final GeneratedColumn<String> venue = GeneratedColumn<String>(
+    'venue',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('Local Ground'),
+  );
+  static const VerificationMeta _isQuickMatchMeta = const VerificationMeta(
+    'isQuickMatch',
+  );
+  @override
+  late final GeneratedColumn<bool> isQuickMatch = GeneratedColumn<bool>(
+    'is_quick_match',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("is_quick_match" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
   static const VerificationMeta _teamAIdMeta = const VerificationMeta(
     'teamAId',
   );
@@ -127,6 +164,21 @@ class $MatchesTable extends Matches
     type: DriftSqlType.int,
     requiredDuringInsert: false,
     defaultValue: const Constant(1),
+  );
+  static const VerificationMeta _syncPendingMeta = const VerificationMeta(
+    'syncPending',
+  );
+  @override
+  late final GeneratedColumn<bool> syncPending = GeneratedColumn<bool>(
+    'sync_pending',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("sync_pending" IN (0, 1))',
+    ),
+    defaultValue: const Constant(true),
   );
   static const VerificationMeta _teamARunsMeta = const VerificationMeta(
     'teamARuns',
@@ -230,12 +282,16 @@ class $MatchesTable extends Matches
     matchTitle,
     totalOvers,
     matchType,
+    ballType,
+    venue,
+    isQuickMatch,
     teamAId,
     teamBId,
     createdAt,
     isCompleted,
     winnerTeamName,
     currentInnings,
+    syncPending,
     teamARuns,
     teamAWickets,
     teamAOvers,
@@ -282,6 +338,27 @@ class $MatchesTable extends Matches
         matchType.isAcceptableOrUnknown(data['match_type']!, _matchTypeMeta),
       );
     }
+    if (data.containsKey('ball_type')) {
+      context.handle(
+        _ballTypeMeta,
+        ballType.isAcceptableOrUnknown(data['ball_type']!, _ballTypeMeta),
+      );
+    }
+    if (data.containsKey('venue')) {
+      context.handle(
+        _venueMeta,
+        venue.isAcceptableOrUnknown(data['venue']!, _venueMeta),
+      );
+    }
+    if (data.containsKey('is_quick_match')) {
+      context.handle(
+        _isQuickMatchMeta,
+        isQuickMatch.isAcceptableOrUnknown(
+          data['is_quick_match']!,
+          _isQuickMatchMeta,
+        ),
+      );
+    }
     if (data.containsKey('team_a_id')) {
       context.handle(
         _teamAIdMeta,
@@ -324,6 +401,15 @@ class $MatchesTable extends Matches
         currentInnings.isAcceptableOrUnknown(
           data['current_innings']!,
           _currentInningsMeta,
+        ),
+      );
+    }
+    if (data.containsKey('sync_pending')) {
+      context.handle(
+        _syncPendingMeta,
+        syncPending.isAcceptableOrUnknown(
+          data['sync_pending']!,
+          _syncPendingMeta,
         ),
       );
     }
@@ -418,6 +504,18 @@ class $MatchesTable extends Matches
         DriftSqlType.string,
         data['${effectivePrefix}match_type'],
       )!,
+      ballType: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}ball_type'],
+      )!,
+      venue: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}venue'],
+      )!,
+      isQuickMatch: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}is_quick_match'],
+      )!,
       teamAId: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
         data['${effectivePrefix}team_a_id'],
@@ -441,6 +539,10 @@ class $MatchesTable extends Matches
       currentInnings: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
         data['${effectivePrefix}current_innings'],
+      )!,
+      syncPending: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}sync_pending'],
       )!,
       teamARuns: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
@@ -488,12 +590,18 @@ class CricketMatch extends DataClass implements Insertable<CricketMatch> {
   final String matchTitle;
   final int totalOvers;
   final String matchType;
+  final String ballType;
+  final String venue;
+  final bool isQuickMatch;
   final int? teamAId;
   final int? teamBId;
   final DateTime createdAt;
   final bool isCompleted;
   final String? winnerTeamName;
   final int currentInnings;
+
+  /// True when this match has NOT yet been successfully pushed to InsForge.
+  final bool syncPending;
   final int teamARuns;
   final int teamAWickets;
   final int teamAOvers;
@@ -507,12 +615,16 @@ class CricketMatch extends DataClass implements Insertable<CricketMatch> {
     required this.matchTitle,
     required this.totalOvers,
     required this.matchType,
+    required this.ballType,
+    required this.venue,
+    required this.isQuickMatch,
     this.teamAId,
     this.teamBId,
     required this.createdAt,
     required this.isCompleted,
     this.winnerTeamName,
     required this.currentInnings,
+    required this.syncPending,
     required this.teamARuns,
     required this.teamAWickets,
     required this.teamAOvers,
@@ -529,6 +641,9 @@ class CricketMatch extends DataClass implements Insertable<CricketMatch> {
     map['match_title'] = Variable<String>(matchTitle);
     map['total_overs'] = Variable<int>(totalOvers);
     map['match_type'] = Variable<String>(matchType);
+    map['ball_type'] = Variable<String>(ballType);
+    map['venue'] = Variable<String>(venue);
+    map['is_quick_match'] = Variable<bool>(isQuickMatch);
     if (!nullToAbsent || teamAId != null) {
       map['team_a_id'] = Variable<int>(teamAId);
     }
@@ -541,6 +656,7 @@ class CricketMatch extends DataClass implements Insertable<CricketMatch> {
       map['winner_team_name'] = Variable<String>(winnerTeamName);
     }
     map['current_innings'] = Variable<int>(currentInnings);
+    map['sync_pending'] = Variable<bool>(syncPending);
     map['team_a_runs'] = Variable<int>(teamARuns);
     map['team_a_wickets'] = Variable<int>(teamAWickets);
     map['team_a_overs'] = Variable<int>(teamAOvers);
@@ -558,6 +674,9 @@ class CricketMatch extends DataClass implements Insertable<CricketMatch> {
       matchTitle: Value(matchTitle),
       totalOvers: Value(totalOvers),
       matchType: Value(matchType),
+      ballType: Value(ballType),
+      venue: Value(venue),
+      isQuickMatch: Value(isQuickMatch),
       teamAId: teamAId == null && nullToAbsent
           ? const Value.absent()
           : Value(teamAId),
@@ -570,6 +689,7 @@ class CricketMatch extends DataClass implements Insertable<CricketMatch> {
           ? const Value.absent()
           : Value(winnerTeamName),
       currentInnings: Value(currentInnings),
+      syncPending: Value(syncPending),
       teamARuns: Value(teamARuns),
       teamAWickets: Value(teamAWickets),
       teamAOvers: Value(teamAOvers),
@@ -591,12 +711,16 @@ class CricketMatch extends DataClass implements Insertable<CricketMatch> {
       matchTitle: serializer.fromJson<String>(json['matchTitle']),
       totalOvers: serializer.fromJson<int>(json['totalOvers']),
       matchType: serializer.fromJson<String>(json['matchType']),
+      ballType: serializer.fromJson<String>(json['ballType']),
+      venue: serializer.fromJson<String>(json['venue']),
+      isQuickMatch: serializer.fromJson<bool>(json['isQuickMatch']),
       teamAId: serializer.fromJson<int?>(json['teamAId']),
       teamBId: serializer.fromJson<int?>(json['teamBId']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
       isCompleted: serializer.fromJson<bool>(json['isCompleted']),
       winnerTeamName: serializer.fromJson<String?>(json['winnerTeamName']),
       currentInnings: serializer.fromJson<int>(json['currentInnings']),
+      syncPending: serializer.fromJson<bool>(json['syncPending']),
       teamARuns: serializer.fromJson<int>(json['teamARuns']),
       teamAWickets: serializer.fromJson<int>(json['teamAWickets']),
       teamAOvers: serializer.fromJson<int>(json['teamAOvers']),
@@ -615,12 +739,16 @@ class CricketMatch extends DataClass implements Insertable<CricketMatch> {
       'matchTitle': serializer.toJson<String>(matchTitle),
       'totalOvers': serializer.toJson<int>(totalOvers),
       'matchType': serializer.toJson<String>(matchType),
+      'ballType': serializer.toJson<String>(ballType),
+      'venue': serializer.toJson<String>(venue),
+      'isQuickMatch': serializer.toJson<bool>(isQuickMatch),
       'teamAId': serializer.toJson<int?>(teamAId),
       'teamBId': serializer.toJson<int?>(teamBId),
       'createdAt': serializer.toJson<DateTime>(createdAt),
       'isCompleted': serializer.toJson<bool>(isCompleted),
       'winnerTeamName': serializer.toJson<String?>(winnerTeamName),
       'currentInnings': serializer.toJson<int>(currentInnings),
+      'syncPending': serializer.toJson<bool>(syncPending),
       'teamARuns': serializer.toJson<int>(teamARuns),
       'teamAWickets': serializer.toJson<int>(teamAWickets),
       'teamAOvers': serializer.toJson<int>(teamAOvers),
@@ -637,12 +765,16 @@ class CricketMatch extends DataClass implements Insertable<CricketMatch> {
     String? matchTitle,
     int? totalOvers,
     String? matchType,
+    String? ballType,
+    String? venue,
+    bool? isQuickMatch,
     Value<int?> teamAId = const Value.absent(),
     Value<int?> teamBId = const Value.absent(),
     DateTime? createdAt,
     bool? isCompleted,
     Value<String?> winnerTeamName = const Value.absent(),
     int? currentInnings,
+    bool? syncPending,
     int? teamARuns,
     int? teamAWickets,
     int? teamAOvers,
@@ -656,6 +788,9 @@ class CricketMatch extends DataClass implements Insertable<CricketMatch> {
     matchTitle: matchTitle ?? this.matchTitle,
     totalOvers: totalOvers ?? this.totalOvers,
     matchType: matchType ?? this.matchType,
+    ballType: ballType ?? this.ballType,
+    venue: venue ?? this.venue,
+    isQuickMatch: isQuickMatch ?? this.isQuickMatch,
     teamAId: teamAId.present ? teamAId.value : this.teamAId,
     teamBId: teamBId.present ? teamBId.value : this.teamBId,
     createdAt: createdAt ?? this.createdAt,
@@ -664,6 +799,7 @@ class CricketMatch extends DataClass implements Insertable<CricketMatch> {
         ? winnerTeamName.value
         : this.winnerTeamName,
     currentInnings: currentInnings ?? this.currentInnings,
+    syncPending: syncPending ?? this.syncPending,
     teamARuns: teamARuns ?? this.teamARuns,
     teamAWickets: teamAWickets ?? this.teamAWickets,
     teamAOvers: teamAOvers ?? this.teamAOvers,
@@ -683,6 +819,11 @@ class CricketMatch extends DataClass implements Insertable<CricketMatch> {
           ? data.totalOvers.value
           : this.totalOvers,
       matchType: data.matchType.present ? data.matchType.value : this.matchType,
+      ballType: data.ballType.present ? data.ballType.value : this.ballType,
+      venue: data.venue.present ? data.venue.value : this.venue,
+      isQuickMatch: data.isQuickMatch.present
+          ? data.isQuickMatch.value
+          : this.isQuickMatch,
       teamAId: data.teamAId.present ? data.teamAId.value : this.teamAId,
       teamBId: data.teamBId.present ? data.teamBId.value : this.teamBId,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
@@ -695,6 +836,9 @@ class CricketMatch extends DataClass implements Insertable<CricketMatch> {
       currentInnings: data.currentInnings.present
           ? data.currentInnings.value
           : this.currentInnings,
+      syncPending: data.syncPending.present
+          ? data.syncPending.value
+          : this.syncPending,
       teamARuns: data.teamARuns.present ? data.teamARuns.value : this.teamARuns,
       teamAWickets: data.teamAWickets.present
           ? data.teamAWickets.value
@@ -725,12 +869,16 @@ class CricketMatch extends DataClass implements Insertable<CricketMatch> {
           ..write('matchTitle: $matchTitle, ')
           ..write('totalOvers: $totalOvers, ')
           ..write('matchType: $matchType, ')
+          ..write('ballType: $ballType, ')
+          ..write('venue: $venue, ')
+          ..write('isQuickMatch: $isQuickMatch, ')
           ..write('teamAId: $teamAId, ')
           ..write('teamBId: $teamBId, ')
           ..write('createdAt: $createdAt, ')
           ..write('isCompleted: $isCompleted, ')
           ..write('winnerTeamName: $winnerTeamName, ')
           ..write('currentInnings: $currentInnings, ')
+          ..write('syncPending: $syncPending, ')
           ..write('teamARuns: $teamARuns, ')
           ..write('teamAWickets: $teamAWickets, ')
           ..write('teamAOvers: $teamAOvers, ')
@@ -744,17 +892,21 @@ class CricketMatch extends DataClass implements Insertable<CricketMatch> {
   }
 
   @override
-  int get hashCode => Object.hash(
+  int get hashCode => Object.hashAll([
     id,
     matchTitle,
     totalOvers,
     matchType,
+    ballType,
+    venue,
+    isQuickMatch,
     teamAId,
     teamBId,
     createdAt,
     isCompleted,
     winnerTeamName,
     currentInnings,
+    syncPending,
     teamARuns,
     teamAWickets,
     teamAOvers,
@@ -763,7 +915,7 @@ class CricketMatch extends DataClass implements Insertable<CricketMatch> {
     teamBWickets,
     teamBOvers,
     teamBBalls,
-  );
+  ]);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -772,12 +924,16 @@ class CricketMatch extends DataClass implements Insertable<CricketMatch> {
           other.matchTitle == this.matchTitle &&
           other.totalOvers == this.totalOvers &&
           other.matchType == this.matchType &&
+          other.ballType == this.ballType &&
+          other.venue == this.venue &&
+          other.isQuickMatch == this.isQuickMatch &&
           other.teamAId == this.teamAId &&
           other.teamBId == this.teamBId &&
           other.createdAt == this.createdAt &&
           other.isCompleted == this.isCompleted &&
           other.winnerTeamName == this.winnerTeamName &&
           other.currentInnings == this.currentInnings &&
+          other.syncPending == this.syncPending &&
           other.teamARuns == this.teamARuns &&
           other.teamAWickets == this.teamAWickets &&
           other.teamAOvers == this.teamAOvers &&
@@ -793,12 +949,16 @@ class MatchesCompanion extends UpdateCompanion<CricketMatch> {
   final Value<String> matchTitle;
   final Value<int> totalOvers;
   final Value<String> matchType;
+  final Value<String> ballType;
+  final Value<String> venue;
+  final Value<bool> isQuickMatch;
   final Value<int?> teamAId;
   final Value<int?> teamBId;
   final Value<DateTime> createdAt;
   final Value<bool> isCompleted;
   final Value<String?> winnerTeamName;
   final Value<int> currentInnings;
+  final Value<bool> syncPending;
   final Value<int> teamARuns;
   final Value<int> teamAWickets;
   final Value<int> teamAOvers;
@@ -812,12 +972,16 @@ class MatchesCompanion extends UpdateCompanion<CricketMatch> {
     this.matchTitle = const Value.absent(),
     this.totalOvers = const Value.absent(),
     this.matchType = const Value.absent(),
+    this.ballType = const Value.absent(),
+    this.venue = const Value.absent(),
+    this.isQuickMatch = const Value.absent(),
     this.teamAId = const Value.absent(),
     this.teamBId = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.isCompleted = const Value.absent(),
     this.winnerTeamName = const Value.absent(),
     this.currentInnings = const Value.absent(),
+    this.syncPending = const Value.absent(),
     this.teamARuns = const Value.absent(),
     this.teamAWickets = const Value.absent(),
     this.teamAOvers = const Value.absent(),
@@ -832,12 +996,16 @@ class MatchesCompanion extends UpdateCompanion<CricketMatch> {
     required String matchTitle,
     required int totalOvers,
     this.matchType = const Value.absent(),
+    this.ballType = const Value.absent(),
+    this.venue = const Value.absent(),
+    this.isQuickMatch = const Value.absent(),
     this.teamAId = const Value.absent(),
     this.teamBId = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.isCompleted = const Value.absent(),
     this.winnerTeamName = const Value.absent(),
     this.currentInnings = const Value.absent(),
+    this.syncPending = const Value.absent(),
     this.teamARuns = const Value.absent(),
     this.teamAWickets = const Value.absent(),
     this.teamAOvers = const Value.absent(),
@@ -853,12 +1021,16 @@ class MatchesCompanion extends UpdateCompanion<CricketMatch> {
     Expression<String>? matchTitle,
     Expression<int>? totalOvers,
     Expression<String>? matchType,
+    Expression<String>? ballType,
+    Expression<String>? venue,
+    Expression<bool>? isQuickMatch,
     Expression<int>? teamAId,
     Expression<int>? teamBId,
     Expression<DateTime>? createdAt,
     Expression<bool>? isCompleted,
     Expression<String>? winnerTeamName,
     Expression<int>? currentInnings,
+    Expression<bool>? syncPending,
     Expression<int>? teamARuns,
     Expression<int>? teamAWickets,
     Expression<int>? teamAOvers,
@@ -873,12 +1045,16 @@ class MatchesCompanion extends UpdateCompanion<CricketMatch> {
       if (matchTitle != null) 'match_title': matchTitle,
       if (totalOvers != null) 'total_overs': totalOvers,
       if (matchType != null) 'match_type': matchType,
+      if (ballType != null) 'ball_type': ballType,
+      if (venue != null) 'venue': venue,
+      if (isQuickMatch != null) 'is_quick_match': isQuickMatch,
       if (teamAId != null) 'team_a_id': teamAId,
       if (teamBId != null) 'team_b_id': teamBId,
       if (createdAt != null) 'created_at': createdAt,
       if (isCompleted != null) 'is_completed': isCompleted,
       if (winnerTeamName != null) 'winner_team_name': winnerTeamName,
       if (currentInnings != null) 'current_innings': currentInnings,
+      if (syncPending != null) 'sync_pending': syncPending,
       if (teamARuns != null) 'team_a_runs': teamARuns,
       if (teamAWickets != null) 'team_a_wickets': teamAWickets,
       if (teamAOvers != null) 'team_a_overs': teamAOvers,
@@ -895,12 +1071,16 @@ class MatchesCompanion extends UpdateCompanion<CricketMatch> {
     Value<String>? matchTitle,
     Value<int>? totalOvers,
     Value<String>? matchType,
+    Value<String>? ballType,
+    Value<String>? venue,
+    Value<bool>? isQuickMatch,
     Value<int?>? teamAId,
     Value<int?>? teamBId,
     Value<DateTime>? createdAt,
     Value<bool>? isCompleted,
     Value<String?>? winnerTeamName,
     Value<int>? currentInnings,
+    Value<bool>? syncPending,
     Value<int>? teamARuns,
     Value<int>? teamAWickets,
     Value<int>? teamAOvers,
@@ -915,12 +1095,16 @@ class MatchesCompanion extends UpdateCompanion<CricketMatch> {
       matchTitle: matchTitle ?? this.matchTitle,
       totalOvers: totalOvers ?? this.totalOvers,
       matchType: matchType ?? this.matchType,
+      ballType: ballType ?? this.ballType,
+      venue: venue ?? this.venue,
+      isQuickMatch: isQuickMatch ?? this.isQuickMatch,
       teamAId: teamAId ?? this.teamAId,
       teamBId: teamBId ?? this.teamBId,
       createdAt: createdAt ?? this.createdAt,
       isCompleted: isCompleted ?? this.isCompleted,
       winnerTeamName: winnerTeamName ?? this.winnerTeamName,
       currentInnings: currentInnings ?? this.currentInnings,
+      syncPending: syncPending ?? this.syncPending,
       teamARuns: teamARuns ?? this.teamARuns,
       teamAWickets: teamAWickets ?? this.teamAWickets,
       teamAOvers: teamAOvers ?? this.teamAOvers,
@@ -947,6 +1131,15 @@ class MatchesCompanion extends UpdateCompanion<CricketMatch> {
     if (matchType.present) {
       map['match_type'] = Variable<String>(matchType.value);
     }
+    if (ballType.present) {
+      map['ball_type'] = Variable<String>(ballType.value);
+    }
+    if (venue.present) {
+      map['venue'] = Variable<String>(venue.value);
+    }
+    if (isQuickMatch.present) {
+      map['is_quick_match'] = Variable<bool>(isQuickMatch.value);
+    }
     if (teamAId.present) {
       map['team_a_id'] = Variable<int>(teamAId.value);
     }
@@ -964,6 +1157,9 @@ class MatchesCompanion extends UpdateCompanion<CricketMatch> {
     }
     if (currentInnings.present) {
       map['current_innings'] = Variable<int>(currentInnings.value);
+    }
+    if (syncPending.present) {
+      map['sync_pending'] = Variable<bool>(syncPending.value);
     }
     if (teamARuns.present) {
       map['team_a_runs'] = Variable<int>(teamARuns.value);
@@ -999,12 +1195,16 @@ class MatchesCompanion extends UpdateCompanion<CricketMatch> {
           ..write('matchTitle: $matchTitle, ')
           ..write('totalOvers: $totalOvers, ')
           ..write('matchType: $matchType, ')
+          ..write('ballType: $ballType, ')
+          ..write('venue: $venue, ')
+          ..write('isQuickMatch: $isQuickMatch, ')
           ..write('teamAId: $teamAId, ')
           ..write('teamBId: $teamBId, ')
           ..write('createdAt: $createdAt, ')
           ..write('isCompleted: $isCompleted, ')
           ..write('winnerTeamName: $winnerTeamName, ')
           ..write('currentInnings: $currentInnings, ')
+          ..write('syncPending: $syncPending, ')
           ..write('teamARuns: $teamARuns, ')
           ..write('teamAWickets: $teamAWickets, ')
           ..write('teamAOvers: $teamAOvers, ')
@@ -1776,6 +1976,18 @@ class $BallEventsTable extends BallEvents
     type: DriftSqlType.int,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _inningsNumberMeta = const VerificationMeta(
+    'inningsNumber',
+  );
+  @override
+  late final GeneratedColumn<int> inningsNumber = GeneratedColumn<int>(
+    'innings_number',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(1),
+  );
   static const VerificationMeta _overNumberMeta = const VerificationMeta(
     'overNumber',
   );
@@ -1862,6 +2074,30 @@ class $BallEventsTable extends BallEvents
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _batterNameMeta = const VerificationMeta(
+    'batterName',
+  );
+  @override
+  late final GeneratedColumn<String> batterName = GeneratedColumn<String>(
+    'batter_name',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _bowlerNameMeta = const VerificationMeta(
+    'bowlerName',
+  );
+  @override
+  late final GeneratedColumn<String> bowlerName = GeneratedColumn<String>(
+    'bowler_name',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
   static const VerificationMeta _batterIdMeta = const VerificationMeta(
     'batterId',
   );
@@ -1900,6 +2136,7 @@ class $BallEventsTable extends BallEvents
   List<GeneratedColumn> get $columns => [
     id,
     matchId,
+    inningsNumber,
     overNumber,
     ballNumber,
     runs,
@@ -1907,6 +2144,8 @@ class $BallEventsTable extends BallEvents
     wicketType,
     isExtra,
     extraType,
+    batterName,
+    bowlerName,
     batterId,
     bowlerId,
     timestamp,
@@ -1933,6 +2172,15 @@ class $BallEventsTable extends BallEvents
       );
     } else if (isInserting) {
       context.missing(_matchIdMeta);
+    }
+    if (data.containsKey('innings_number')) {
+      context.handle(
+        _inningsNumberMeta,
+        inningsNumber.isAcceptableOrUnknown(
+          data['innings_number']!,
+          _inningsNumberMeta,
+        ),
+      );
     }
     if (data.containsKey('over_number')) {
       context.handle(
@@ -1976,6 +2224,18 @@ class $BallEventsTable extends BallEvents
         extraType.isAcceptableOrUnknown(data['extra_type']!, _extraTypeMeta),
       );
     }
+    if (data.containsKey('batter_name')) {
+      context.handle(
+        _batterNameMeta,
+        batterName.isAcceptableOrUnknown(data['batter_name']!, _batterNameMeta),
+      );
+    }
+    if (data.containsKey('bowler_name')) {
+      context.handle(
+        _bowlerNameMeta,
+        bowlerName.isAcceptableOrUnknown(data['bowler_name']!, _bowlerNameMeta),
+      );
+    }
     if (data.containsKey('batter_id')) {
       context.handle(
         _batterIdMeta,
@@ -2015,6 +2275,10 @@ class $BallEventsTable extends BallEvents
         DriftSqlType.int,
         data['${effectivePrefix}match_id'],
       )!,
+      inningsNumber: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}innings_number'],
+      )!,
       overNumber: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
         data['${effectivePrefix}over_number'],
@@ -2043,6 +2307,14 @@ class $BallEventsTable extends BallEvents
         DriftSqlType.string,
         data['${effectivePrefix}extra_type'],
       ),
+      batterName: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}batter_name'],
+      )!,
+      bowlerName: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}bowler_name'],
+      )!,
       batterId: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
         data['${effectivePrefix}batter_id'],
@@ -2067,6 +2339,7 @@ class $BallEventsTable extends BallEvents
 class BallEvent extends DataClass implements Insertable<BallEvent> {
   final int id;
   final int matchId;
+  final int inningsNumber;
   final int overNumber;
   final int ballNumber;
   final int runs;
@@ -2074,12 +2347,15 @@ class BallEvent extends DataClass implements Insertable<BallEvent> {
   final String? wicketType;
   final bool isExtra;
   final String? extraType;
+  final String batterName;
+  final String bowlerName;
   final int batterId;
   final int bowlerId;
   final DateTime timestamp;
   const BallEvent({
     required this.id,
     required this.matchId,
+    required this.inningsNumber,
     required this.overNumber,
     required this.ballNumber,
     required this.runs,
@@ -2087,6 +2363,8 @@ class BallEvent extends DataClass implements Insertable<BallEvent> {
     this.wicketType,
     required this.isExtra,
     this.extraType,
+    required this.batterName,
+    required this.bowlerName,
     required this.batterId,
     required this.bowlerId,
     required this.timestamp,
@@ -2096,6 +2374,7 @@ class BallEvent extends DataClass implements Insertable<BallEvent> {
     final map = <String, Expression>{};
     map['id'] = Variable<int>(id);
     map['match_id'] = Variable<int>(matchId);
+    map['innings_number'] = Variable<int>(inningsNumber);
     map['over_number'] = Variable<int>(overNumber);
     map['ball_number'] = Variable<int>(ballNumber);
     map['runs'] = Variable<int>(runs);
@@ -2107,6 +2386,8 @@ class BallEvent extends DataClass implements Insertable<BallEvent> {
     if (!nullToAbsent || extraType != null) {
       map['extra_type'] = Variable<String>(extraType);
     }
+    map['batter_name'] = Variable<String>(batterName);
+    map['bowler_name'] = Variable<String>(bowlerName);
     map['batter_id'] = Variable<int>(batterId);
     map['bowler_id'] = Variable<int>(bowlerId);
     map['timestamp'] = Variable<DateTime>(timestamp);
@@ -2117,6 +2398,7 @@ class BallEvent extends DataClass implements Insertable<BallEvent> {
     return BallEventsCompanion(
       id: Value(id),
       matchId: Value(matchId),
+      inningsNumber: Value(inningsNumber),
       overNumber: Value(overNumber),
       ballNumber: Value(ballNumber),
       runs: Value(runs),
@@ -2128,6 +2410,8 @@ class BallEvent extends DataClass implements Insertable<BallEvent> {
       extraType: extraType == null && nullToAbsent
           ? const Value.absent()
           : Value(extraType),
+      batterName: Value(batterName),
+      bowlerName: Value(bowlerName),
       batterId: Value(batterId),
       bowlerId: Value(bowlerId),
       timestamp: Value(timestamp),
@@ -2142,6 +2426,7 @@ class BallEvent extends DataClass implements Insertable<BallEvent> {
     return BallEvent(
       id: serializer.fromJson<int>(json['id']),
       matchId: serializer.fromJson<int>(json['matchId']),
+      inningsNumber: serializer.fromJson<int>(json['inningsNumber']),
       overNumber: serializer.fromJson<int>(json['overNumber']),
       ballNumber: serializer.fromJson<int>(json['ballNumber']),
       runs: serializer.fromJson<int>(json['runs']),
@@ -2149,6 +2434,8 @@ class BallEvent extends DataClass implements Insertable<BallEvent> {
       wicketType: serializer.fromJson<String?>(json['wicketType']),
       isExtra: serializer.fromJson<bool>(json['isExtra']),
       extraType: serializer.fromJson<String?>(json['extraType']),
+      batterName: serializer.fromJson<String>(json['batterName']),
+      bowlerName: serializer.fromJson<String>(json['bowlerName']),
       batterId: serializer.fromJson<int>(json['batterId']),
       bowlerId: serializer.fromJson<int>(json['bowlerId']),
       timestamp: serializer.fromJson<DateTime>(json['timestamp']),
@@ -2160,6 +2447,7 @@ class BallEvent extends DataClass implements Insertable<BallEvent> {
     return <String, dynamic>{
       'id': serializer.toJson<int>(id),
       'matchId': serializer.toJson<int>(matchId),
+      'inningsNumber': serializer.toJson<int>(inningsNumber),
       'overNumber': serializer.toJson<int>(overNumber),
       'ballNumber': serializer.toJson<int>(ballNumber),
       'runs': serializer.toJson<int>(runs),
@@ -2167,6 +2455,8 @@ class BallEvent extends DataClass implements Insertable<BallEvent> {
       'wicketType': serializer.toJson<String?>(wicketType),
       'isExtra': serializer.toJson<bool>(isExtra),
       'extraType': serializer.toJson<String?>(extraType),
+      'batterName': serializer.toJson<String>(batterName),
+      'bowlerName': serializer.toJson<String>(bowlerName),
       'batterId': serializer.toJson<int>(batterId),
       'bowlerId': serializer.toJson<int>(bowlerId),
       'timestamp': serializer.toJson<DateTime>(timestamp),
@@ -2176,6 +2466,7 @@ class BallEvent extends DataClass implements Insertable<BallEvent> {
   BallEvent copyWith({
     int? id,
     int? matchId,
+    int? inningsNumber,
     int? overNumber,
     int? ballNumber,
     int? runs,
@@ -2183,12 +2474,15 @@ class BallEvent extends DataClass implements Insertable<BallEvent> {
     Value<String?> wicketType = const Value.absent(),
     bool? isExtra,
     Value<String?> extraType = const Value.absent(),
+    String? batterName,
+    String? bowlerName,
     int? batterId,
     int? bowlerId,
     DateTime? timestamp,
   }) => BallEvent(
     id: id ?? this.id,
     matchId: matchId ?? this.matchId,
+    inningsNumber: inningsNumber ?? this.inningsNumber,
     overNumber: overNumber ?? this.overNumber,
     ballNumber: ballNumber ?? this.ballNumber,
     runs: runs ?? this.runs,
@@ -2196,6 +2490,8 @@ class BallEvent extends DataClass implements Insertable<BallEvent> {
     wicketType: wicketType.present ? wicketType.value : this.wicketType,
     isExtra: isExtra ?? this.isExtra,
     extraType: extraType.present ? extraType.value : this.extraType,
+    batterName: batterName ?? this.batterName,
+    bowlerName: bowlerName ?? this.bowlerName,
     batterId: batterId ?? this.batterId,
     bowlerId: bowlerId ?? this.bowlerId,
     timestamp: timestamp ?? this.timestamp,
@@ -2204,6 +2500,9 @@ class BallEvent extends DataClass implements Insertable<BallEvent> {
     return BallEvent(
       id: data.id.present ? data.id.value : this.id,
       matchId: data.matchId.present ? data.matchId.value : this.matchId,
+      inningsNumber: data.inningsNumber.present
+          ? data.inningsNumber.value
+          : this.inningsNumber,
       overNumber: data.overNumber.present
           ? data.overNumber.value
           : this.overNumber,
@@ -2217,6 +2516,12 @@ class BallEvent extends DataClass implements Insertable<BallEvent> {
           : this.wicketType,
       isExtra: data.isExtra.present ? data.isExtra.value : this.isExtra,
       extraType: data.extraType.present ? data.extraType.value : this.extraType,
+      batterName: data.batterName.present
+          ? data.batterName.value
+          : this.batterName,
+      bowlerName: data.bowlerName.present
+          ? data.bowlerName.value
+          : this.bowlerName,
       batterId: data.batterId.present ? data.batterId.value : this.batterId,
       bowlerId: data.bowlerId.present ? data.bowlerId.value : this.bowlerId,
       timestamp: data.timestamp.present ? data.timestamp.value : this.timestamp,
@@ -2228,6 +2533,7 @@ class BallEvent extends DataClass implements Insertable<BallEvent> {
     return (StringBuffer('BallEvent(')
           ..write('id: $id, ')
           ..write('matchId: $matchId, ')
+          ..write('inningsNumber: $inningsNumber, ')
           ..write('overNumber: $overNumber, ')
           ..write('ballNumber: $ballNumber, ')
           ..write('runs: $runs, ')
@@ -2235,6 +2541,8 @@ class BallEvent extends DataClass implements Insertable<BallEvent> {
           ..write('wicketType: $wicketType, ')
           ..write('isExtra: $isExtra, ')
           ..write('extraType: $extraType, ')
+          ..write('batterName: $batterName, ')
+          ..write('bowlerName: $bowlerName, ')
           ..write('batterId: $batterId, ')
           ..write('bowlerId: $bowlerId, ')
           ..write('timestamp: $timestamp')
@@ -2246,6 +2554,7 @@ class BallEvent extends DataClass implements Insertable<BallEvent> {
   int get hashCode => Object.hash(
     id,
     matchId,
+    inningsNumber,
     overNumber,
     ballNumber,
     runs,
@@ -2253,6 +2562,8 @@ class BallEvent extends DataClass implements Insertable<BallEvent> {
     wicketType,
     isExtra,
     extraType,
+    batterName,
+    bowlerName,
     batterId,
     bowlerId,
     timestamp,
@@ -2263,6 +2574,7 @@ class BallEvent extends DataClass implements Insertable<BallEvent> {
       (other is BallEvent &&
           other.id == this.id &&
           other.matchId == this.matchId &&
+          other.inningsNumber == this.inningsNumber &&
           other.overNumber == this.overNumber &&
           other.ballNumber == this.ballNumber &&
           other.runs == this.runs &&
@@ -2270,6 +2582,8 @@ class BallEvent extends DataClass implements Insertable<BallEvent> {
           other.wicketType == this.wicketType &&
           other.isExtra == this.isExtra &&
           other.extraType == this.extraType &&
+          other.batterName == this.batterName &&
+          other.bowlerName == this.bowlerName &&
           other.batterId == this.batterId &&
           other.bowlerId == this.bowlerId &&
           other.timestamp == this.timestamp);
@@ -2278,6 +2592,7 @@ class BallEvent extends DataClass implements Insertable<BallEvent> {
 class BallEventsCompanion extends UpdateCompanion<BallEvent> {
   final Value<int> id;
   final Value<int> matchId;
+  final Value<int> inningsNumber;
   final Value<int> overNumber;
   final Value<int> ballNumber;
   final Value<int> runs;
@@ -2285,12 +2600,15 @@ class BallEventsCompanion extends UpdateCompanion<BallEvent> {
   final Value<String?> wicketType;
   final Value<bool> isExtra;
   final Value<String?> extraType;
+  final Value<String> batterName;
+  final Value<String> bowlerName;
   final Value<int> batterId;
   final Value<int> bowlerId;
   final Value<DateTime> timestamp;
   const BallEventsCompanion({
     this.id = const Value.absent(),
     this.matchId = const Value.absent(),
+    this.inningsNumber = const Value.absent(),
     this.overNumber = const Value.absent(),
     this.ballNumber = const Value.absent(),
     this.runs = const Value.absent(),
@@ -2298,6 +2616,8 @@ class BallEventsCompanion extends UpdateCompanion<BallEvent> {
     this.wicketType = const Value.absent(),
     this.isExtra = const Value.absent(),
     this.extraType = const Value.absent(),
+    this.batterName = const Value.absent(),
+    this.bowlerName = const Value.absent(),
     this.batterId = const Value.absent(),
     this.bowlerId = const Value.absent(),
     this.timestamp = const Value.absent(),
@@ -2305,6 +2625,7 @@ class BallEventsCompanion extends UpdateCompanion<BallEvent> {
   BallEventsCompanion.insert({
     this.id = const Value.absent(),
     required int matchId,
+    this.inningsNumber = const Value.absent(),
     this.overNumber = const Value.absent(),
     this.ballNumber = const Value.absent(),
     this.runs = const Value.absent(),
@@ -2312,6 +2633,8 @@ class BallEventsCompanion extends UpdateCompanion<BallEvent> {
     this.wicketType = const Value.absent(),
     this.isExtra = const Value.absent(),
     this.extraType = const Value.absent(),
+    this.batterName = const Value.absent(),
+    this.bowlerName = const Value.absent(),
     required int batterId,
     required int bowlerId,
     this.timestamp = const Value.absent(),
@@ -2321,6 +2644,7 @@ class BallEventsCompanion extends UpdateCompanion<BallEvent> {
   static Insertable<BallEvent> custom({
     Expression<int>? id,
     Expression<int>? matchId,
+    Expression<int>? inningsNumber,
     Expression<int>? overNumber,
     Expression<int>? ballNumber,
     Expression<int>? runs,
@@ -2328,6 +2652,8 @@ class BallEventsCompanion extends UpdateCompanion<BallEvent> {
     Expression<String>? wicketType,
     Expression<bool>? isExtra,
     Expression<String>? extraType,
+    Expression<String>? batterName,
+    Expression<String>? bowlerName,
     Expression<int>? batterId,
     Expression<int>? bowlerId,
     Expression<DateTime>? timestamp,
@@ -2335,6 +2661,7 @@ class BallEventsCompanion extends UpdateCompanion<BallEvent> {
     return RawValuesInsertable({
       if (id != null) 'id': id,
       if (matchId != null) 'match_id': matchId,
+      if (inningsNumber != null) 'innings_number': inningsNumber,
       if (overNumber != null) 'over_number': overNumber,
       if (ballNumber != null) 'ball_number': ballNumber,
       if (runs != null) 'runs': runs,
@@ -2342,6 +2669,8 @@ class BallEventsCompanion extends UpdateCompanion<BallEvent> {
       if (wicketType != null) 'wicket_type': wicketType,
       if (isExtra != null) 'is_extra': isExtra,
       if (extraType != null) 'extra_type': extraType,
+      if (batterName != null) 'batter_name': batterName,
+      if (bowlerName != null) 'bowler_name': bowlerName,
       if (batterId != null) 'batter_id': batterId,
       if (bowlerId != null) 'bowler_id': bowlerId,
       if (timestamp != null) 'timestamp': timestamp,
@@ -2351,6 +2680,7 @@ class BallEventsCompanion extends UpdateCompanion<BallEvent> {
   BallEventsCompanion copyWith({
     Value<int>? id,
     Value<int>? matchId,
+    Value<int>? inningsNumber,
     Value<int>? overNumber,
     Value<int>? ballNumber,
     Value<int>? runs,
@@ -2358,6 +2688,8 @@ class BallEventsCompanion extends UpdateCompanion<BallEvent> {
     Value<String?>? wicketType,
     Value<bool>? isExtra,
     Value<String?>? extraType,
+    Value<String>? batterName,
+    Value<String>? bowlerName,
     Value<int>? batterId,
     Value<int>? bowlerId,
     Value<DateTime>? timestamp,
@@ -2365,6 +2697,7 @@ class BallEventsCompanion extends UpdateCompanion<BallEvent> {
     return BallEventsCompanion(
       id: id ?? this.id,
       matchId: matchId ?? this.matchId,
+      inningsNumber: inningsNumber ?? this.inningsNumber,
       overNumber: overNumber ?? this.overNumber,
       ballNumber: ballNumber ?? this.ballNumber,
       runs: runs ?? this.runs,
@@ -2372,6 +2705,8 @@ class BallEventsCompanion extends UpdateCompanion<BallEvent> {
       wicketType: wicketType ?? this.wicketType,
       isExtra: isExtra ?? this.isExtra,
       extraType: extraType ?? this.extraType,
+      batterName: batterName ?? this.batterName,
+      bowlerName: bowlerName ?? this.bowlerName,
       batterId: batterId ?? this.batterId,
       bowlerId: bowlerId ?? this.bowlerId,
       timestamp: timestamp ?? this.timestamp,
@@ -2386,6 +2721,9 @@ class BallEventsCompanion extends UpdateCompanion<BallEvent> {
     }
     if (matchId.present) {
       map['match_id'] = Variable<int>(matchId.value);
+    }
+    if (inningsNumber.present) {
+      map['innings_number'] = Variable<int>(inningsNumber.value);
     }
     if (overNumber.present) {
       map['over_number'] = Variable<int>(overNumber.value);
@@ -2408,6 +2746,12 @@ class BallEventsCompanion extends UpdateCompanion<BallEvent> {
     if (extraType.present) {
       map['extra_type'] = Variable<String>(extraType.value);
     }
+    if (batterName.present) {
+      map['batter_name'] = Variable<String>(batterName.value);
+    }
+    if (bowlerName.present) {
+      map['bowler_name'] = Variable<String>(bowlerName.value);
+    }
     if (batterId.present) {
       map['batter_id'] = Variable<int>(batterId.value);
     }
@@ -2425,6 +2769,7 @@ class BallEventsCompanion extends UpdateCompanion<BallEvent> {
     return (StringBuffer('BallEventsCompanion(')
           ..write('id: $id, ')
           ..write('matchId: $matchId, ')
+          ..write('inningsNumber: $inningsNumber, ')
           ..write('overNumber: $overNumber, ')
           ..write('ballNumber: $ballNumber, ')
           ..write('runs: $runs, ')
@@ -2432,6 +2777,8 @@ class BallEventsCompanion extends UpdateCompanion<BallEvent> {
           ..write('wicketType: $wicketType, ')
           ..write('isExtra: $isExtra, ')
           ..write('extraType: $extraType, ')
+          ..write('batterName: $batterName, ')
+          ..write('bowlerName: $bowlerName, ')
           ..write('batterId: $batterId, ')
           ..write('bowlerId: $bowlerId, ')
           ..write('timestamp: $timestamp')
@@ -2465,12 +2812,16 @@ typedef $$MatchesTableCreateCompanionBuilder =
       required String matchTitle,
       required int totalOvers,
       Value<String> matchType,
+      Value<String> ballType,
+      Value<String> venue,
+      Value<bool> isQuickMatch,
       Value<int?> teamAId,
       Value<int?> teamBId,
       Value<DateTime> createdAt,
       Value<bool> isCompleted,
       Value<String?> winnerTeamName,
       Value<int> currentInnings,
+      Value<bool> syncPending,
       Value<int> teamARuns,
       Value<int> teamAWickets,
       Value<int> teamAOvers,
@@ -2486,12 +2837,16 @@ typedef $$MatchesTableUpdateCompanionBuilder =
       Value<String> matchTitle,
       Value<int> totalOvers,
       Value<String> matchType,
+      Value<String> ballType,
+      Value<String> venue,
+      Value<bool> isQuickMatch,
       Value<int?> teamAId,
       Value<int?> teamBId,
       Value<DateTime> createdAt,
       Value<bool> isCompleted,
       Value<String?> winnerTeamName,
       Value<int> currentInnings,
+      Value<bool> syncPending,
       Value<int> teamARuns,
       Value<int> teamAWickets,
       Value<int> teamAOvers,
@@ -2531,6 +2886,21 @@ class $$MatchesTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
+  ColumnFilters<String> get ballType => $composableBuilder(
+    column: $table.ballType,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get venue => $composableBuilder(
+    column: $table.venue,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get isQuickMatch => $composableBuilder(
+    column: $table.isQuickMatch,
+    builder: (column) => ColumnFilters(column),
+  );
+
   ColumnFilters<int> get teamAId => $composableBuilder(
     column: $table.teamAId,
     builder: (column) => ColumnFilters(column),
@@ -2558,6 +2928,11 @@ class $$MatchesTableFilterComposer
 
   ColumnFilters<int> get currentInnings => $composableBuilder(
     column: $table.currentInnings,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get syncPending => $composableBuilder(
+    column: $table.syncPending,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -2631,6 +3006,21 @@ class $$MatchesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get ballType => $composableBuilder(
+    column: $table.ballType,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get venue => $composableBuilder(
+    column: $table.venue,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get isQuickMatch => $composableBuilder(
+    column: $table.isQuickMatch,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<int> get teamAId => $composableBuilder(
     column: $table.teamAId,
     builder: (column) => ColumnOrderings(column),
@@ -2658,6 +3048,11 @@ class $$MatchesTableOrderingComposer
 
   ColumnOrderings<int> get currentInnings => $composableBuilder(
     column: $table.currentInnings,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get syncPending => $composableBuilder(
+    column: $table.syncPending,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -2727,6 +3122,17 @@ class $$MatchesTableAnnotationComposer
   GeneratedColumn<String> get matchType =>
       $composableBuilder(column: $table.matchType, builder: (column) => column);
 
+  GeneratedColumn<String> get ballType =>
+      $composableBuilder(column: $table.ballType, builder: (column) => column);
+
+  GeneratedColumn<String> get venue =>
+      $composableBuilder(column: $table.venue, builder: (column) => column);
+
+  GeneratedColumn<bool> get isQuickMatch => $composableBuilder(
+    column: $table.isQuickMatch,
+    builder: (column) => column,
+  );
+
   GeneratedColumn<int> get teamAId =>
       $composableBuilder(column: $table.teamAId, builder: (column) => column);
 
@@ -2748,6 +3154,11 @@ class $$MatchesTableAnnotationComposer
 
   GeneratedColumn<int> get currentInnings => $composableBuilder(
     column: $table.currentInnings,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<bool> get syncPending => $composableBuilder(
+    column: $table.syncPending,
     builder: (column) => column,
   );
 
@@ -2823,12 +3234,16 @@ class $$MatchesTableTableManager
                 Value<String> matchTitle = const Value.absent(),
                 Value<int> totalOvers = const Value.absent(),
                 Value<String> matchType = const Value.absent(),
+                Value<String> ballType = const Value.absent(),
+                Value<String> venue = const Value.absent(),
+                Value<bool> isQuickMatch = const Value.absent(),
                 Value<int?> teamAId = const Value.absent(),
                 Value<int?> teamBId = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<bool> isCompleted = const Value.absent(),
                 Value<String?> winnerTeamName = const Value.absent(),
                 Value<int> currentInnings = const Value.absent(),
+                Value<bool> syncPending = const Value.absent(),
                 Value<int> teamARuns = const Value.absent(),
                 Value<int> teamAWickets = const Value.absent(),
                 Value<int> teamAOvers = const Value.absent(),
@@ -2842,12 +3257,16 @@ class $$MatchesTableTableManager
                 matchTitle: matchTitle,
                 totalOvers: totalOvers,
                 matchType: matchType,
+                ballType: ballType,
+                venue: venue,
+                isQuickMatch: isQuickMatch,
                 teamAId: teamAId,
                 teamBId: teamBId,
                 createdAt: createdAt,
                 isCompleted: isCompleted,
                 winnerTeamName: winnerTeamName,
                 currentInnings: currentInnings,
+                syncPending: syncPending,
                 teamARuns: teamARuns,
                 teamAWickets: teamAWickets,
                 teamAOvers: teamAOvers,
@@ -2863,12 +3282,16 @@ class $$MatchesTableTableManager
                 required String matchTitle,
                 required int totalOvers,
                 Value<String> matchType = const Value.absent(),
+                Value<String> ballType = const Value.absent(),
+                Value<String> venue = const Value.absent(),
+                Value<bool> isQuickMatch = const Value.absent(),
                 Value<int?> teamAId = const Value.absent(),
                 Value<int?> teamBId = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<bool> isCompleted = const Value.absent(),
                 Value<String?> winnerTeamName = const Value.absent(),
                 Value<int> currentInnings = const Value.absent(),
+                Value<bool> syncPending = const Value.absent(),
                 Value<int> teamARuns = const Value.absent(),
                 Value<int> teamAWickets = const Value.absent(),
                 Value<int> teamAOvers = const Value.absent(),
@@ -2882,12 +3305,16 @@ class $$MatchesTableTableManager
                 matchTitle: matchTitle,
                 totalOvers: totalOvers,
                 matchType: matchType,
+                ballType: ballType,
+                venue: venue,
+                isQuickMatch: isQuickMatch,
                 teamAId: teamAId,
                 teamBId: teamBId,
                 createdAt: createdAt,
                 isCompleted: isCompleted,
                 winnerTeamName: winnerTeamName,
                 currentInnings: currentInnings,
+                syncPending: syncPending,
                 teamARuns: teamARuns,
                 teamAWickets: teamAWickets,
                 teamAOvers: teamAOvers,
@@ -3314,6 +3741,7 @@ typedef $$BallEventsTableCreateCompanionBuilder =
     BallEventsCompanion Function({
       Value<int> id,
       required int matchId,
+      Value<int> inningsNumber,
       Value<int> overNumber,
       Value<int> ballNumber,
       Value<int> runs,
@@ -3321,6 +3749,8 @@ typedef $$BallEventsTableCreateCompanionBuilder =
       Value<String?> wicketType,
       Value<bool> isExtra,
       Value<String?> extraType,
+      Value<String> batterName,
+      Value<String> bowlerName,
       required int batterId,
       required int bowlerId,
       Value<DateTime> timestamp,
@@ -3329,6 +3759,7 @@ typedef $$BallEventsTableUpdateCompanionBuilder =
     BallEventsCompanion Function({
       Value<int> id,
       Value<int> matchId,
+      Value<int> inningsNumber,
       Value<int> overNumber,
       Value<int> ballNumber,
       Value<int> runs,
@@ -3336,6 +3767,8 @@ typedef $$BallEventsTableUpdateCompanionBuilder =
       Value<String?> wicketType,
       Value<bool> isExtra,
       Value<String?> extraType,
+      Value<String> batterName,
+      Value<String> bowlerName,
       Value<int> batterId,
       Value<int> bowlerId,
       Value<DateTime> timestamp,
@@ -3357,6 +3790,11 @@ class $$BallEventsTableFilterComposer
 
   ColumnFilters<int> get matchId => $composableBuilder(
     column: $table.matchId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get inningsNumber => $composableBuilder(
+    column: $table.inningsNumber,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -3395,6 +3833,16 @@ class $$BallEventsTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
+  ColumnFilters<String> get batterName => $composableBuilder(
+    column: $table.batterName,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get bowlerName => $composableBuilder(
+    column: $table.bowlerName,
+    builder: (column) => ColumnFilters(column),
+  );
+
   ColumnFilters<int> get batterId => $composableBuilder(
     column: $table.batterId,
     builder: (column) => ColumnFilters(column),
@@ -3427,6 +3875,11 @@ class $$BallEventsTableOrderingComposer
 
   ColumnOrderings<int> get matchId => $composableBuilder(
     column: $table.matchId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get inningsNumber => $composableBuilder(
+    column: $table.inningsNumber,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -3465,6 +3918,16 @@ class $$BallEventsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get batterName => $composableBuilder(
+    column: $table.batterName,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get bowlerName => $composableBuilder(
+    column: $table.bowlerName,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<int> get batterId => $composableBuilder(
     column: $table.batterId,
     builder: (column) => ColumnOrderings(column),
@@ -3496,6 +3959,11 @@ class $$BallEventsTableAnnotationComposer
   GeneratedColumn<int> get matchId =>
       $composableBuilder(column: $table.matchId, builder: (column) => column);
 
+  GeneratedColumn<int> get inningsNumber => $composableBuilder(
+    column: $table.inningsNumber,
+    builder: (column) => column,
+  );
+
   GeneratedColumn<int> get overNumber => $composableBuilder(
     column: $table.overNumber,
     builder: (column) => column,
@@ -3522,6 +3990,16 @@ class $$BallEventsTableAnnotationComposer
 
   GeneratedColumn<String> get extraType =>
       $composableBuilder(column: $table.extraType, builder: (column) => column);
+
+  GeneratedColumn<String> get batterName => $composableBuilder(
+    column: $table.batterName,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get bowlerName => $composableBuilder(
+    column: $table.bowlerName,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<int> get batterId =>
       $composableBuilder(column: $table.batterId, builder: (column) => column);
@@ -3566,6 +4044,7 @@ class $$BallEventsTableTableManager
               ({
                 Value<int> id = const Value.absent(),
                 Value<int> matchId = const Value.absent(),
+                Value<int> inningsNumber = const Value.absent(),
                 Value<int> overNumber = const Value.absent(),
                 Value<int> ballNumber = const Value.absent(),
                 Value<int> runs = const Value.absent(),
@@ -3573,12 +4052,15 @@ class $$BallEventsTableTableManager
                 Value<String?> wicketType = const Value.absent(),
                 Value<bool> isExtra = const Value.absent(),
                 Value<String?> extraType = const Value.absent(),
+                Value<String> batterName = const Value.absent(),
+                Value<String> bowlerName = const Value.absent(),
                 Value<int> batterId = const Value.absent(),
                 Value<int> bowlerId = const Value.absent(),
                 Value<DateTime> timestamp = const Value.absent(),
               }) => BallEventsCompanion(
                 id: id,
                 matchId: matchId,
+                inningsNumber: inningsNumber,
                 overNumber: overNumber,
                 ballNumber: ballNumber,
                 runs: runs,
@@ -3586,6 +4068,8 @@ class $$BallEventsTableTableManager
                 wicketType: wicketType,
                 isExtra: isExtra,
                 extraType: extraType,
+                batterName: batterName,
+                bowlerName: bowlerName,
                 batterId: batterId,
                 bowlerId: bowlerId,
                 timestamp: timestamp,
@@ -3594,6 +4078,7 @@ class $$BallEventsTableTableManager
               ({
                 Value<int> id = const Value.absent(),
                 required int matchId,
+                Value<int> inningsNumber = const Value.absent(),
                 Value<int> overNumber = const Value.absent(),
                 Value<int> ballNumber = const Value.absent(),
                 Value<int> runs = const Value.absent(),
@@ -3601,12 +4086,15 @@ class $$BallEventsTableTableManager
                 Value<String?> wicketType = const Value.absent(),
                 Value<bool> isExtra = const Value.absent(),
                 Value<String?> extraType = const Value.absent(),
+                Value<String> batterName = const Value.absent(),
+                Value<String> bowlerName = const Value.absent(),
                 required int batterId,
                 required int bowlerId,
                 Value<DateTime> timestamp = const Value.absent(),
               }) => BallEventsCompanion.insert(
                 id: id,
                 matchId: matchId,
+                inningsNumber: inningsNumber,
                 overNumber: overNumber,
                 ballNumber: ballNumber,
                 runs: runs,
@@ -3614,6 +4102,8 @@ class $$BallEventsTableTableManager
                 wicketType: wicketType,
                 isExtra: isExtra,
                 extraType: extraType,
+                batterName: batterName,
+                bowlerName: bowlerName,
                 batterId: batterId,
                 bowlerId: bowlerId,
                 timestamp: timestamp,

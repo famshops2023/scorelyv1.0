@@ -40,7 +40,7 @@ class _TossScreenState extends State<TossScreen> {
       battingFirstTeam: battingFirstTeam,
     );
 
-    context.pushReplacement('/scoring', extra: updatedData);
+    context.pushReplacement('/opening-lineup', extra: updatedData);
   }
 
   @override
@@ -131,10 +131,13 @@ class _TossScreenState extends State<TossScreen> {
                   elevation: 4,
                   shadowColor: const Color(0xFFBA0013).withValues(alpha: 0.4),
                 ),
-                icon: const Icon(Icons.sports_cricket,
-                    color: Colors.white, size: 20),
+                icon: const Icon(
+                  Icons.sports_cricket,
+                  color: Colors.white,
+                  size: 20,
+                ),
                 label: Text(
-                  'START SCORING',
+                  'NEXT',
                   style: GoogleFonts.plusJakartaSans(
                     fontSize: 16,
                     fontWeight: FontWeight.w700,
@@ -168,7 +171,7 @@ class _TossScreenState extends State<TossScreen> {
               color: Colors.black.withValues(alpha: 0.03),
               blurRadius: 10,
               offset: const Offset(0, 4),
-            )
+            ),
           ],
         ),
         child: Column(
@@ -216,8 +219,7 @@ class _TossScreenState extends State<TossScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 16),
         decoration: BoxDecoration(
-          color:
-              isSelected ? const Color(0xFFBA0013) : const Color(0xFFECEEF1),
+          color: isSelected ? const Color(0xFFBA0013) : const Color(0xFFECEEF1),
           borderRadius: BorderRadius.circular(8),
         ),
         alignment: Alignment.center,
