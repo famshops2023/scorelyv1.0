@@ -29,7 +29,7 @@ subprojects {
                 if (name == "isar_flutter_libs") {
                     android.namespace = "dev.isar.isar_flutter_libs"
                 } else {
-                    android.namespace = "com.example.scorely_test.${name.replace("-", "_").replace(".", "_")}"
+                    android.namespace = "app.innomerce.scorely.${name.replace("-", "_").replace(".", "_")}"
                 }
             }
         }

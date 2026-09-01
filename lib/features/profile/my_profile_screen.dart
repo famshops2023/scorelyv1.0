@@ -168,7 +168,7 @@ class MyProfileScreen extends ConsumerWidget {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    'ID: ${profile.id}',
+                    profile.displayId,
                     style: GoogleFonts.inter(
                       fontSize: 12,
                       color: Colors.white.withValues(alpha: 0.6),

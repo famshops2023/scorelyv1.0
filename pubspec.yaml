@@ -48,3 +48,6 @@ flutter:
   assets:
     - assets/images/
     - assets/sounds/
+
+dependency_overrides:
+  google_sign_in_android: 7.2.16

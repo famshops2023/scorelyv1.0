@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "572509298477",
+    "project_id": "scorely-507215",
+    "storage_bucket": "scorely-507215.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:572509298477:android:scorely",
+        "android_client_info": {
+          "package_name": "app.innomerce.scorely"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "572509298477-m2l34rs7he891tvpue0lrv9g0opa56m9.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "app.innomerce.scorely",
+            "certificate_hash": "EC55EC5C1477A8BD72AB054C6C9CA756CE9D41A1"
+          }
+        },
+        {
+          "client_id": "572509298477-vcub9bom9ac99n4ei77faialgdeijqov.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": ""
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "572509298477-vcub9bom9ac99n4ei77faialgdeijqov.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -1,16 +1,49 @@
 import 'dart:async';
 import 'package:app_links/app_links.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'core/theme/app_theme.dart';
 import 'routes/app_router.dart';
+import 'services/error_reporter.dart';
 import 'services/sync_manager.dart';
+import 'widgets/error_boundary.dart';
 
 void main() {
+  // ── 1. Ensure Flutter is initialised before anything else ────────────────
   WidgetsFlutterBinding.ensureInitialized();
-  // Force edge-to-edge on all Android versions so the system navigation
-  // bar is transparent and Flutter's SafeArea insets work correctly.
+
+  // ── 2. Flutter framework errors (widget build failures, render errors) ───
+  FlutterError.onError = (FlutterErrorDetails details) {
+    // Log to local file
+    ErrorReporter.instance.log(
+      details.exception,
+      details.stack,
+      context: details.context?.toString() ?? 'Flutter framework error',
+    );
+    // In debug, keep default red-screen behaviour for quick diagnosis
+    if (kDebugMode) {
+      FlutterError.presentError(details);
+    }
+  };
+
+  // ── 3. Platform/engine-level errors (native channel crashes, etc.) ───────
+  PlatformDispatcher.instance.onError = (error, stack) {
+    ErrorReporter.instance.log(error, stack, context: 'PlatformDispatcher');
+    return true; // Returning true means "handled – don't re-throw"
+  };
+
+  // ── 4. Custom error widget (replaces the red screen in release builds) ───
+  ErrorWidget.builder = (FlutterErrorDetails details) {
+    if (kDebugMode) {
+      // Debug: keep the default red error widget so devs see the full trace
+      return ErrorWidget(details.exception);
+    }
+    return AppErrorWidget(details: details);
+  };
+
+  // ── 5. System UI ──────────────────────────────────────────────────────────
   SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(
@@ -19,12 +52,22 @@ void main() {
       statusBarColor: Colors.transparent,
     ),
   );
-  runApp(
-    const ProviderScope(
-      child: ScorelyApp(),
-    ),
+
+  // ── 6. runZonedGuarded catches ALL unhandled Dart / async errors ─────────
+  runZonedGuarded(
+    () {
+      runApp(
+        const ProviderScope(
+          child: ScorelyApp(),
+        ),
+      );
+    },
+    (error, stack) {
+      ErrorReporter.instance.log(error, stack, context: 'runZonedGuarded');
+    },
   );
 }
+
 
 class ScorelyApp extends ConsumerStatefulWidget {
   const ScorelyApp({super.key});

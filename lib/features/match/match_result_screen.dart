@@ -547,11 +547,14 @@ class _MatchResultScreenState extends ConsumerState<MatchResultScreen> {
           height: 50,
           child: ElevatedButton(
             onPressed: () {
+              // Capture the parent context (MatchResultScreen) before showing dialog
+              final parentContext = context;
               showDialog(
                 context: context,
-                builder: (context) => CloneSetupDialog(
+                builder: (_) => CloneSetupDialog(
                   previousSetup: widget.resultData.setupData,
                   ref: ref,
+                  parentContext: parentContext,
                 ),
               );
             },
@@ -659,8 +662,17 @@ class _MatchResultScreenState extends ConsumerState<MatchResultScreen> {
 class CloneSetupDialog extends StatefulWidget {
   final MatchSetupData? previousSetup;
   final WidgetRef ref;
+  /// The BuildContext of the parent screen (MatchResultScreen).
+  /// Navigation must be performed using this context because the dialog
+  /// context becomes invalid after Navigator.pop().
+  final BuildContext parentContext;
 
-  const CloneSetupDialog({super.key, required this.previousSetup, required this.ref});
+  const CloneSetupDialog({
+    super.key,
+    required this.previousSetup,
+    required this.ref,
+    required this.parentContext,
+  });
 
   @override
   State<CloneSetupDialog> createState() => _CloneSetupDialogState();
@@ -875,24 +887,28 @@ class _CloneSetupDialogState extends State<CloneSetupDialog> {
   }
 
   void _handleCloneAction() {
+    // IMPORTANT: Use widget.parentContext for all navigation.
+    // This dialog's own `context` is unmounted after Navigator.pop() is called
+    // just before this method runs, so any context.push/go here would silently fail.
+    final navContext = widget.parentContext;
     final setup = widget.previousSetup;
+
     if (setup == null) {
-      context.go('/home');
+      navContext.go('/home');
       return;
     }
 
     if (_matchSetupChecked && _teamSquadChecked) {
-      // Both checked: Go to Toss directly carrying setup & squads
+      // Both checked: Go to Toss carrying the cloned setup & squads
       final newSetup = setup.copyWith(
         id: const Uuid().v4(),
         status: 'draft',
         tossWonBy: '',
         battingFirstTeam: '',
       );
-      // Bypass the 'Go Live' popup for cloned matches
-      context.push('/toss', extra: newSetup);
+      navContext.push('/toss', extra: newSetup);
     } else if (!_matchSetupChecked && _teamSquadChecked) {
-      // Team Squad checked, Match Setup unchecked: Go to Match Setup Screen prefilled to edit settings
+      // Team Squad checked, Match Setup unchecked: go to Match Setup pre-filled to change settings
       final extraData = {
         'teamAName': setup.teamAName,
         'teamBName': setup.teamBName,
@@ -900,11 +916,9 @@ class _CloneSetupDialogState extends State<CloneSetupDialog> {
         'teamBPlayers': setup.teamBPlayers,
         'isQuickMatch': setup.isQuickMatch,
       };
-      context.go('/match-setup', extra: extraData);
+      navContext.go('/match-setup', extra: extraData);
     } else if (_matchSetupChecked && !_teamSquadChecked) {
-      // Match Setup checked, Team Squad unchecked:
-      // Quick Match: Squad setup screen (CreateTeamScreen)
-      // Scheduled Match: Select 11s screen (TeamSquadScreen)
+      // Match Setup checked, Team Squad unchecked: reset players
       final newSetup = setup.copyWith(
         id: const Uuid().v4(),
         status: 'draft',
@@ -915,21 +929,21 @@ class _CloneSetupDialogState extends State<CloneSetupDialog> {
       );
 
       if (setup.isQuickMatch) {
-        context.go('/create-team', extra: {
+        navContext.go('/create-team', extra: {
           'isQuickMatch': true,
           'overs': setup.overs,
           'matchType': setup.matchType,
           'ballType': setup.ballType,
         });
       } else {
-        // Scheduled match: Go to select 11's for team A. We look up teamA id in teamsProvider
+        // Scheduled match: go to select playing XI for team A
         final teams = widget.ref.read(teamsProvider).value ?? [];
         final teamA = teams.firstWhere(
           (t) => t.name.toLowerCase() == setup.teamAName.toLowerCase(),
           orElse: () => TeamData(id: '', name: '', location: '', dateActive: DateTime.now(), members: []),
         );
         if (teamA.id.isNotEmpty) {
-          context.go('/team-squad', extra: {
+          navContext.go('/team-squad', extra: {
             'teamId': teamA.id,
             'readOnly': false,
             'singleSelectionMode': false,
@@ -938,13 +952,13 @@ class _CloneSetupDialogState extends State<CloneSetupDialog> {
             'teamType': 'A',
           });
         } else {
-          // Fallback if team id is empty/not found: go to Match Setup Screen
-          context.go('/match-setup', extra: newSetup.toJson());
+          // Fallback: go to Match Setup screen
+          navContext.go('/match-setup', extra: newSetup.toJson());
         }
       }
     } else {
-      // Both unchecked: Go to home screen
-      context.go('/home');
+      // Both unchecked: go home
+      navContext.go('/home');
     }
   }
 }

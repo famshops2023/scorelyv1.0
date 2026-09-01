@@ -593,7 +593,29 @@ class HomeScreen extends ConsumerWidget {
 
   Widget _buildScheduleMatchCard(BuildContext context) {
     return GestureDetector(
-      onTap: () => context.push('/match-setup'),
+      onTap: () {
+        // context.push('/match-setup'); // Temporarily disabled for MVP
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            backgroundColor: HomeColors.surface,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+            title: Text('Coming Soon 🚀', style: HomeTypography.headlineSm),
+            content: Text(
+              'Scheduled Matches with Live Sync and Team Management will be available in the next major update.\n\nFor now, enjoy Quick Matches!',
+              style: HomeTypography.bodyMd,
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: Text('Got it', style: TextStyle(color: HomeColors.primary, fontWeight: FontWeight.bold)),
+              ),
+            ],
+          ),
+        );
+      },
       child: Container(
         width: double.infinity,
         decoration: BoxDecoration(

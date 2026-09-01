@@ -35,6 +35,17 @@ class UserProfile {
     this.accessToken,
   });
 
+  /// Returns a short, human-readable ID like SCR-1042.
+  /// Derived deterministically from the raw UUID so it is always consistent.
+  String get displayId {
+    if (id.isEmpty) return 'SCR-0000';
+    // Use the last 4 hex chars of the UUID → integer → 4-digit number
+    final hex = id.replaceAll('-', '');
+    final tail = hex.length >= 4 ? hex.substring(hex.length - 4) : hex.padLeft(4, '0');
+    final num = int.tryParse(tail, radix: 16) ?? 0;
+    return 'SCR-${(num % 9000 + 1000)}';
+  }
+
   Map<String, dynamic> toMap() {
     return {
       'id': id,

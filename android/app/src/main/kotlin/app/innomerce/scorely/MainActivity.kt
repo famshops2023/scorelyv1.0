@@ -1,4 +1,4 @@
-package com.example.scorely_test
+package app.innomerce.scorely
 
 import io.flutter.embedding.android.FlutterActivity
 
