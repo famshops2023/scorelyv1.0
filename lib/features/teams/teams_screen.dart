@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
+import '../../providers/profile_provider.dart';
 import 'providers/teams_provider.dart';
 
 class TeamsScreen extends ConsumerStatefulWidget {
@@ -24,6 +25,170 @@ class _TeamsScreenState extends ConsumerState<TeamsScreen> {
   void dispose() {
     _searchController.dispose();
     super.dispose();
+  }
+
+  /// Shows an auth-gate dialog when the user taps CREATE TEAM without signing in.
+  Future<void> _handleCreateTeamTap(BuildContext context) async {
+    final profile = ref.read(profileProvider);
+    if (profile.isLoggedIn) {
+      context.push('/edit-squad', extra: '');
+      return;
+    }
+
+    await showDialog<void>(
+      context: context,
+      barrierDismissible: true,
+      builder: (ctx) {
+        return Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(24),
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(24),
+            child: Container(
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                border: Border(
+                  top: BorderSide(color: Color(0xFFBA0013), width: 6),
+                ),
+              ),
+              padding: const EdgeInsets.fromLTRB(24, 28, 24, 24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Icon
+                  Container(
+                    width: 64,
+                    height: 64,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFFEBEE),
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFFBA0013).withValues(alpha: 0.15),
+                          blurRadius: 16,
+                          offset: const Offset(0, 6),
+                        ),
+                      ],
+                    ),
+                    child: const Icon(
+                      Icons.groups_2_rounded,
+                      color: Color(0xFFBA0013),
+                      size: 30,
+                    ),
+                  ),
+                  const SizedBox(height: 18),
+
+                  // Title
+                  Text(
+                    'Sign In to Create a Team',
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w700,
+                      color: const Color(0xFF1A2138),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+
+                  // Body
+                  Text(
+                    'Creating and managing teams requires a Scorely account so your squad is safely synced across devices.',
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.inter(
+                      fontSize: 13.5,
+                      color: const Color(0xFF5A6278),
+                      height: 1.55,
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+
+                  // Tip banner
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF0F5FF),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: const Color(0xFFCDD8F6)),
+                    ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Icon(Icons.bolt_rounded, size: 17, color: Color(0xFF575D78)),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'Prefer to stay offline? Use Quick Match to score without an account.',
+                            style: GoogleFonts.inter(
+                              fontSize: 12,
+                              color: const Color(0xFF575D78),
+                              height: 1.5,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 22),
+
+                  // Buttons
+                  SizedBox(
+                    width: double.infinity,
+                    height: 50,
+                    child: ElevatedButton.icon(
+                      onPressed: () {
+                        Navigator.pop(ctx);
+                        context.push('/login');
+                      },
+                      icon: const Icon(Icons.login_rounded, size: 18, color: Colors.white),
+                      label: Text(
+                        'SIGN IN',
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFFBA0013),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        elevation: 0,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 46,
+                    child: OutlinedButton(
+                      onPressed: () => Navigator.pop(ctx),
+                      style: OutlinedButton.styleFrom(
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        side: const BorderSide(color: Color(0xFFDDE0E8)),
+                      ),
+                      child: Text(
+                        'CANCEL',
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                          color: const Color(0xFF1A2138),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
   }
 
   @override
@@ -85,9 +250,7 @@ class _TeamsScreenState extends ConsumerState<TeamsScreen> {
                   width: double.infinity,
                   height: 48,
                   child: ElevatedButton.icon(
-                    onPressed: () {
-                      context.push('/edit-squad', extra: '');
-                    },
+                    onPressed: () => _handleCreateTeamTap(context),
                     icon: const Icon(
                       Icons.add_circle_outline,
                       color: Colors.white,
@@ -258,31 +421,89 @@ class _TeamsScreenState extends ConsumerState<TeamsScreen> {
             ),
           ),
           Expanded(
-            child: ListView.builder(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 17.0,
-                vertical: 8.0,
-              ),
-              itemCount: displayTeams.length,
-              itemBuilder: (context, index) {
-                final team = displayTeams[index];
+            child: displayTeams.isEmpty
+                ? Center(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            _showMyTeams ? Icons.groups_3_outlined : Icons.shield_outlined,
+                            size: 60,
+                            color: const Color(0xFF94A3B8),
+                          ),
+                          const SizedBox(height: 14),
+                          Text(
+                            _showMyTeams ? 'No Teams Created Yet' : 'No Teams Found',
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w700,
+                              color: const Color(0xFF1E293B),
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            _showMyTeams
+                                ? 'Create your squad to manage players, track stats, and schedule matches.'
+                                : 'Try searching for a different team name or team ID.',
+                            textAlign: TextAlign.center,
+                            style: GoogleFonts.inter(
+                              fontSize: 13,
+                              color: const Color(0xFF64748B),
+                            ),
+                          ),
+                          if (_showMyTeams) ...[
+                            const SizedBox(height: 20),
+                            ElevatedButton.icon(
+                              onPressed: () => _handleCreateTeamTap(context),
+                              icon: const Icon(Icons.add, color: Colors.white, size: 18),
+                              label: Text(
+                                'CREATE TEAM NOW',
+                                style: GoogleFonts.inter(
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 13,
+                                ),
+                              ),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFFBA0013),
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                elevation: 0,
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                  )
+                : ListView.builder(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 17.0,
+                      vertical: 8.0,
+                    ),
+                    itemCount: displayTeams.length,
+                    itemBuilder: (context, index) {
+                      final team = displayTeams[index];
 
-                // Determine if current user is admin for this team
-                bool isAdmin = false;
-                final userMember = team.members
-                    .where((m) => m.id == currentUserId)
-                    .firstOrNull;
-                if (userMember != null && userMember.isAdmin) {
-                  isAdmin = true;
-                }
+                      // Determine if current user is admin for this team
+                      final localTeamIds = ref.watch(myCreatedTeamIdsProvider);
+                      final isAdmin = localTeamIds.contains(team.id) ||
+                          team.createdBy == currentUserId ||
+                          (team.members.any((m) =>
+                              (m.id == currentUserId || m.profileId == currentUserId) &&
+                              m.isAdmin));
 
-                return _TeamCard(
-                  team: team,
-                  isAdmin: isAdmin,
-                  isSelectionMode: widget.isSelectionMode,
-                );
-              },
-            ),
+                      return _TeamCard(
+                        team: team,
+                        isAdmin: isAdmin,
+                        isSelectionMode: widget.isSelectionMode,
+                      );
+                    },
+                  ),
           ),
         ],
       ),

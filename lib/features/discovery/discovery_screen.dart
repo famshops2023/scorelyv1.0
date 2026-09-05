@@ -1,11 +1,14 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
 
+import '../teams/providers/teams_provider.dart';
+
 class DiscoveryItem {
-  final String id;        // Human-readable code (team_code or player id)
+  final String id;        // Human-readable code (team_code or display ID)
   final String rawId;     // Actual database UUID for navigation
   final String name;
   final String type; // 'team', 'player', 'tournament'
@@ -22,16 +25,16 @@ class DiscoveryItem {
   }) : rawId = rawId ?? id;
 }
 
-class DiscoveryScreen extends StatefulWidget {
+class DiscoveryScreen extends ConsumerStatefulWidget {
   final bool isSelectionMode;
 
   const DiscoveryScreen({super.key, this.isSelectionMode = false});
 
   @override
-  State<DiscoveryScreen> createState() => _DiscoveryScreenState();
+  ConsumerState<DiscoveryScreen> createState() => _DiscoveryScreenState();
 }
 
-class _DiscoveryScreenState extends State<DiscoveryScreen> {
+class _DiscoveryScreenState extends ConsumerState<DiscoveryScreen> {
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
   String _selectedTab = 'All';
@@ -39,7 +42,7 @@ class _DiscoveryScreenState extends State<DiscoveryScreen> {
   final List<String> _tabs = ['All', 'Teams', 'Players', 'Tournaments'];
 
   bool _isLoading = true;
-  List<DiscoveryItem> _items = [];
+  List<DiscoveryItem> _fetchedItems = [];
 
   @override
   void initState() {
@@ -48,6 +51,12 @@ class _DiscoveryScreenState extends State<DiscoveryScreen> {
       _selectedTab = 'Teams';
     }
     _fetchData();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
   }
 
   Future<void> _fetchData() async {
@@ -59,10 +68,10 @@ class _DiscoveryScreenState extends State<DiscoveryScreen> {
       'Authorization': 'Bearer ik_d23aa9a406864853f254a0722fc1e56b',
     };
 
-    List<DiscoveryItem> fetchedItems = [];
+    List<DiscoveryItem> items = [];
 
     try {
-      // Fetch teams
+      // 1. Fetch teams from backend database
       final teamsRes = await http.get(
         Uri.parse('$baseUrl/teams?select=*&order=created_at.desc'),
         headers: headers,
@@ -73,9 +82,15 @@ class _DiscoveryScreenState extends State<DiscoveryScreen> {
           final city = t['city'] as String? ?? '';
           final state = t['state'] as String? ?? '';
           final location = [city, state].where((s) => s.isNotEmpty).join(', ');
-          fetchedItems.add(DiscoveryItem(
-            id: t['team_code']?.toString() ?? t['id']?.toString() ?? '',
-            rawId: t['id']?.toString() ?? '',
+          final rawId = t['id']?.toString() ?? '';
+          final code = t['team_code']?.toString();
+          final displayId = (code != null && code.isNotEmpty)
+              ? code
+              : (rawId.length >= 8 ? 'SCR-${rawId.substring(0, 4).toUpperCase()}' : rawId);
+
+          items.add(DiscoveryItem(
+            id: displayId,
+            rawId: rawId,
             name: t['name'] ?? 'Unknown Team',
             type: 'team',
             location: location.isNotEmpty ? location : 'Unknown Location',
@@ -83,7 +98,7 @@ class _DiscoveryScreenState extends State<DiscoveryScreen> {
         }
       }
 
-      // Fetch players
+      // 2. Fetch players from backend database
       final playersRes = await http.get(
         Uri.parse('$baseUrl/players?select=*'),
         headers: headers,
@@ -91,40 +106,68 @@ class _DiscoveryScreenState extends State<DiscoveryScreen> {
       if (playersRes.statusCode == 200) {
         final List<dynamic> data = json.decode(playersRes.body);
         for (var p in data) {
-          fetchedItems.add(DiscoveryItem(
-            id: p['id']?.toString() ?? '',
+          final rawId = p['id']?.toString() ?? '';
+          final rolesList = (p['roles'] as List?)?.map((e) => e.toString()).join('/') ?? '';
+          final roleStr = rolesList.isNotEmpty
+              ? rolesList
+              : (p['attribute'] as String? ?? p['role'] as String? ?? 'Cricketer');
+
+          items.add(DiscoveryItem(
+            id: rawId.length >= 8 ? 'P-${rawId.substring(0, 4).toUpperCase()}' : rawId,
+            rawId: rawId,
             name: p['name'] ?? 'Unknown Player',
             type: 'player',
-            role: p['attribute'] as String? ?? p['role'] as String? ?? 'Cricketer',
-            location: p['location'] as String? ?? 'Unknown Location',
+            role: roleStr,
+            location: p['location'] as String? ?? 'India',
           ));
         }
       }
     } catch (_) {
-      // ignored — show empty state
-    }
-
-    // Fallback to demo data only if nothing was fetched at all
-    if (fetchedItems.isEmpty) {
-      fetchedItems = [
-        DiscoveryItem(id: 'ST-1001', name: 'Thunder Strikers', type: 'team', location: 'Mumbai, India'),
-        DiscoveryItem(id: 'ST-1002', name: 'Royal Titans', type: 'team', location: 'Delhi, India'),
-        DiscoveryItem(id: 'ST-1003', name: 'Chennai Kings', type: 'team', location: 'Chennai, India'),
-        DiscoveryItem(id: 'P-001', name: 'Arjun Kumar', type: 'player', role: 'All-rounder', location: 'Chennai, India'),
-        DiscoveryItem(id: 'P-002', name: 'Ravi Sharma', type: 'player', role: 'Fast Bowler', location: 'Mumbai, India'),
-      ];
+      // Network or API error — handle gracefully
     }
 
     if (mounted) {
       setState(() {
-        _items = fetchedItems;
+        _fetchedItems = items;
         _isLoading = false;
       });
     }
   }
 
+  /// Combines static backend items with real-time dynamic items from Riverpod `teamsProvider`
+  List<DiscoveryItem> _getAllItems() {
+    final Map<String, DiscoveryItem> combinedMap = {};
+
+    // 1. Add Riverpod local / dynamic teams first
+    final stateTeams = ref.watch(teamsProvider).value ?? [];
+    for (final t in stateTeams) {
+      final code = t.teamCode.isNotEmpty
+          ? t.teamCode
+          : (t.id.length >= 8 ? 'SCR-${t.id.substring(0, 4).toUpperCase()}' : t.id);
+
+      combinedMap[t.id] = DiscoveryItem(
+        id: code,
+        rawId: t.id,
+        name: t.name,
+        type: 'team',
+        location: t.location.isNotEmpty ? t.location : 'Unknown Location',
+      );
+    }
+
+    // 2. Add fetched remote items (without overwriting if already in Riverpod state)
+    for (final item in _fetchedItems) {
+      if (!combinedMap.containsKey(item.rawId)) {
+        combinedMap[item.rawId] = item;
+      }
+    }
+
+    return combinedMap.values.toList();
+  }
+
   List<DiscoveryItem> get _filteredItems {
-    return _items.where((item) {
+    final allItems = _getAllItems();
+
+    return allItems.where((item) {
       // Tab filter
       if (!widget.isSelectionMode) {
         if (_selectedTab == 'Teams' && item.type != 'team') return false;
@@ -140,9 +183,10 @@ class _DiscoveryScreenState extends State<DiscoveryScreen> {
         final query = _searchQuery.toLowerCase();
         final matchName = item.name.toLowerCase().contains(query);
         final matchId = item.id.toLowerCase().contains(query);
+        final matchRawId = item.rawId.toLowerCase().contains(query);
         final matchLocation = item.location.toLowerCase().contains(query);
         final matchRole = (item.role ?? '').toLowerCase().contains(query);
-        if (!matchName && !matchId && !matchLocation && !matchRole) return false;
+        if (!matchName && !matchId && !matchRawId && !matchLocation && !matchRole) return false;
       }
 
       return true;
@@ -151,6 +195,8 @@ class _DiscoveryScreenState extends State<DiscoveryScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final filtered = _filteredItems;
+
     return Scaffold(
       backgroundColor: const Color(0xFF111317), // surface
       appBar: AppBar(
@@ -161,7 +207,7 @@ class _DiscoveryScreenState extends State<DiscoveryScreen> {
           onPressed: () => context.pop(),
         ),
         title: Text(
-          'Discovery',
+          widget.isSelectionMode ? 'Select Team' : 'Discovery',
           style: GoogleFonts.plusJakartaSans(
             fontSize: 24,
             fontWeight: FontWeight.w700,
@@ -188,6 +234,15 @@ class _DiscoveryScreenState extends State<DiscoveryScreen> {
                   hintText: 'Search teams, players, or IDs...',
                   hintStyle: GoogleFonts.inter(color: const Color(0xFFbcc7de)),
                   prefixIcon: const Icon(Icons.search, color: Color(0xFFbcc7de)),
+                  suffixIcon: _searchQuery.isNotEmpty
+                      ? IconButton(
+                          icon: const Icon(Icons.clear, color: Color(0xFFbcc7de), size: 18),
+                          onPressed: () {
+                            _searchController.clear();
+                            setState(() => _searchQuery = '');
+                          },
+                        )
+                      : null,
                   border: InputBorder.none,
                   contentPadding: const EdgeInsets.symmetric(vertical: 14),
                 ),
@@ -206,20 +261,63 @@ class _DiscoveryScreenState extends State<DiscoveryScreen> {
                 ),
               ),
             ),
-          
+
           if (!widget.isSelectionMode) const SizedBox(height: 16),
 
-          // List
+          // List with Pull-To-Refresh
           Expanded(
             child: _isLoading
                 ? const Center(child: CircularProgressIndicator(color: Color(0xFFBA0013)))
-                : ListView.builder(
-                    padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-                    itemCount: _filteredItems.length,
-                    itemBuilder: (context, index) {
-                      final item = _filteredItems[index];
-                      return _buildItemCard(item);
+                : RefreshIndicator(
+                    color: const Color(0xFFBA0013),
+                    backgroundColor: const Color(0xFF1e2024),
+                    onRefresh: () async {
+                      await ref.read(teamsProvider.notifier).refresh();
+                      await _fetchData();
                     },
+                    child: filtered.isEmpty
+                        ? ListView(
+                            physics: const AlwaysScrollableScrollPhysics(),
+                            children: [
+                              const SizedBox(height: 80),
+                              Center(
+                                child: Column(
+                                  children: [
+                                    const Icon(
+                                      Icons.search_off_rounded,
+                                      size: 56,
+                                      color: Color(0xFF5A6278),
+                                    ),
+                                    const SizedBox(height: 12),
+                                    Text(
+                                      'No results found',
+                                      style: GoogleFonts.plusJakartaSans(
+                                        color: Colors.white70,
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      'Try searching for another team, player, or ID',
+                                      style: GoogleFonts.inter(
+                                        color: const Color(0xFF5A6278),
+                                        fontSize: 13,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          )
+                        : ListView.builder(
+                            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                            itemCount: filtered.length,
+                            itemBuilder: (context, index) {
+                              final item = filtered[index];
+                              return _buildItemCard(item);
+                            },
+                          ),
                   ),
           ),
         ],

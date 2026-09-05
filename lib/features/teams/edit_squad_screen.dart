@@ -9,6 +9,7 @@ import 'package:qr_flutter/qr_flutter.dart';
 import 'package:share_plus/share_plus.dart';
 
 import 'providers/teams_provider.dart';
+import '../../providers/profile_provider.dart';
 
 class EditSquadScreen extends ConsumerStatefulWidget {
   final String teamId;
@@ -304,30 +305,19 @@ class _EditSquadScreenState extends ConsumerState<EditSquadScreen> {
     final location = '${_cityController.text}, ${_stateController.text}';
 
     if (_team.id.isEmpty) {
-      // New team — generate ID and add it
-      final newId = 'team_${DateTime.now().millisecondsSinceEpoch}';
-      final currentUserId = ref.read(currentUserIdProvider);
-      // Ensure current user is an admin member so team appears under My Teams
-      final alreadyMember = _team.members.any((m) => m.id == currentUserId);
-      final members = alreadyMember
-          ? _team.members
-          : [
-              TeamMember(
-                id: currentUserId,
-                name: 'Me',
-                roles: ['BAT'],
-                isAdmin: true,
-                isCaptain: false,
-              ),
-              ..._team.members,
-            ];
+      // New team — add with the logged-in user as admin creator
+      final profile = ref.read(profileProvider);
+      final creatorId = profile.id;
+      final creatorName = profile.name.isNotEmpty ? profile.name : 'Me';
       final newTeam = _team.copyWith(
-        id: newId,
         name: name,
         location: location,
-        members: members,
       );
-      ref.read(teamsProvider.notifier).addTeam(newTeam);
+      ref.read(teamsProvider.notifier).addTeam(
+        newTeam,
+        creatorId: creatorId.isNotEmpty ? creatorId : null,
+        creatorName: creatorName,
+      );
     } else {
       // Existing team — update it
       final updatedTeam = _team.copyWith(

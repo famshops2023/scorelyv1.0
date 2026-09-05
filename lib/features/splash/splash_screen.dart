@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:video_player/video_player.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -11,70 +12,40 @@ class SplashScreen extends StatefulWidget {
 
 class _SplashScreenState extends State<SplashScreen>
     with TickerProviderStateMixin {
-  // ── Controllers ──────────────────────────────────────────────────────────
-  late AnimationController _logoController;
+  // ── Video ─────────────────────────────────────────────────────────────────
+  late VideoPlayerController _videoController;
+
+  // ── Phase tracking ────────────────────────────────────────────────────────
+  // Phase 1: Video playing
+  // Phase 2: After video ends – loading indicator + "READY TO PLAY"
+  bool _videoEnded = false;
+  bool _navigated = false;
+
+  // ── Bottom "READY TO PLAY" animations ────────────────────────────────────
   late AnimationController _bottomController;
-  late AnimationController _pulseController;
-  late AnimationController _glowController;
-
-  // ── Logo animations ───────────────────────────────────────────────────────
-  late Animation<double> _logoFade;
-  late Animation<double> _logoScale;
-  late Animation<Offset> _logoSlide;
-
-  // ── Bottom bar animations ─────────────────────────────────────────────────
   late Animation<double> _bottomFade;
   late Animation<double> _lineWidth;
 
-  // ── Continuous animations ─────────────────────────────────────────────────
-  late Animation<double> _pulse;
-  late Animation<double> _glow;
+  // ── Loading dot animation ─────────────────────────────────────────────────
+  late AnimationController _loadingController;
+  late Animation<double> _loadingFade;
+
+  // Dot bounce controllers
+  late List<AnimationController> _dotControllers;
+  late List<Animation<double>> _dotAnims;
 
   @override
   void initState() {
     super.initState();
 
-    _logoController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1200),
-    );
+    // ── Bottom bar controller ─────────────────────────────────────────────
     _bottomController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 800),
+      duration: const Duration(milliseconds: 700),
     );
-    _pulseController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1600),
-    )..repeat(reverse: true);
-    _glowController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 2200),
-    )..repeat(reverse: true);
-
-    // Logo
-    _logoFade = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(
-        parent: _logoController,
-        curve: const Interval(0.0, 0.6, curve: Curves.easeOut),
-      ),
-    );
-    _logoScale = Tween<double>(begin: 0.55, end: 1.0).animate(
-      CurvedAnimation(
-        parent: _logoController,
-        curve: const Interval(0.0, 0.8, curve: Curves.elasticOut),
-      ),
-    );
-    _logoSlide = Tween<Offset>(begin: const Offset(0, 0.15), end: Offset.zero)
-        .animate(
-          CurvedAnimation(
-            parent: _logoController,
-            curve: const Interval(0.0, 0.7, curve: Curves.easeOut),
-          ),
-        );
-
-    // Bottom bar
-    _bottomFade = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _bottomController, curve: Curves.easeOut),
+    _bottomFade = CurvedAnimation(
+      parent: _bottomController,
+      curve: Curves.easeOut,
     );
     _lineWidth = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(
@@ -83,135 +54,159 @@ class _SplashScreenState extends State<SplashScreen>
       ),
     );
 
-    // Pulse & glow
-    _pulse = Tween<double>(begin: 0.97, end: 1.03).animate(
-      CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
+    // ── Loading overlay controller ────────────────────────────────────────
+    _loadingController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 400),
     );
-    _glow = Tween<double>(begin: 0.5, end: 1.0).animate(
-      CurvedAnimation(parent: _glowController, curve: Curves.easeInOut),
+    _loadingFade = CurvedAnimation(
+      parent: _loadingController,
+      curve: Curves.easeIn,
     );
 
-    // Sequence
-    _logoController.forward();
-    Future.delayed(const Duration(milliseconds: 1400), () {
-      if (mounted) _bottomController.forward();
-    });
+    // ── Bouncing dot controllers (3 dots, staggered) ──────────────────────
+    _dotControllers = List.generate(
+      3,
+      (i) => AnimationController(
+        vsync: this,
+        duration: const Duration(milliseconds: 500),
+      ),
+    );
+    _dotAnims = _dotControllers.map((c) {
+      return Tween<double>(begin: 0, end: -10).animate(
+        CurvedAnimation(parent: c, curve: Curves.easeInOut),
+      );
+    }).toList();
 
-    // Navigate directly to home after 6.5s
-    Future.delayed(const Duration(milliseconds: 6500), () {
-      if (mounted) context.go('/home');
+    // Stagger the dots
+    void startDots() {
+      for (int i = 0; i < _dotControllers.length; i++) {
+        Future.delayed(Duration(milliseconds: i * 160), () {
+          if (mounted) {
+            _dotControllers[i].repeat(reverse: true);
+          }
+        });
+      }
+    }
+
+    // ── Video setup ───────────────────────────────────────────────────────
+    _videoController = VideoPlayerController.asset(
+      'assets/images/Splash-screen-1.mp4',
+    );
+
+    _videoController.initialize().then((_) {
+      if (!mounted) return;
+      setState(() {});
+      _videoController.setLooping(false);
+      _videoController.setVolume(0); // muted
+      _videoController.play();
+
+      // Listen for video completion
+      _videoController.addListener(() {
+        if (!mounted) return;
+        final pos = _videoController.value.position;
+        final dur = _videoController.value.duration;
+        if (dur.inMilliseconds > 0 &&
+            pos.inMilliseconds >= dur.inMilliseconds - 100 &&
+            !_videoEnded) {
+          setState(() => _videoEnded = true);
+          _bottomController.forward();
+          _loadingController.forward();
+          startDots();
+
+          // Navigate after a minimum 2.5s loading phase
+          Future.delayed(const Duration(milliseconds: 2500), () {
+            if (mounted && !_navigated) {
+              _navigated = true;
+              context.go('/home');
+            }
+          });
+        }
+      });
+    }).catchError((_) {
+      // Fallback: if video fails, navigate after 4s
+      if (mounted && !_navigated) {
+        Future.delayed(const Duration(seconds: 4), () {
+          if (mounted && !_navigated) {
+            _navigated = true;
+            context.go('/home');
+          }
+        });
+      }
     });
   }
 
   @override
   void dispose() {
-    _logoController.dispose();
+    _videoController.dispose();
     _bottomController.dispose();
-    _pulseController.dispose();
-    _glowController.dispose();
+    _loadingController.dispose();
+    for (final c in _dotControllers) {
+      c.dispose();
+    }
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
+    final isInit = _videoController.value.isInitialized;
 
     return Scaffold(
-      backgroundColor: const Color(0xFF050D12),
+      backgroundColor: Colors.black,
       body: Stack(
         fit: StackFit.expand,
         children: [
-          // ── 1. Stadium Background ─────────────────────────────────────────
-          Image.asset(
-            'assets/images/stadium_bg.png',
-            fit: BoxFit.cover,
-            alignment: Alignment.center,
-          ),
-
-          // ── 2. Dark gradient overlay ──────────────────────────────────────
-          Container(
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  Color(0xCC050D12),
-                  Color(0x55050D12),
-                  Color(0x33050D12),
-                  Color(0x55050D12),
-                  Color(0xDD050D12),
-                  Color(0xFF050D12),
-                ],
-                stops: [0.0, 0.2, 0.42, 0.58, 0.78, 1.0],
+          // ── 1. Video fill ──────────────────────────────────────────────────
+          if (isInit)
+            SizedBox.expand(
+              child: FittedBox(
+                fit: BoxFit.cover,
+                child: SizedBox(
+                  width: _videoController.value.size.width,
+                  height: _videoController.value.size.height,
+                  child: VideoPlayer(_videoController),
+                ),
               ),
-            ),
-          ),
+            )
+          else
+            // Pre-init: solid dark background
+            Container(color: const Color(0xFF050D12)),
 
-          // ── 3. Radial glow behind logo ────────────────────────────────────
-          AnimatedBuilder(
-            animation: _glowController,
-            builder: (_, _) {
-              return Center(
-                child: Transform.translate(
-                  offset: const Offset(0, -40),
-                  child: Container(
-                    width: 320,
-                    height: 320,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      gradient: RadialGradient(
-                        colors: [
-                          Color.lerp(
-                            const Color(0x22F4A429),
-                            const Color(0x44F4A429),
-                            _glow.value,
-                          )!,
-                          Colors.transparent,
-                        ],
-                      ),
-                    ),
+          // ── 2. Post-video overlay (loading phase) ─────────────────────────
+          if (_videoEnded)
+            FadeTransition(
+              opacity: _loadingFade,
+              child: Container(
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Color(0xAA050D12),
+                      Color(0x55050D12),
+                      Color(0xCC050D12),
+                      Color(0xFF050D12),
+                    ],
+                    stops: [0.0, 0.4, 0.7, 1.0],
                   ),
                 ),
-              );
-            },
-          ),
+              ),
+            ),
 
-          // ── 4. Main content ───────────────────────────────────────────────
-          SafeArea(
-            child: Column(
-              children: [
-                const Spacer(flex: 3),
-
-                // Animated logo
-                AnimatedBuilder(
-                  animation: Listenable.merge([
-                    _logoController,
-                    _pulseController,
-                  ]),
-                  builder: (_, _) {
-                    return FadeTransition(
-                      opacity: _logoFade,
-                      child: SlideTransition(
-                        position: _logoSlide,
-                        child: Transform.scale(
-                          scale: _logoScale.value * _pulse.value,
-                          child: _buildLogo(),
-                        ),
-                      ),
-                    );
-                  },
-                ),
-
-                const Spacer(flex: 4),
-
-                // READY TO PLAY + expanding line
-                AnimatedBuilder(
-                  animation: _bottomController,
-                  builder: (_, _) {
-                    return FadeTransition(
-                      opacity: _bottomFade,
-                      child: Padding(
-                        padding: const EdgeInsets.only(bottom: 48),
+          // ── 3. Bottom section: "READY TO PLAY" + loading dots ─────────────
+          if (_videoEnded)
+            SafeArea(
+              child: Align(
+                alignment: Alignment.bottomCenter,
+                child: Padding(
+                  padding: const EdgeInsets.only(bottom: 48),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // READY TO PLAY label
+                      FadeTransition(
+                        opacity: _bottomFade,
                         child: Column(
                           children: [
                             const Text(
@@ -224,80 +219,87 @@ class _SplashScreenState extends State<SplashScreen>
                               ),
                             ),
                             const SizedBox(height: 10),
-                            Container(
-                              width:
-                                  _lineWidth.value *
-                                  math.min(screenWidth * 0.45, 200),
-                              height: 2.5,
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(2),
-                                gradient: const LinearGradient(
-                                  colors: [
-                                    Colors.transparent,
-                                    Color(0xFF4ADE80),
-                                    Colors.transparent,
-                                  ],
-                                ),
-                                boxShadow: const [
-                                  BoxShadow(
-                                    color: Color(0x884ADE80),
-                                    blurRadius: 8,
-                                    spreadRadius: 1,
+                            // Expanding glowing line
+                            AnimatedBuilder(
+                              animation: _lineWidth,
+                              builder: (_, _) {
+                                return Container(
+                                  width: _lineWidth.value *
+                                      math.min(screenWidth * 0.45, 200),
+                                  height: 2.5,
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(2),
+                                    gradient: const LinearGradient(
+                                      colors: [
+                                        Colors.transparent,
+                                        Color(0xFF4ADE80),
+                                        Colors.transparent,
+                                      ],
+                                    ),
+                                    boxShadow: const [
+                                      BoxShadow(
+                                        color: Color(0x884ADE80),
+                                        blurRadius: 8,
+                                        spreadRadius: 1,
+                                      ),
+                                    ],
                                   ),
-                                ],
-                              ),
+                                );
+                              },
                             ),
                           ],
                         ),
                       ),
-                    );
-                  },
+
+                      const SizedBox(height: 24),
+
+                      // Bouncing loading dots
+                      FadeTransition(
+                        opacity: _loadingFade,
+                        child: _buildBouncingDots(),
+                      ),
+                    ],
+                  ),
                 ),
-              ],
+              ),
             ),
-          ),
         ],
       ),
     );
   }
 
-  Widget _buildLogo() {
-    return AnimatedBuilder(
-      animation: _glowController,
-      builder: (_, child) {
-        return Container(
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            boxShadow: [
-              BoxShadow(
-                color: Color.lerp(
-                  const Color(0x44F4A429),
-                  const Color(0x88F4A429),
-                  _glow.value,
-                )!,
-                blurRadius: 60,
-                spreadRadius: 10,
+  Widget _buildBouncingDots() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: List.generate(3, (i) {
+        return AnimatedBuilder(
+          animation: _dotAnims[i],
+          builder: (_, _) {
+            return Transform.translate(
+              offset: Offset(0, _dotAnims[i].value),
+              child: Container(
+                margin: const EdgeInsets.symmetric(horizontal: 4),
+                width: 7,
+                height: 7,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Color.lerp(
+                    const Color(0xFF4ADE80),
+                    Colors.white,
+                    (i / 3),
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFF4ADE80).withValues(alpha: 0.6),
+                      blurRadius: 6,
+                    ),
+                  ],
+                ),
               ),
-              BoxShadow(
-                color: Color.lerp(
-                  const Color(0x22FFD700),
-                  const Color(0x55FFD700),
-                  _glow.value,
-                )!,
-                blurRadius: 30,
-                spreadRadius: 4,
-              ),
-            ],
-          ),
-          child: child,
+            );
+          },
         );
-      },
-      child: Image.asset(
-        'assets/images/scorely_logo.png',
-        width: 200,
-        height: 200,
-        fit: BoxFit.contain,
-      ),
+      }),
     );
   }
 }

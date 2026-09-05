@@ -1,7 +1,7 @@
-name: scorely_test
-description: "A new Flutter project."
+name: scorely
+description: "Scorely - Live Cricket Scoring & Team Management"
 publish_to: 'none'
-version: 0.1.0+1
+version: 1.0.0+1
 
 environment:
   sdk: ^3.11.5
@@ -34,6 +34,7 @@ dependencies:
   flutter_local_notifications: ^22.2.0
   google_sign_in: ^7.2.0
   connectivity_plus: ^7.3.1
+  video_player: ^2.9.5
 
 dev_dependencies:
   flutter_test:

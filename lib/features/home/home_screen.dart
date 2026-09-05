@@ -162,7 +162,9 @@ class HomeScreen extends ConsumerWidget {
                     style: GoogleFonts.inter(
                       fontSize: 14,
                       color: isLoggedIn ? Colors.white70 : Colors.blue[300],
-                      decoration: isLoggedIn ? TextDecoration.none : TextDecoration.underline,
+                      decoration: isLoggedIn
+                          ? TextDecoration.none
+                          : TextDecoration.underline,
                     ),
                   ),
                 ),
@@ -240,7 +242,8 @@ class HomeScreen extends ConsumerWidget {
               Navigator.pop(context);
               SharePlus.instance.share(
                 ShareParams(
-                  text: 'Check out Scorely! The ultimate cricket scoring app for live match updates and team management. Download it now: https://scorely.app',
+                  text:
+                      'Check out Scorely! The ultimate cricket scoring app for live match updates and team management. Download it now: https://scorely.app',
                   subject: 'Scorely Cricket App',
                 ),
               );
@@ -299,7 +302,8 @@ class HomeScreen extends ConsumerWidget {
         children: [
           Image.asset(
             'assets/images/scorely_icon.png',
-            height: 32,
+            height: 46,
+            fit: BoxFit.contain,
             errorBuilder: (context, error, stackTrace) =>
                 const Icon(Icons.sports_cricket, color: Colors.amber),
           ),
@@ -577,7 +581,7 @@ class HomeScreen extends ConsumerWidget {
                   ),
                   const SizedBox(height: 3),
                   Text(
-                    'Start scoring within 30 seconds',
+                    'Start scoring within 30 seconds - Go Offline',
                     style: HomeTypography.bodyMd.copyWith(
                       color: HomeColors.onPrimary.withValues(alpha: 0.9),
                     ),
@@ -610,7 +614,13 @@ class HomeScreen extends ConsumerWidget {
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context),
-                child: Text('Got it', style: TextStyle(color: HomeColors.primary, fontWeight: FontWeight.bold)),
+                child: Text(
+                  'Got it',
+                  style: TextStyle(
+                    color: HomeColors.primary,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
               ),
             ],
           ),
