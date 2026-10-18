@@ -4,6 +4,7 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import '../core/config/insforge_config.dart';
 
 /// Manages real-time live score updates to InsForge for scheduled matches.
 ///
@@ -12,15 +13,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 /// - If offline, the blob is queued in SharedPreferences.
 /// - On reconnect, all queued updates are flushed (only the latest is sent).
 class LiveScoringService {
-  static const _baseUrl =
-      'https://ip53vj9s.ap-southeast.insforge.app/api/database/records';
-  static const _apiKey = 'ik_d23aa9a406864853f254a0722fc1e56b';
-  static const _headers = {
-    'apikey': _apiKey,
-    'Authorization': 'Bearer $_apiKey',
-    'Content-Type': 'application/json',
-    'Prefer': 'return=representation',
-  };
+  static String get _baseUrl => InsforgeConfig.recordsUrl;
+  static Map<String, String> get _headers => InsforgeConfig.headers;
 
   /// SharedPreferences key for the pending live payload queue.
   static const _queueKey = 'live_score_pending_queue';

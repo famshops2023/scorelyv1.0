@@ -137,10 +137,11 @@ class _TeamSquadScreenState extends ConsumerState<TeamSquadScreen> {
 
     final int selectedCount = _selectedPlayerIds.length;
     final currentUserId = ref.watch(currentUserIdProvider);
+    final isTeamCreator = currentUserId.isNotEmpty && team.createdBy == currentUserId;
     // readOnly mode or singleSelectionMode forces isAdmin = false → hides selection box and button
     final isAdmin = (widget.readOnly || widget.singleSelectionMode)
         ? false
-        : displayedMembers.any((m) => m.id == currentUserId && m.isAdmin);
+        : (isTeamCreator || displayedMembers.any((m) => (m.id == currentUserId || m.profileId == currentUserId) && m.isAdmin));
 
     // Handle logo/initials
     final words = team.name.split(' ');
@@ -490,122 +491,128 @@ class _TeamSquadScreenState extends ConsumerState<TeamSquadScreen> {
           
           // Bottom Button
           if (isAdmin && !widget.singleSelectionMode && !widget.readOnly)
-            Container(
-              width: double.infinity,
-            padding: const EdgeInsets.all(17),
-            decoration: const BoxDecoration(
-              color: Colors.white,
-              boxShadow: [
-                BoxShadow(
-                  color: Color.fromRGBO(26, 33, 56, 0.05),
-                  blurRadius: 10,
-                  offset: Offset(0, -4),
+            SafeArea(
+              top: false,
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.fromLTRB(17, 12, 17, 16),
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Color.fromRGBO(26, 33, 56, 0.05),
+                      blurRadius: 10,
+                      offset: Offset(0, -4),
+                    ),
+                  ],
                 ),
-              ],
-            ),
-            child: ElevatedButton.icon(
-              onPressed: selectedCount > 0 ? () async {
-                if (widget.isSelectingPlayingXi && widget.setupData != null) {
-                  // Map selected IDs to PlayerSetupData
-                  final selectedMembers = displayedMembers.where((m) => _selectedPlayerIds.contains(m.id)).toList();
-                  final players = selectedMembers.map((m) => PlayerSetupData(
-                    name: m.name,
-                    role: m.roles.contains('WK') ? PlayerRole.wicketKeeper :
-                          m.roles.contains('AR') ? PlayerRole.allRounder :
-                          m.roles.contains('BOWL') ? PlayerRole.bowler : PlayerRole.batsman,
-                  )).toList();
+                child: ElevatedButton.icon(
+                  onPressed: selectedCount > 0 ? () async {
+                    if (widget.isSelectingPlayingXi && widget.setupData != null) {
+                      // Map selected IDs to PlayerSetupData
+                      final selectedMembers = displayedMembers.where((m) => _selectedPlayerIds.contains(m.id)).toList();
+                      final players = selectedMembers.map((m) => PlayerSetupData(
+                        name: m.name,
+                        role: m.roles.contains('WK') ? PlayerRole.wicketKeeper :
+                              m.roles.contains('AR') ? PlayerRole.allRounder :
+                              m.roles.contains('BOWL') ? PlayerRole.bowler : PlayerRole.batsman,
+                      )).toList();
 
-                  MatchSetupData currentData = widget.setupData!;
-                  if (currentData.id.isEmpty) {
-                    currentData = currentData.copyWith(id: const Uuid().v4());
-                  }
+                      MatchSetupData currentData = widget.setupData!;
+                      if (currentData.id.isEmpty) {
+                        currentData = currentData.copyWith(id: const Uuid().v4());
+                      }
 
-                  if (widget.teamType == 'A') {
-                    currentData = currentData.copyWith(
-                      teamAPlayers: players,
-                      status: 'waiting_for_team_b',
-                    );
-                    
-                    // Add to pending matches
-                    await ref.read(pendingMatchesProvider.notifier).addOrUpdateMatch(currentData);
-                    
-                    // Try to navigate to Team B
-                    final teamB = teams.firstWhere(
-                      (t) => t.name == currentData.teamBName,
-                      orElse: () => TeamData(id: '', name: '', location: '', dateActive: DateTime.now(), members: []),
-                    );
-                    
-                    if (teamB.id.isNotEmpty && context.mounted) {
-                      context.push('/team-squad', extra: {
-                        'teamId': teamB.id,
-                        'readOnly': false,
-                        'singleSelectionMode': false,
-                        'setupData': currentData,
-                        'isSelectingPlayingXi': true,
-                        'teamType': 'B',
-                      });
-                    } else if (context.mounted) {
-                       proceedToToss(context, ref, currentData);
+                      if (widget.teamType == 'A') {
+                        currentData = currentData.copyWith(
+                          teamAPlayers: players,
+                          status: 'waiting_for_team_b',
+                        );
+
+                        // Add to pending matches
+                        await ref.read(pendingMatchesProvider.notifier).addOrUpdateMatch(currentData);
+
+                        // Try to navigate to Team B
+                        final teamB = teams.firstWhere(
+                          (t) => t.name == currentData.teamBName,
+                          orElse: () => TeamData(id: '', name: '', location: '', dateActive: DateTime.now(), members: []),
+                        );
+
+                        if (teamB.id.isNotEmpty && context.mounted) {
+                          context.push('/team-squad', extra: {
+                            'teamId': teamB.id,
+                            'readOnly': false,
+                            'singleSelectionMode': false,
+                            'setupData': currentData,
+                            'isSelectingPlayingXi': true,
+                            'teamType': 'B',
+                          });
+                        } else if (context.mounted) {
+                          proceedToToss(context, ref, currentData);
+                        }
+                      } else if (widget.teamType == 'B') {
+                        currentData = currentData.copyWith(
+                          teamBPlayers: players,
+                          status: 'ready_for_toss',
+                        );
+                        await ref.read(pendingMatchesProvider.notifier).addOrUpdateMatch(currentData);
+                        if (context.mounted) {
+                          proceedToToss(context, ref, currentData);
+                        }
+                      }
                     }
-                  } else if (widget.teamType == 'B') {
-                    currentData = currentData.copyWith(
-                      teamBPlayers: players,
-                      status: 'ready_for_toss',
-                    );
-                    await ref.read(pendingMatchesProvider.notifier).addOrUpdateMatch(currentData);
-                    if (context.mounted) {
-                      proceedToToss(context, ref, currentData);
-                    }
-                  }
-                }
-              } : null,
-              icon: Icon(
-                widget.isSelectingPlayingXi 
-                  ? (widget.teamType == 'A' ? Icons.arrow_forward : Icons.play_arrow) 
-                  : Icons.person_add_alt_1, 
-                color: Colors.white
-              ),
-              label: Text(
-                widget.isSelectingPlayingXi
-                    ? (widget.teamType == 'A' ? 'Next' : 'Proceed to Toss')
-                    : 'Add Selected to Match',
-                style: GoogleFonts.inter(
-                  fontWeight: FontWeight.w700,
-                  fontSize: 14,
+                  } : null,
+                  icon: Icon(
+                    widget.isSelectingPlayingXi
+                        ? (widget.teamType == 'A' ? Icons.arrow_forward : Icons.play_arrow)
+                        : Icons.person_add_alt_1,
+                    color: Colors.white,
+                  ),
+                  label: Text(
+                    widget.isSelectingPlayingXi
+                        ? (widget.teamType == 'A' ? 'Next' : 'Proceed to Toss')
+                        : 'Add Selected to Match',
+                    style: GoogleFonts.inter(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 14,
+                    ),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFBA0013),
+                    foregroundColor: Colors.white,
+                    disabledBackgroundColor: const Color(0xFFE7BDB8),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    elevation: 0,
+                  ),
                 ),
-              ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFBA0013),
-                foregroundColor: Colors.white,
-                disabledBackgroundColor: const Color(0xFFE7BDB8),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                elevation: 0,
               ),
             ),
-          ),
           
           if (!isAdmin && widget.isSelectingPlayingXi)
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(17),
-              decoration: const BoxDecoration(
-                color: Colors.white,
-                boxShadow: [
-                  BoxShadow(color: Color.fromRGBO(26, 33, 56, 0.05), blurRadius: 10, offset: Offset(0, -4)),
-                ],
-              ),
-              child: ElevatedButton(
-                onPressed: () => context.go('/'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF575D78),
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                  padding: const EdgeInsets.symmetric(vertical: 14),
+            SafeArea(
+              top: false,
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.fromLTRB(17, 12, 17, 16),
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  boxShadow: [
+                    BoxShadow(color: Color.fromRGBO(26, 33, 56, 0.05), blurRadius: 10, offset: Offset(0, -4)),
+                  ],
                 ),
-                child: Text('Save & Exit', style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 14)),
+                child: ElevatedButton(
+                  onPressed: () => context.go('/'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF575D78),
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                  ),
+                  child: Text('Save & Exit', style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 14)),
+                ),
               ),
             ),
         ],

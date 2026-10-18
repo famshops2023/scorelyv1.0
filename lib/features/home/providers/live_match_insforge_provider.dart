@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
+import '../../../core/config/insforge_config.dart';
 import '../../../models/live_match_data.dart';
 import '../../../providers/profile_provider.dart';
 
@@ -10,15 +11,8 @@ import '../../../providers/profile_provider.dart';
 // INSFORGE CONFIG  (same project as pending_matches_provider)
 // ============================================================
 class _InsForge {
-  static const baseUrl =
-      'https://ip53vj9s.ap-southeast.insforge.app/api/database/records';
-  static const apiKey = 'ik_d23aa9a406864853f254a0722fc1e56b';
-  static const headers = {
-    'apikey': apiKey,
-    'Authorization': 'Bearer $apiKey',
-    'Content-Type': 'application/json',
-    'Prefer': 'return=representation',
-  };
+  static String get baseUrl => InsforgeConfig.recordsUrl;
+  static Map<String, String> get headers => InsforgeConfig.headers;
 }
 
 /// Fetches live matches from the [pending_matches] table where

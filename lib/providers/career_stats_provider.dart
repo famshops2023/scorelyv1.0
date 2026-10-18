@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
+import '../core/config/insforge_config.dart';
 
 /// Aggregated career stats computed from local match data
 class CareerStats {
@@ -86,12 +87,8 @@ class CareerStats {
 
 
 final careerStatsProvider = FutureProvider<CareerStats>((ref) async {
-  final url = 'https://ip53vj9s.ap-southeast.insforge.app/api/database/records/matches?status=eq.completed';
-  final headers = {
-    'apikey': 'ik_d23aa9a406864853f254a0722fc1e56b',
-    'Authorization': 'Bearer ik_d23aa9a406864853f254a0722fc1e56b',
-    'Content-Type': 'application/json',
-  };
+  final url = '${InsforgeConfig.recordsUrl}/matches?status=eq.completed';
+  final headers = InsforgeConfig.headers;
 
   List<dynamic> completedRaw = [];
   try {

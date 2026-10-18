@@ -48,6 +48,25 @@ class BatterStats {
       dismissalInfo: dismissalInfo ?? this.dismissalInfo,
     );
   }
+  Map<String, dynamic> toJson() => {
+        'name': name,
+        'runs': runs,
+        'balls': balls,
+        'fours': fours,
+        'sixes': sixes,
+        'isOut': isOut,
+        'dismissalInfo': dismissalInfo,
+      };
+
+  factory BatterStats.fromJson(Map<String, dynamic> json) => BatterStats(
+        name: json['name'] as String? ?? '',
+        runs: json['runs'] as int? ?? 0,
+        balls: json['balls'] as int? ?? 0,
+        fours: json['fours'] as int? ?? 0,
+        sixes: json['sixes'] as int? ?? 0,
+        isOut: json['isOut'] as bool? ?? false,
+        dismissalInfo: json['dismissalInfo'] as String? ?? '',
+      );
 }
 
 class BowlerStats {
@@ -97,6 +116,22 @@ class BowlerStats {
       wickets: wickets ?? this.wickets,
     );
   }
+
+  Map<String, dynamic> toJson() => {
+        'name': name,
+        'ballsBowled': ballsBowled,
+        'maidens': maidens,
+        'runsConceded': runsConceded,
+        'wickets': wickets,
+      };
+
+  factory BowlerStats.fromJson(Map<String, dynamic> json) => BowlerStats(
+        name: json['name'] as String? ?? '',
+        ballsBowled: json['ballsBowled'] as int? ?? 0,
+        maidens: json['maidens'] as int? ?? 0,
+        runsConceded: json['runsConceded'] as int? ?? 0,
+        wickets: json['wickets'] as int? ?? 0,
+      );
 }
 
 class FallOfWicket {

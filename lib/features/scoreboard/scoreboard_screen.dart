@@ -24,16 +24,13 @@ class ScoreboardScreen extends StatefulWidget {
 }
 
 class _ScoreboardScreenState extends State<ScoreboardScreen> {
-  late InningsStats _selectedInnings;
+  int _selectedInningsIndex = 1;
 
-  @override
-  void initState() {
-    super.initState();
-    _selectedInnings = widget.innings1;
-  }
+  InningsStats get _selectedInnings =>
+      _selectedInningsIndex == 1 ? widget.innings1 : widget.innings2;
 
   List<BallEvent> get _currentBalls =>
-      _selectedInnings == widget.innings1 ? widget.innings1Balls : widget.innings2Balls;
+      _selectedInningsIndex == 1 ? widget.innings1Balls : widget.innings2Balls;
 
   @override
   Widget build(BuildContext context) {
@@ -60,7 +57,7 @@ class _ScoreboardScreenState extends State<ScoreboardScreen> {
 
   Widget _buildScoreOverview() {
     final isLive = !widget.match.isCompleted;
-    final inningsText = _selectedInnings == widget.innings1 ? '1st Innings' : '2nd Innings';
+    final inningsText = _selectedInningsIndex == 1 ? '1st Innings' : '2nd Innings';
 
     return Container(
       decoration: BoxDecoration(
@@ -131,19 +128,19 @@ class _ScoreboardScreenState extends State<ScoreboardScreen> {
       decoration: BoxDecoration(color: const Color(0xFFECEEF1), borderRadius: BorderRadius.circular(8)),
       child: Row(
         children: [
-          Expanded(child: _buildSegmentButton(widget.innings1)),
-          Expanded(child: _buildSegmentButton(widget.innings2)),
+          Expanded(child: _buildSegmentButton(1, widget.innings1.teamName)),
+          Expanded(child: _buildSegmentButton(2, widget.innings2.teamName)),
         ],
       ),
     );
   }
 
-  Widget _buildSegmentButton(InningsStats innings) {
-    final isSelected = _selectedInnings == innings;
+  Widget _buildSegmentButton(int inningsIndex, String teamName) {
+    final isSelected = _selectedInningsIndex == inningsIndex;
     return GestureDetector(
       onTap: () {
         setState(() {
-          _selectedInnings = innings;
+          _selectedInningsIndex = inningsIndex;
         });
       },
       child: Container(
@@ -155,7 +152,7 @@ class _ScoreboardScreenState extends State<ScoreboardScreen> {
         ),
         alignment: Alignment.center,
         child: Text(
-          innings.teamName.toUpperCase(),
+          teamName.toUpperCase(),
           style: GoogleFonts.inter(
             fontSize: 12,
             fontWeight: FontWeight.bold,
@@ -356,7 +353,7 @@ class _ScoreboardScreenState extends State<ScoreboardScreen> {
             decoration: const BoxDecoration(color: Color(0xFF131B31), borderRadius: BorderRadius.vertical(top: Radius.circular(12))),
             alignment: Alignment.centerLeft,
             child: Text(
-              'BOWLING - ${_selectedInnings == widget.innings1 ? widget.innings2.teamName.toUpperCase() : widget.innings1.teamName.toUpperCase()}',
+              'BOWLING - ${_selectedInningsIndex == 1 ? widget.innings2.teamName.toUpperCase() : widget.innings1.teamName.toUpperCase()}',
               style: GoogleFonts.inter(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
             ),
           ),

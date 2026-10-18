@@ -2,16 +2,12 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:uuid/uuid.dart';
+import '../core/config/insforge_config.dart';
 import 'database.dart';
 
 class InsforgeSyncService {
-  static const _url = 'https://ip53vj9s.ap-southeast.insforge.app/api/database/records';
-  static const _headers = {
-    'apikey': 'ik_d23aa9a406864853f254a0722fc1e56b',
-    'Authorization': 'Bearer ik_d23aa9a406864853f254a0722fc1e56b',
-    'Content-Type': 'application/json',
-    'Prefer': 'return=representation',
-  };
+  static String get _url => InsforgeConfig.recordsUrl;
+  static Map<String, String> get _headers => InsforgeConfig.headers;
 
   /// Attempts to sync a local match to InsForge.
   /// Returns `true` on success, `false` if any HTTP step fails.

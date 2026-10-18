@@ -38,6 +38,15 @@
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data android:scheme="https" android:host="scorely.com" />
+                <data android:scheme="https" android:host="scorely.app" />
+            </intent-filter>
+
+            <!-- Custom App Scheme (Direct launch without SSL/web domain requirement) -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="scorely" />
             </intent-filter>
         </activity>
         <!-- Don't delete the meta-data below.

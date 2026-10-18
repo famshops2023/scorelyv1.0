@@ -70,13 +70,22 @@ class ProfileNotifier extends Notifier<UserProfile> {
   }) async {
     final result = await _auth.verifyOTP(email: email, token: token);
     if (result.success && result.profile != null) {
-      final merged = state.copyWith(
-        id: result.profile!.id,
-        email: result.profile!.email,
-        name: result.profile!.name,
-        isLoggedIn: true,
-        accessToken: result.profile!.accessToken,
-      );
+      final remote = await _service.fetchRemoteProfile(result.profile!.id);
+      final merged = (remote != null)
+          ? remote.copyWith(
+              id: result.profile!.id,
+              email: result.profile!.email,
+              name: remote.name.isNotEmpty ? remote.name : result.profile!.name,
+              isLoggedIn: true,
+              accessToken: result.profile!.accessToken,
+            )
+          : state.copyWith(
+              id: result.profile!.id,
+              email: result.profile!.email,
+              name: result.profile!.name,
+              isLoggedIn: true,
+              accessToken: result.profile!.accessToken,
+            );
       state = merged;
       await _service.saveProfile(merged);
       return null;
@@ -92,13 +101,22 @@ class ProfileNotifier extends Notifier<UserProfile> {
   }) async {
     final result = await _auth.signIn(email: email, password: password);
     if (result.success && result.profile != null) {
-      final merged = state.copyWith(
-        id: result.profile!.id,
-        email: result.profile!.email,
-        name: result.profile!.name,
-        isLoggedIn: true,
-        accessToken: result.profile!.accessToken,
-      );
+      final remote = await _service.fetchRemoteProfile(result.profile!.id);
+      final merged = (remote != null)
+          ? remote.copyWith(
+              id: result.profile!.id,
+              email: result.profile!.email,
+              name: remote.name.isNotEmpty ? remote.name : result.profile!.name,
+              isLoggedIn: true,
+              accessToken: result.profile!.accessToken,
+            )
+          : state.copyWith(
+              id: result.profile!.id,
+              email: result.profile!.email,
+              name: result.profile!.name,
+              isLoggedIn: true,
+              accessToken: result.profile!.accessToken,
+            );
       state = merged;
       await _service.saveProfile(merged);
       return null;
@@ -111,13 +129,22 @@ class ProfileNotifier extends Notifier<UserProfile> {
   Future<String?> signInWithGoogle() async {
     final result = await _auth.signInWithGoogle();
     if (result.success && result.profile != null) {
-      final merged = state.copyWith(
-        id: result.profile!.id,
-        email: result.profile!.email,
-        name: result.profile!.name,
-        isLoggedIn: true,
-        accessToken: result.profile!.accessToken,
-      );
+      final remote = await _service.fetchRemoteProfile(result.profile!.id);
+      final merged = (remote != null)
+          ? remote.copyWith(
+              id: result.profile!.id,
+              email: result.profile!.email,
+              name: remote.name.isNotEmpty ? remote.name : result.profile!.name,
+              isLoggedIn: true,
+              accessToken: result.profile!.accessToken,
+            )
+          : state.copyWith(
+              id: result.profile!.id,
+              email: result.profile!.email,
+              name: result.profile!.name,
+              isLoggedIn: true,
+              accessToken: result.profile!.accessToken,
+            );
       state = merged;
       await _service.saveProfile(merged);
       return null;

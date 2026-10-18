@@ -85,6 +85,73 @@ class UserProfile {
     );
   }
 
+  Map<String, dynamic> toInsForgeMap() {
+    String? formattedDob;
+    if (dateOfBirth.isNotEmpty) {
+      try {
+        if (dateOfBirth.contains('/')) {
+          final parts = dateOfBirth.split('/');
+          if (parts.length == 3) {
+            if (parts[2].length == 4) {
+              // MM/DD/YYYY -> YYYY-MM-DD
+              final m = parts[0].padLeft(2, '0');
+              final d = parts[1].padLeft(2, '0');
+              final y = parts[2];
+              formattedDob = '$y-$m-$d';
+            } else if (parts[0].length == 4) {
+              // YYYY/MM/DD
+              formattedDob = '${parts[0]}-${parts[1].padLeft(2, '0')}-${parts[2].padLeft(2, '0')}';
+            }
+          }
+        } else {
+          final parsed = DateTime.tryParse(dateOfBirth);
+          if (parsed != null) {
+            formattedDob =
+                "${parsed.year.toString().padLeft(4, '0')}-${parsed.month.toString().padLeft(2, '0')}-${parsed.day.toString().padLeft(2, '0')}";
+          }
+        }
+      } catch (_) {}
+    }
+
+    return {
+      if (id.isNotEmpty) 'id': id,
+      'name': name,
+      if (email.isNotEmpty) 'email': email,
+      'role': role,
+      'location': location,
+      'association': association,
+      'date_of_birth': formattedDob,
+      'mobile': mobile,
+      'playing_role': playingRole,
+      'batting_style': battingStyle,
+      'bowling_style': bowlingStyle,
+      'gender': gender,
+      'profile_image_url': profileImagePath,
+      'updated_at': DateTime.now().toIso8601String(),
+    };
+  }
+
+  factory UserProfile.fromInsForgeMap(Map<String, dynamic> map,
+      {String? accessToken}) {
+    return UserProfile(
+      id: map['id']?.toString() ?? '',
+      email: map['email']?.toString() ?? '',
+      name: map['name']?.toString() ?? 'Scorely User',
+      role: map['role']?.toString() ?? 'Cricket Enthusiast',
+      location: map['location']?.toString() ?? '',
+      association: map['association']?.toString() ?? '',
+      dateOfBirth: map['date_of_birth']?.toString() ?? '',
+      mobile: map['mobile']?.toString() ?? '',
+      playingRole: map['playing_role']?.toString() ?? 'Batsman',
+      battingStyle: map['batting_style']?.toString() ?? 'Right Hand',
+      bowlingStyle: map['bowling_style']?.toString() ?? 'Right-arm Fast',
+      gender: map['gender']?.toString() ?? 'Prefer not to say',
+      profileImagePath: map['profile_image_url'] as String?,
+      isLoggedIn: true,
+      accessToken: accessToken,
+    );
+  }
+
   String toJson() => json.encode(toMap());
 
   factory UserProfile.fromJson(String source) =>

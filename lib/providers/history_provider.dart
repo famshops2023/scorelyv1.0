@@ -41,6 +41,10 @@ class MatchHistoryNotifier extends Notifier<List<CricketMatch>> {
 
 /// Last 5 completed matches — for Recent Matches section on Home screen.
 final recentMatchesProvider = FutureProvider<List<CricketMatch>>((ref) async {
+  final history = ref.watch(matchHistoryProvider);
+  if (history.isNotEmpty) {
+    return history.where((m) => m.isCompleted).take(5).toList();
+  }
   final db = ref.watch(databaseServiceProvider);
   final all = await db.getAllMatches();
   return all.where((m) => m.isCompleted).take(5).toList();
@@ -48,6 +52,14 @@ final recentMatchesProvider = FutureProvider<List<CricketMatch>>((ref) async {
 
 /// The latest in-progress (live) match — for Live Match section on Home screen.
 final liveMatchProvider = FutureProvider<CricketMatch?>((ref) async {
+  final history = ref.watch(matchHistoryProvider);
+  if (history.isNotEmpty) {
+    try {
+      return history.firstWhere((m) => !m.isCompleted);
+    } catch (_) {
+      return null;
+    }
+  }
   final db = ref.watch(databaseServiceProvider);
   final all = await db.getAllMatches();
   try {
@@ -74,6 +86,11 @@ final matchTeamNamesProvider =
           ..where((r) => r.id.equals(match.teamBId!)))
         .getSingleOrNull();
     if (t != null) teamB = t.name;
+  }
+  if (teamA == 'Team A' && teamB == 'Team B' && match.matchTitle.contains(' vs ')) {
+    final parts = match.matchTitle.split(' vs ');
+    if (parts.isNotEmpty) teamA = parts[0].trim();
+    if (parts.length > 1) teamB = parts[1].trim();
   }
   return (teamA, teamB);
 });

@@ -22,6 +22,14 @@ class _TeamsScreenState extends ConsumerState<TeamsScreen> {
   final TextEditingController _searchController = TextEditingController();
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(teamsProvider.notifier).refresh();
+    });
+  }
+
+  @override
   void dispose() {
     _searchController.dispose();
     super.dispose();
@@ -421,78 +429,94 @@ class _TeamsScreenState extends ConsumerState<TeamsScreen> {
             ),
           ),
           Expanded(
-            child: displayTeams.isEmpty
-                ? Center(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 24.0),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            _showMyTeams ? Icons.groups_3_outlined : Icons.shield_outlined,
-                            size: 60,
-                            color: const Color(0xFF94A3B8),
-                          ),
-                          const SizedBox(height: 14),
-                          Text(
-                            _showMyTeams ? 'No Teams Created Yet' : 'No Teams Found',
-                            style: GoogleFonts.plusJakartaSans(
-                              fontSize: 18,
-                              fontWeight: FontWeight.w700,
-                              color: const Color(0xFF1E293B),
+            child: RefreshIndicator(
+              color: const Color(0xFFBA0013),
+              onRefresh: () => ref.read(teamsProvider.notifier).refresh(),
+              child: displayTeams.isEmpty
+                  ? SingleChildScrollView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      child: Container(
+                        height: 350,
+                        alignment: Alignment.center,
+                        padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              _showMyTeams
+                                  ? Icons.groups_3_outlined
+                                  : Icons.shield_outlined,
+                              size: 60,
+                              color: const Color(0xFF94A3B8),
                             ),
-                          ),
-                          const SizedBox(height: 6),
-                          Text(
-                            _showMyTeams
-                                ? 'Create your squad to manage players, track stats, and schedule matches.'
-                                : 'Try searching for a different team name or team ID.',
-                            textAlign: TextAlign.center,
-                            style: GoogleFonts.inter(
-                              fontSize: 13,
-                              color: const Color(0xFF64748B),
-                            ),
-                          ),
-                          if (_showMyTeams) ...[
-                            const SizedBox(height: 20),
-                            ElevatedButton.icon(
-                              onPressed: () => _handleCreateTeamTap(context),
-                              icon: const Icon(Icons.add, color: Colors.white, size: 18),
-                              label: Text(
-                                'CREATE TEAM NOW',
-                                style: GoogleFonts.inter(
-                                  fontWeight: FontWeight.w700,
-                                  fontSize: 13,
-                                ),
-                              ),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFFBA0013),
-                                foregroundColor: Colors.white,
-                                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                elevation: 0,
+                            const SizedBox(height: 14),
+                            Text(
+                              _showMyTeams
+                                  ? 'No Teams Created Yet'
+                                  : 'No Teams Found',
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: 18,
+                                fontWeight: FontWeight.w700,
+                                color: const Color(0xFF1E293B),
                               ),
                             ),
+                            const SizedBox(height: 6),
+                            Text(
+                              _showMyTeams
+                                  ? 'Create your squad to manage players, track stats, and schedule matches.'
+                                  : 'Try searching for a different team name or team ID.',
+                              textAlign: TextAlign.center,
+                              style: GoogleFonts.inter(
+                                fontSize: 13,
+                                color: const Color(0xFF64748B),
+                              ),
+                            ),
+                            if (_showMyTeams) ...[
+                              const SizedBox(height: 20),
+                              ElevatedButton.icon(
+                                onPressed: () => _handleCreateTeamTap(context),
+                                icon: const Icon(
+                                  Icons.add,
+                                  color: Colors.white,
+                                  size: 18,
+                                ),
+                                label: Text(
+                                  'CREATE TEAM NOW',
+                                  style: GoogleFonts.inter(
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 13,
+                                  ),
+                                ),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: const Color(0xFFBA0013),
+                                  foregroundColor: Colors.white,
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 20,
+                                    vertical: 12,
+                                  ),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  elevation: 0,
+                                ),
+                              ),
+                            ],
                           ],
-                        ],
+                        ),
                       ),
-                    ),
-                  )
-                : ListView.builder(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 17.0,
-                      vertical: 8.0,
-                    ),
-                    itemCount: displayTeams.length,
+                    )
+                  : ListView.builder(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 17.0,
+                        vertical: 8.0,
+                      ),
+                      itemCount: displayTeams.length,
                     itemBuilder: (context, index) {
                       final team = displayTeams[index];
 
                       // Determine if current user is admin for this team
-                      final localTeamIds = ref.watch(myCreatedTeamIdsProvider);
-                      final isAdmin = localTeamIds.contains(team.id) ||
-                          team.createdBy == currentUserId ||
+                      final isAdmin = team.createdBy == currentUserId ||
                           (team.members.any((m) =>
                               (m.id == currentUserId || m.profileId == currentUserId) &&
                               m.isAdmin));
@@ -504,6 +528,7 @@ class _TeamsScreenState extends ConsumerState<TeamsScreen> {
                       );
                     },
                   ),
+            ),
           ),
         ],
       ),

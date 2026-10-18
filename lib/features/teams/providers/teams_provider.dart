@@ -1,23 +1,17 @@
 import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
-import 'package:shared_preferences/shared_preferences.dart';
+import '../../../core/config/insforge_config.dart';
 
 import '../../../providers/profile_provider.dart';
+import '../../../services/profile_service.dart';
 
 // ============================================================
 // INSFORGE CONFIG
 // ============================================================
 class _InsForge {
-  static const baseUrl =
-      'https://ip53vj9s.ap-southeast.insforge.app/api/database/records';
-  static const apiKey = 'ik_d23aa9a406864853f254a0722fc1e56b';
-  static const headers = {
-    'apikey': apiKey,
-    'Authorization': 'Bearer $apiKey',
-    'Content-Type': 'application/json',
-    'Prefer': 'return=representation',
-  };
+  static String get baseUrl => InsforgeConfig.recordsUrl;
+  static Map<String, String> get headers => InsforgeConfig.headers;
 }
 
 // ============================================================
@@ -43,11 +37,24 @@ class TeamMember {
   });
 
   factory TeamMember.fromJson(Map<String, dynamic> json) {
+    List<String> parsedRoles = [];
+    final playingRole = json['playing_role']?.toString();
+    if (playingRole != null && playingRole.isNotEmpty) {
+      parsedRoles = [playingRole];
+    } else if (json['roles'] is List) {
+      parsedRoles = (json['roles'] as List).map((e) => e.toString()).toList();
+    } else if (json['role'] != null && json['role'].toString().isNotEmpty) {
+      parsedRoles = [json['role'].toString()];
+    }
+    if (parsedRoles.isEmpty) {
+      parsedRoles = ['BAT'];
+    }
+
     return TeamMember(
       id: json['id']?.toString() ?? '',
       profileId: json['profile_id'] as String? ?? json['user_id'] as String?,
       name: json['name'] as String? ?? '',
-      roles: (json['roles'] as List?)?.map((e) => e.toString()).toList() ?? [],
+      roles: parsedRoles,
       isAdmin: json['is_admin'] as bool? ?? false,
       isCaptain: json['is_captain'] as bool? ?? false,
       profileImageUrl: json['profile_image_url'] as String?,
@@ -56,11 +63,10 @@ class TeamMember {
 
   Map<String, dynamic> toJson() => {
         'name': name,
-        'roles': roles,
+        'playing_role': roles.isNotEmpty ? roles.first : 'BAT',
         'is_admin': isAdmin,
         'is_captain': isCaptain,
-        'profile_image_url': profileImageUrl,
-        if (profileId != null) 'profile_id': profileId,
+        if (profileId != null && profileId!.isNotEmpty) 'profile_id': profileId,
       };
 
   TeamMember copyWith({
@@ -191,10 +197,13 @@ class TeamsNotifier extends AsyncNotifier<List<TeamData>> {
       }
 
       // 4. Assemble TeamData objects
-      return teamsJson.map((t) {
+      final liveTeams = teamsJson.map((t) {
         final id = t['id']?.toString() ?? '';
         return TeamData.fromJson(t, members: membersByTeam[id] ?? []);
       }).toList();
+
+
+      return liveTeams;
     } catch (e) {
       return [];
     }
@@ -220,12 +229,16 @@ class TeamsNotifier extends AsyncNotifier<List<TeamData>> {
 
       if (finalCreatorId != null) {
         bodyMap['owner_id'] = finalCreatorId;
+        final profile = ref.read(profileProvider);
+        if (profile.isLoggedIn && profile.id.isNotEmpty) {
+          await ProfileService().syncProfileToInsForge(profile);
+        }
       }
 
       var res = await http.post(
         Uri.parse('${_InsForge.baseUrl}/teams'),
         headers: _InsForge.headers,
-        body: jsonEncode(bodyMap),
+        body: jsonEncode([bodyMap]),
       );
 
       // If failed with owner_id (e.g. invalid UUID or FK mismatch), retry without owner_id
@@ -234,7 +247,7 @@ class TeamsNotifier extends AsyncNotifier<List<TeamData>> {
         res = await http.post(
           Uri.parse('${_InsForge.baseUrl}/teams'),
           headers: _InsForge.headers,
-          body: jsonEncode(bodyMap),
+          body: jsonEncode([bodyMap]),
         );
       }
 
@@ -295,9 +308,6 @@ class TeamsNotifier extends AsyncNotifier<List<TeamData>> {
             createdBy: finalCreatorId,
           );
 
-    // Save created team ID persistently to device storage
-    ref.read(myCreatedTeamIdsProvider.notifier).addTeamId(teamId);
-
     // ALWAYS update state so the team appears immediately in UI
     state = AsyncData([...state.value ?? [], newTeam]);
     return newTeam;
@@ -310,21 +320,68 @@ class TeamsNotifier extends AsyncNotifier<List<TeamData>> {
       final city = location.isNotEmpty ? location[0].trim() : updatedTeam.location;
       final statePart = location.length > 1 ? location[1].trim() : '';
 
+      final updateBody = <String, dynamic>{
+        'name': updatedTeam.name,
+        'city': city,
+        'state': statePart,
+        'logo_url': updatedTeam.logoUrl,
+        'updated_at': DateTime.now().toIso8601String(),
+      };
+
+      if (updatedTeam.createdBy != null && updatedTeam.createdBy!.isNotEmpty) {
+        updateBody['owner_id'] = updatedTeam.createdBy;
+        final profile = ref.read(profileProvider);
+        if (profile.isLoggedIn && profile.id.isNotEmpty) {
+          await ProfileService().syncProfileToInsForge(profile);
+        }
+      }
+
       await http.patch(
         Uri.parse('${_InsForge.baseUrl}/teams?id=eq.${updatedTeam.id}'),
         headers: _InsForge.headers,
-        body: jsonEncode({
-          'name': updatedTeam.name,
-          'city': city,
-          'state': statePart,
-          'logo_url': updatedTeam.logoUrl,
-          'updated_at': DateTime.now().toIso8601String(),
-        }),
+        body: jsonEncode(updateBody),
       );
+
+      // Sync members with InsForge
+      final existingRes = await http.get(
+        Uri.parse('${_InsForge.baseUrl}/players?team_id=eq.${updatedTeam.id}'),
+        headers: _InsForge.headers,
+      );
+      final List existingPlayersJson =
+          existingRes.statusCode == 200 ? jsonDecode(existingRes.body) as List : [];
+      final existingIds = existingPlayersJson.map((e) => e['id']?.toString()).toSet();
+
+      final List<TeamMember> syncedMembers = [];
+      for (final m in updatedTeam.members) {
+        if (existingIds.contains(m.id)) {
+          // Update existing player
+          await updateMember(updatedTeam.id, m.id, m);
+          syncedMembers.add(m);
+        } else {
+          // Insert new player
+          final inserted = await _insertPlayer(m, updatedTeam.id);
+          if (inserted != null) {
+            syncedMembers.add(inserted);
+          } else {
+            syncedMembers.add(m);
+          }
+        }
+      }
+
+      // Delete players that were removed from the squad
+      final updatedMemberIds = updatedTeam.members.map((m) => m.id).toSet();
+      for (final p in existingPlayersJson) {
+        final pid = p['id']?.toString() ?? '';
+        if (pid.isNotEmpty && !updatedMemberIds.contains(pid)) {
+          await removeMember(updatedTeam.id, pid);
+        }
+      }
+
+      final teamWithSyncedMembers = updatedTeam.copyWith(members: syncedMembers);
 
       state = AsyncData([
         for (final t in state.value ?? [])
-          if (t.id == updatedTeam.id) updatedTeam else t
+          if (t.id == updatedTeam.id) teamWithSyncedMembers else t
       ]);
     } catch (e) {
       // keep local state on failure
@@ -364,15 +421,15 @@ class TeamsNotifier extends AsyncNotifier<List<TeamData>> {
   Future<void> updateMember(
       String teamId, String memberId, TeamMember updated) async {
     try {
+      final playingRole = updated.roles.isNotEmpty ? updated.roles.first : 'BAT';
       await http.patch(
         Uri.parse('${_InsForge.baseUrl}/players?id=eq.$memberId'),
         headers: _InsForge.headers,
         body: jsonEncode({
           'name': updated.name,
-          'roles': updated.roles,
+          'playing_role': playingRole,
           'is_admin': updated.isAdmin,
           'is_captain': updated.isCaptain,
-          'profile_image_url': updated.profileImageUrl,
           'updated_at': DateTime.now().toIso8601String(),
         }),
       );
@@ -424,13 +481,13 @@ class TeamsNotifier extends AsyncNotifier<List<TeamData>> {
   // ---- PRIVATE: insert a player row ----
   Future<TeamMember?> _insertPlayer(TeamMember m, String teamId) async {
     try {
+      final playingRole = m.roles.isNotEmpty ? m.roles.first : 'BAT';
       final bodyMap = <String, dynamic>{
         'team_id': teamId,
         'name': m.name,
-        'roles': m.roles,
+        'playing_role': playingRole,
         'is_admin': m.isAdmin,
         'is_captain': m.isCaptain,
-        'profile_image_url': m.profileImageUrl,
       };
 
       if (m.profileId != null && m.profileId!.isNotEmpty) {
@@ -440,7 +497,7 @@ class TeamsNotifier extends AsyncNotifier<List<TeamData>> {
       var res = await http.post(
         Uri.parse('${_InsForge.baseUrl}/players'),
         headers: _InsForge.headers,
-        body: jsonEncode(bodyMap),
+        body: jsonEncode([bodyMap]),
       );
 
       // If failed with profile_id (e.g. FK constraint or schema variation), retry without profile_id
@@ -449,13 +506,14 @@ class TeamsNotifier extends AsyncNotifier<List<TeamData>> {
         res = await http.post(
           Uri.parse('${_InsForge.baseUrl}/players'),
           headers: _InsForge.headers,
-          body: jsonEncode(bodyMap),
+          body: jsonEncode([bodyMap]),
         );
       }
 
       if (res.statusCode != 201 && res.statusCode != 200) return null;
-      final created = (jsonDecode(res.body) as List).first;
-      return TeamMember.fromJson(created);
+      final decoded = jsonDecode(res.body);
+      final created = (decoded is List) ? decoded.first : decoded;
+      return TeamMember.fromJson(created as Map<String, dynamic>);
     } catch (e) {
       return null;
     }
@@ -465,68 +523,23 @@ class TeamsNotifier extends AsyncNotifier<List<TeamData>> {
 final teamsProvider =
     AsyncNotifierProvider<TeamsNotifier, List<TeamData>>(TeamsNotifier.new);
 
-// Persistent tracking of teams created on this device
-final myCreatedTeamIdsProvider =
-    NotifierProvider<MyCreatedTeamIdsNotifier, Set<String>>(
-  MyCreatedTeamIdsNotifier.new,
-);
-
-class MyCreatedTeamIdsNotifier extends Notifier<Set<String>> {
-  @override
-  Set<String> build() {
-    _load();
-    return {};
-  }
-
-  Future<void> _load() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final ids = prefs.getStringList('my_created_team_ids') ?? [];
-      state = ids.toSet();
-    } catch (_) {}
-  }
-
-  Future<void> addTeamId(String id) async {
-    if (id.isEmpty) return;
-    final newState = {...state, id};
-    state = newState;
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setStringList('my_created_team_ids', newState.toList());
-    } catch (_) {}
-  }
-
-  Future<void> removeTeamId(String id) async {
-    final newState = state.where((item) => item != id).toSet();
-    state = newState;
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setStringList('my_created_team_ids', newState.toList());
-    } catch (_) {}
-  }
-}
-
-// Helper: teams where current user is the creator, marked as member, or created on device
+// Helper: teams where the signed-in user is the owner or an explicit member (by profileId).
 final myTeamsProvider = Provider<List<TeamData>>((ref) {
-  final currentUserId = ref.watch(currentUserIdProvider);
-  final localTeamIds = ref.watch(myCreatedTeamIdsProvider);
+  final profile = ref.watch(profileProvider);
+  final currentUserId = profile.id;
   final teamsAsync = ref.watch(teamsProvider);
   final allTeams = teamsAsync.value ?? [];
 
+  if (currentUserId.isEmpty) return [];
+
   return allTeams.where((t) {
-    // 1. Created persistently on this device
-    if (localTeamIds.contains(t.id)) return true;
+    // 1. Signed-in user is the owner of the team
+    if (t.createdBy == currentUserId) return true;
 
-    // 2. Created by logged in user ID
-    if (currentUserId.isNotEmpty && t.createdBy == currentUserId) return true;
-
-    // 3. Current user is in squad or has admin member status
-    if (t.members.any((m) =>
-        (currentUserId.isNotEmpty && (m.id == currentUserId || m.profileId == currentUserId)) ||
-        m.isAdmin)) {
-      return true;
-    }
-
-    return false;
+    // 2. Signed-in user is an explicit member of the squad (by profileId)
+    final isMember = t.members.any(
+      (m) => m.profileId != null && m.profileId == currentUserId,
+    );
+    return isMember;
   }).toList();
 });

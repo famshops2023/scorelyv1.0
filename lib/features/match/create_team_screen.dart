@@ -1,9 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../models/player_setup.dart';
+import '../../services/database.dart';
+import 'match_setup_screen.dart';
+import 'match_result_screen.dart';
+import 'providers/quick_match_storage.dart';
 
-class CreateTeamScreen extends StatefulWidget {
+class CreateTeamScreen extends ConsumerStatefulWidget {
   final bool isQuickMatch;
   final Map<String, dynamic>? initialData;
   
@@ -14,10 +19,10 @@ class CreateTeamScreen extends StatefulWidget {
   });
 
   @override
-  State<CreateTeamScreen> createState() => _CreateTeamScreenState();
+  ConsumerState<CreateTeamScreen> createState() => _CreateTeamScreenState();
 }
 
-class _CreateTeamScreenState extends State<CreateTeamScreen> {
+class _CreateTeamScreenState extends ConsumerState<CreateTeamScreen> {
   final _teamAController = TextEditingController(text: '');
   final _teamBController = TextEditingController(text: '');
 
@@ -27,6 +32,25 @@ class _CreateTeamScreenState extends State<CreateTeamScreen> {
 
   final _playerInputController = TextEditingController();
   String _searchQuery = '';
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.initialData != null) {
+      if (widget.initialData!['teamAName'] != null) {
+        _teamAController.text = widget.initialData!['teamAName'].toString();
+      }
+      if (widget.initialData!['teamBName'] != null) {
+        _teamBController.text = widget.initialData!['teamBName'].toString();
+      }
+      if (widget.initialData!['teamAPlayers'] is List<PlayerSetupData>) {
+        _teamAPlayers.addAll(widget.initialData!['teamAPlayers'] as List<PlayerSetupData>);
+      }
+      if (widget.initialData!['teamBPlayers'] is List<PlayerSetupData>) {
+        _teamBPlayers.addAll(widget.initialData!['teamBPlayers'] as List<PlayerSetupData>);
+      }
+    }
+  }
 
   @override
   void dispose() {
@@ -227,6 +251,88 @@ class _CreateTeamScreenState extends State<CreateTeamScreen> {
     context.push('/match-setup', extra: data);
   }
 
+  Future<void> _showCloneDialog() async {
+    // 1. Try to load previous setup from QuickMatchStorage
+    var setup = await QuickMatchStorage.getLastQuickMatch();
+
+    // 2. If not found in QuickMatchStorage, attempt to load from database
+    if (setup == null) {
+      try {
+        final matches = await DatabaseService.instance.getAllMatches();
+        if (matches.isNotEmpty) {
+          final lastMatch = matches.first;
+          String teamAName = 'Team A';
+          String teamBName = 'Team B';
+          if (lastMatch.matchTitle.contains(' vs ')) {
+            final parts = lastMatch.matchTitle.split(' vs ');
+            if (parts.isNotEmpty) teamAName = parts[0].trim();
+            if (parts.length > 1) teamBName = parts[1].trim();
+          }
+          final db = DatabaseService.instance;
+          final balls = await (db.select(db.ballEvents)
+                ..where((b) => b.matchId.equals(lastMatch.id)))
+              .get();
+          final playerNamesA = <String>{};
+          final playerNamesB = <String>{};
+          for (final b in balls) {
+            if (b.inningsNumber == 1) {
+              if (b.batterName.isNotEmpty) playerNamesA.add(b.batterName);
+              if (b.bowlerName.isNotEmpty) playerNamesB.add(b.bowlerName);
+            } else {
+              if (b.batterName.isNotEmpty) playerNamesB.add(b.batterName);
+              if (b.bowlerName.isNotEmpty) playerNamesA.add(b.bowlerName);
+            }
+          }
+          final teamAPlayers = playerNamesA.map((n) => PlayerSetupData(name: n)).toList();
+          final teamBPlayers = playerNamesB.map((n) => PlayerSetupData(name: n)).toList();
+          if (teamAPlayers.isNotEmpty) teamAPlayers.first = teamAPlayers.first.copyWith(isCaptain: true);
+          if (teamBPlayers.isNotEmpty) teamBPlayers.first = teamBPlayers.first.copyWith(isCaptain: true);
+
+          setup = MatchSetupData(
+            teamAName: teamAName,
+            teamBName: teamBName,
+            teamAPlayers: teamAPlayers,
+            teamBPlayers: teamBPlayers,
+            overs: lastMatch.totalOvers,
+            tossWonBy: '',
+            maxOversPerBowler: (lastMatch.totalOvers / 5).ceil().clamp(1, 10),
+            powerplayOvers: (lastMatch.totalOvers * 0.3).round().clamp(1, 10),
+            battingFirstTeam: '',
+            matchType: lastMatch.matchType,
+            ballType: lastMatch.ballType,
+            venue: lastMatch.venue,
+            matchDate: lastMatch.createdAt,
+            isQuickMatch: lastMatch.isQuickMatch,
+          );
+        }
+      } catch (e) {
+        debugPrint('Error loading last match for clone: $e');
+      }
+    }
+
+    if (!mounted) return;
+
+    if (setup == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('No previous match setup found to clone.'),
+          backgroundColor: Color(0xFFBA0013),
+        ),
+      );
+      return;
+    }
+
+    final parentContext = context;
+    showDialog(
+      context: context,
+      builder: (_) => CloneSetupDialog(
+        previousSetup: setup,
+        ref: ref,
+        parentContext: parentContext,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -249,6 +355,18 @@ class _CreateTeamScreenState extends State<CreateTeamScreen> {
             context.pop();
           },
         ),
+        actions: [
+          IconButton(
+            tooltip: 'Clone Previous Setup',
+            icon: const Icon(
+              Icons.copy_all_rounded,
+              color: Colors.white,
+              size: 22,
+            ),
+            onPressed: _showCloneDialog,
+          ),
+          const SizedBox(width: 8),
+        ],
       ),
       body: Column(
         children: [

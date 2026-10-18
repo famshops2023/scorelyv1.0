@@ -598,7 +598,8 @@ class HomeScreen extends ConsumerWidget {
   Widget _buildScheduleMatchCard(BuildContext context) {
     return GestureDetector(
       onTap: () {
-        // context.push('/match-setup'); // Temporarily disabled for MVP
+        // MVP: Schedule Match is coming soon — Quick Match is available now.
+        // context.push('/match-setup');
         showDialog(
           context: context,
           builder: (context) => AlertDialog(
@@ -642,7 +643,7 @@ class HomeScreen extends ConsumerWidget {
                 Text('Schedule Match', style: HomeTypography.headlineSm),
                 const SizedBox(height: 3),
                 Text(
-                  'Plan Future Match',
+                  'Plan Future Match - Go Live Scoring',
                   style: HomeTypography.bodyMd.copyWith(
                     color: HomeColors.secondary,
                   ),

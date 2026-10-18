@@ -28,4 +28,20 @@ class QuickMatchStorage {
     final jsonListToSave = matches.map((m) => m.toJson()).toList();
     await prefs.setString(_key, jsonEncode(jsonListToSave));
   }
+
+  static Future<MatchSetupData?> getLastQuickMatch() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final jsonStr = prefs.getString(_key);
+      if (jsonStr != null) {
+        final List<dynamic> jsonList = jsonDecode(jsonStr);
+        if (jsonList.isNotEmpty) {
+          return MatchSetupData.fromJson(jsonList.first as Map<String, dynamic>);
+        }
+      }
+    } catch (e) {
+      // ignore parsing errors
+    }
+    return null;
+  }
 }

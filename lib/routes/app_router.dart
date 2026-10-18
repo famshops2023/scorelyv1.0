@@ -37,9 +37,20 @@ final goRouter = GoRouter(
   initialLocation: '/',
   routes: [
     GoRoute(
+      path: '/join',
+      builder: (context, state) {
+        final teamId = state.uri.queryParameters['team'] ??
+            state.uri.queryParameters['teamId'] ??
+            '';
+        return JoinTeamHandler(teamId: teamId);
+      },
+    ),
+    GoRoute(
       path: '/joinTeam',
       builder: (context, state) {
-        final teamId = state.uri.queryParameters['teamId'] ?? '';
+        final teamId = state.uri.queryParameters['teamId'] ??
+            state.uri.queryParameters['team'] ??
+            '';
         return JoinTeamHandler(teamId: teamId);
       },
     ),
@@ -101,8 +112,29 @@ final goRouter = GoRouter(
     GoRoute(
       path: '/discovery',
       builder: (context, state) {
-        final isSelectionMode = state.extra as bool? ?? false;
-        return DiscoveryScreen(isSelectionMode: isSelectionMode);
+        bool isSelectionMode = false;
+        String? initialTab;
+        bool signedUpOnly = false;
+        bool multiSelect = false;
+        if (state.extra is bool) {
+          isSelectionMode = state.extra as bool;
+        } else if (state.extra is String) {
+          initialTab = state.extra as String;
+        } else if (state.extra is Map<String, dynamic>) {
+          final map = state.extra as Map<String, dynamic>;
+          isSelectionMode = map['isSelectionMode'] as bool? ?? false;
+          initialTab = map['initialTab'] as String? ??
+              map['filter'] as String? ??
+              map['tab'] as String?;
+          signedUpOnly = map['signedUpOnly'] as bool? ?? false;
+          multiSelect = map['multiSelect'] as bool? ?? false;
+        }
+        return DiscoveryScreen(
+          isSelectionMode: isSelectionMode,
+          initialTab: initialTab,
+          signedUpOnly: signedUpOnly,
+          multiSelect: multiSelect,
+        );
       },
     ),
     GoRoute(
@@ -125,7 +157,21 @@ final goRouter = GoRouter(
     ),
     GoRoute(
       path: '/discovery-select',
-      builder: (context, state) => const DiscoveryScreen(isSelectionMode: true),
+      builder: (context, state) {
+        String? initialTab;
+        if (state.extra is String) {
+          initialTab = state.extra as String;
+        } else if (state.extra is Map<String, dynamic>) {
+          final map = state.extra as Map<String, dynamic>;
+          initialTab = map['initialTab'] as String? ??
+              map['filter'] as String? ??
+              map['tab'] as String?;
+        }
+        return DiscoveryScreen(
+          isSelectionMode: true,
+          initialTab: initialTab ?? 'Players',
+        );
+      },
     ),
     GoRoute(
       path: '/edit-squad',

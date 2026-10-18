@@ -5,7 +5,6 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 
-import '../../models/user_profile.dart';
 import '../../providers/profile_provider.dart';
 
 class EditProfileScreen extends ConsumerStatefulWidget {
@@ -134,14 +133,15 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
 
   void _saveProfile() {
     if (_formKey.currentState!.validate()) {
-      final updatedProfile = UserProfile(
-        id: _profileId,
-        name: _nameController.text,
-        role: _roleController.text,
-        location: _locationController.text,
-        association: _associationController.text,
-        dateOfBirth: _dobController.text,
-        mobile: _mobileController.text,
+      final current = ref.read(profileProvider);
+      final updatedProfile = current.copyWith(
+        id: _profileId.isNotEmpty ? _profileId : current.id,
+        name: _nameController.text.trim(),
+        role: _roleController.text.trim(),
+        location: _locationController.text.trim(),
+        association: _associationController.text.trim(),
+        dateOfBirth: _dobController.text.trim(),
+        mobile: _mobileController.text.trim(),
         playingRole: _playingRole,
         battingStyle: _battingStyle,
         bowlingStyle: _bowlingStyle,

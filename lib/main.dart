@@ -7,12 +7,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'core/theme/app_theme.dart';
 import 'routes/app_router.dart';
 import 'services/error_reporter.dart';
+import 'services/notification_service.dart';
 import 'services/sync_manager.dart';
 import 'widgets/error_boundary.dart';
 
-void main() {
+void main() async {
   // ── 1. Ensure Flutter is initialised before anything else ────────────────
   WidgetsFlutterBinding.ensureInitialized();
+  await NotificationService.instance.init();
 
   // ── 2. Flutter framework errors (widget build failures, render errors) ───
   FlutterError.onError = (FlutterErrorDetails details) {
@@ -93,10 +95,16 @@ class _ScorelyAppState extends ConsumerState<ScorelyApp> {
 
     // Handle incoming links while the app is in the background or foreground
     _linkSubscription = _appLinks.uriLinkStream.listen((uri) {
-      // Example uri: https://scorely.com/joinTeam?teamId=123
-      if (uri.path.isNotEmpty) {
+      String routePath = '';
+      if (uri.path.isNotEmpty && uri.path != '/') {
+        routePath = uri.path;
+      } else if (uri.host.isNotEmpty) {
+        routePath = '/${uri.host}';
+      }
+
+      if (routePath.isNotEmpty) {
         final query = uri.hasQuery ? '?${uri.query}' : '';
-        goRouter.go('${uri.path}$query');
+        goRouter.go('$routePath$query');
       }
     }, onError: (err) {
       debugPrint('Deep link error: $err');

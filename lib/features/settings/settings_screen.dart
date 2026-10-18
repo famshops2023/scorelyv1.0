@@ -7,6 +7,9 @@ import '../../core/theme/colors.dart';
 import '../../core/theme/typography.dart';
 import '../../providers/history_provider.dart';
 import '../../providers/profile_provider.dart';
+import '../../services/sound_service.dart';
+import '../../services/wakelock_service.dart';
+import '../../services/notification_service.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
@@ -47,6 +50,17 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     setState(() {
       updateState(value);
     });
+
+    if (key == 'settings_sound_effects' && value) {
+      SoundService.instance.playPreview();
+    } else if (key == 'settings_notifications' && value) {
+      final granted = await NotificationService.instance.requestPermissions();
+      if (granted) {
+        await NotificationService.instance.showTestNotification();
+      }
+    } else if (key == 'settings_keep_awake') {
+      await WakelockService.instance.updateSetting(value);
+    }
   }
 
   Future<void> _updateIntSetting(String key, int value, ValueChanged<int> updateState) async {
@@ -358,7 +372,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   _buildToggleTile(
                     Icons.volume_up_outlined,
                     'Sound Effects',
-                    'Play sounds for boundaries and wickets',
+                    'Play sounds for boundaries, wickets, and victory cheers',
                     _soundEffects,
                     (val) => _updateBoolSetting('settings_sound_effects', val, (v) => _soundEffects = v),
                   ),

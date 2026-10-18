@@ -12,6 +12,10 @@ import '../../services/sync_manager.dart';
 import '../../services/live_scoring_service.dart';
 import 'package:drift/drift.dart' as drift;
 import '../../providers/history_provider.dart';
+import '../../services/sound_service.dart';
+import '../../services/wakelock_service.dart';
+import '../../services/notification_service.dart';
+import '../../services/ongoing_match_service.dart';
 
 class LocalBallEvent {
   final int runs;
@@ -31,6 +35,26 @@ class LocalBallEvent {
     required this.batterName,
     required this.bowlerName,
   });
+
+  Map<String, dynamic> toJson() => {
+        'runs': runs,
+        'isWicket': isWicket,
+        'wicketType': wicketType,
+        'isExtra': isExtra,
+        'extraType': extraType,
+        'batterName': batterName,
+        'bowlerName': bowlerName,
+      };
+
+  factory LocalBallEvent.fromJson(Map<String, dynamic> json) => LocalBallEvent(
+        runs: json['runs'] as int? ?? 0,
+        isWicket: json['isWicket'] as bool? ?? false,
+        wicketType: json['wicketType'] as String?,
+        isExtra: json['isExtra'] as bool? ?? false,
+        extraType: json['extraType'] as String?,
+        batterName: json['batterName'] as String? ?? '',
+        bowlerName: json['bowlerName'] as String? ?? '',
+      );
 }
 
 // --- Local Data Models for Stats & Undo Stack ---
@@ -194,37 +218,57 @@ class _ScoringScreenState extends ConsumerState<ScoringScreen> {
         _battingTeam == _setup.teamAName ? _setup.teamBPlayers : _setup.teamAPlayers;
 
     // Initialize batting crease
-    if (_battingPlayers.isNotEmpty) {
-      _striker = _battingPlayers[0].name;
-      _batterOrder.add(_striker!);
+    if (widget.lineup != null) {
+      _striker = widget.lineup!.openingBat1.name;
+      _nonStriker = widget.lineup!.openingBat2.name;
+      _currentBowler = widget.lineup!.openingBowler.name;
+      _batterOrder.addAll([_striker!, _nonStriker!]);
       _batterStats[_striker!] = BatterStats(name: _striker!);
-    }
-    if (_battingPlayers.length > 1) {
-      _nonStriker = _battingPlayers[1].name;
-      _batterOrder.add(_nonStriker!);
       _batterStats[_nonStriker!] = BatterStats(name: _nonStriker!);
-    }
-
-    // Initialize bowling
-    if (_fieldingPlayers.isNotEmpty) {
-      _currentBowler = _fieldingPlayers.firstWhere(
-          (p) => p.role == PlayerRole.bowler,
-          orElse: () => _fieldingPlayers[0]).name;
       _bowlerStats[_currentBowler!] = BowlerStats(name: _currentBowler!);
+    } else {
+      if (_battingPlayers.isNotEmpty) {
+        _striker = _battingPlayers[0].name;
+        _batterOrder.add(_striker!);
+        _batterStats[_striker!] = BatterStats(name: _striker!);
+      }
+      if (_battingPlayers.length > 1) {
+        _nonStriker = _battingPlayers[1].name;
+        _batterOrder.add(_nonStriker!);
+        _batterStats[_nonStriker!] = BatterStats(name: _nonStriker!);
+      }
+
+      // Initialize bowling
+      if (_fieldingPlayers.isNotEmpty) {
+        _currentBowler = _fieldingPlayers.firstWhere(
+            (p) => p.role == PlayerRole.bowler,
+            orElse: () => _fieldingPlayers[0]).name;
+        _bowlerStats[_currentBowler!] = BowlerStats(name: _currentBowler!);
+      }
     }
 
     // Save initial state in history
     _commitState();
+
+    // Check if an ongoing match session exists to restore
+    final ongoingId = _setup.id.isNotEmpty
+        ? _setup.id
+        : 'quick_${_setup.teamAName}_vs_${_setup.teamBName}';
+    _restoreOngoingMatchIfAny(ongoingId);
 
     // Init live scoring push for scheduled matches
     final insForgeId = _setup.id;
     if (!_setup.isQuickMatch && insForgeId.isNotEmpty) {
       _liveService.init(insForgeId);
     }
+
+    // Keep screen awake during match scoring if enabled
+    WakelockService.instance.enableIfAllowed();
   }
 
   @override
   void dispose() {
+    WakelockService.instance.disable();
     _liveService.dispose();
     super.dispose();
   }
@@ -256,6 +300,120 @@ class _ScoringScreenState extends ConsumerState<ScoringScreen> {
     // Push live update to InsForge for scheduled matches
     if (!_setup.isQuickMatch && _setup.id.isNotEmpty) {
       _pushLiveUpdate();
+    }
+
+    // Persist snapshot to avoid data loss on crash or restart
+    _saveOngoingSnapshot();
+  }
+
+  void _saveOngoingSnapshot() {
+    final ongoingId = _setup.id.isNotEmpty
+        ? _setup.id
+        : 'quick_${_setup.teamAName}_vs_${_setup.teamBName}';
+    final snapshot = {
+      'setup': _setup.toJson(),
+      'battingTeam': _battingTeam,
+      'fieldingTeam': _fieldingTeam,
+      'runs': _runs,
+      'wickets': _wickets,
+      'ballsBowled': _ballsBowled,
+      'extraRuns': _extraRuns,
+      'thisOver': _thisOver,
+      'striker': _striker,
+      'nonStriker': _nonStriker,
+      'currentBowler': _currentBowler,
+      'batterStats': _batterStats.map((k, v) => MapEntry(k, v.toJson())),
+      'bowlerStats': _bowlerStats.map((k, v) => MapEntry(k, v.toJson())),
+      'wicketsHistory': _wicketsHistory,
+      'batterOrder': _batterOrder,
+      'nextBatterIndex': _nextBatterIndex,
+      'isSecondInnings': _isSecondInnings,
+      'target': _target,
+      'firstInningsRuns': _firstInningsRuns,
+      'firstInningsWickets': _firstInningsWickets,
+      'firstInningsTeam': _firstInningsTeam,
+      'firstInningsOvers': _firstInningsOvers,
+      'firstInningsBalls': _firstInningsBalls,
+      'localBalls': _localBalls.map((b) => b.toJson()).toList(),
+      'firstInningsBallsList':
+          _firstInningsBallsList.map((b) => b.toJson()).toList(),
+    };
+    OngoingMatchService.instance.saveSnapshot(ongoingId, snapshot);
+  }
+
+  Future<void> _restoreOngoingMatchIfAny(String ongoingId) async {
+    final snapshot = await OngoingMatchService.instance.getSnapshot(ongoingId);
+    if (snapshot != null && mounted) {
+      setState(() {
+        _runs = snapshot['runs'] as int? ?? _runs;
+        _wickets = snapshot['wickets'] as int? ?? _wickets;
+        _ballsBowled = snapshot['ballsBowled'] as int? ?? _ballsBowled;
+        _extraRuns = snapshot['extraRuns'] as int? ?? _extraRuns;
+        _thisOver = (snapshot['thisOver'] as List?)?.map((e) => e.toString()).toList() ?? _thisOver;
+        _striker = snapshot['striker'] as String? ?? _striker;
+        _nonStriker = snapshot['nonStriker'] as String? ?? _nonStriker;
+        _currentBowler = snapshot['currentBowler'] as String? ?? _currentBowler;
+        _isSecondInnings = snapshot['isSecondInnings'] as bool? ?? _isSecondInnings;
+        _target = snapshot['target'] as int? ?? _target;
+        _firstInningsRuns = snapshot['firstInningsRuns'] as int? ?? _firstInningsRuns;
+        _firstInningsWickets = snapshot['firstInningsWickets'] as int? ?? _firstInningsWickets;
+        _firstInningsTeam = snapshot['firstInningsTeam'] as String? ?? _firstInningsTeam;
+        _firstInningsOvers = snapshot['firstInningsOvers'] as String? ?? _firstInningsOvers;
+        _firstInningsBalls = snapshot['firstInningsBalls'] as int? ?? _firstInningsBalls;
+        _battingTeam = snapshot['battingTeam'] as String? ?? _battingTeam;
+        _fieldingTeam = snapshot['fieldingTeam'] as String? ?? _fieldingTeam;
+
+        if (snapshot['batterStats'] != null) {
+          final map = snapshot['batterStats'] as Map<String, dynamic>;
+          _batterStats = map.map((k, v) => MapEntry(k, BatterStats.fromJson(v as Map<String, dynamic>)));
+        }
+        if (snapshot['bowlerStats'] != null) {
+          final map = snapshot['bowlerStats'] as Map<String, dynamic>;
+          _bowlerStats = map.map((k, v) => MapEntry(k, BowlerStats.fromJson(v as Map<String, dynamic>)));
+        }
+        if (snapshot['wicketsHistory'] != null) {
+          _wicketsHistory = (snapshot['wicketsHistory'] as List).map((e) => e.toString()).toList();
+        }
+        if (snapshot['batterOrder'] != null) {
+          _batterOrder = (snapshot['batterOrder'] as List).map((e) => e.toString()).toList();
+        }
+        if (snapshot['localBalls'] != null) {
+          _localBalls = (snapshot['localBalls'] as List)
+              .map((e) => LocalBallEvent.fromJson(e as Map<String, dynamic>))
+              .toList();
+        }
+        if (snapshot['firstInningsBallsList'] != null) {
+          _firstInningsBallsList = (snapshot['firstInningsBallsList'] as List)
+              .map((e) => LocalBallEvent.fromJson(e as Map<String, dynamic>))
+              .toList();
+        }
+      });
+      _commitState();
+    }
+  }
+
+  void _checkAndRecordMaidenOver() {
+    if (_currentBowler == null) return;
+    bool concededRuns = false;
+    for (final ball in _thisOver) {
+      // Wides and No-Balls always concede at least 1 run — cannot be maiden
+      if (ball.contains('Wd') || ball.contains('Nb')) {
+        concededRuns = true;
+        break;
+      }
+      // Wicket, dot ball, byes and leg-byes do NOT concede bowler runs
+      if (ball == 'W' || ball == '.') continue;
+      // Byes (e.g. '2B') and LegByes (e.g. '3LB') — runs go to extras, not bowler
+      if (ball.endsWith('LB')) continue;
+      if (ball.endsWith('B') && !ball.contains('N')) continue;
+      final runs = int.tryParse(ball);
+      if (runs != null && runs > 0) {
+        concededRuns = true;
+        break;
+      }
+    }
+    if (!concededRuns && _thisOver.isNotEmpty) {
+      _bowlerStats[_currentBowler!]?.maidens += 1;
     }
   }
 
@@ -651,7 +809,7 @@ class _ScoringScreenState extends ConsumerState<ScoringScreen> {
 
   // --- Confirm outcome logic ---
 
-  void _confirmBallOutcome() {
+  void _confirmBallOutcome() async {
     if (_selectedAction == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -672,24 +830,29 @@ class _ScoringScreenState extends ConsumerState<ScoringScreen> {
       return;
     }
 
+    if (action == 'W') {
+      await _processWicketConfirm();
+    } else {
+      setState(() {
+        if (action == 'WD') {
+          _processWideConfirm();
+        } else if (action == 'NB') {
+          _processNoBallConfirm();
+        } else if (action == 'B' || action == 'LB') {
+          _processByesConfirm(action);
+        } else {
+          final r = int.parse(action);
+          _processNormalRunsConfirm(r);
+        }
+      });
+    }
+
+    // Check for victory/loss
+    _checkInningsStatus();
+
+    // Reset selection state — deselects action buttons and hides wicket panel
     setState(() {
-      if (action == 'W') {
-        _processWicketConfirm();
-      } else if (action == 'WD') {
-        _processWideConfirm();
-      } else if (action == 'NB') {
-        _processNoBallConfirm();
-      } else if (action == 'B' || action == 'LB') {
-        _processByesConfirm(action);
-      } else {
-        final r = int.parse(action);
-        _processNormalRunsConfirm(r);
-      }
-
-      // Check for victory/loss
-      _checkInningsStatus();
-
-      // Reset selection state
+      _selectedAction = null;
       _selectedExtraRuns = 0;
       _selectedWicketType = null;
       _selectedWicketBatter = null;
@@ -702,8 +865,14 @@ class _ScoringScreenState extends ConsumerState<ScoringScreen> {
     if (_striker != null) {
       _batterStats[_striker!]?.runs += r;
       _batterStats[_striker!]?.balls += 1;
-      if (r == 4) _batterStats[_striker!]?.fours += 1;
-      if (r == 6) _batterStats[_striker!]?.sixes += 1;
+      if (r == 4) {
+        _batterStats[_striker!]?.fours += 1;
+        SoundService.instance.playFour();
+      }
+      if (r == 6) {
+        _batterStats[_striker!]?.sixes += 1;
+        SoundService.instance.playSix();
+      }
     }
 
     if (_currentBowler != null) {
@@ -727,6 +896,7 @@ class _ScoringScreenState extends ConsumerState<ScoringScreen> {
     _commitState();
 
     if (_ballsBowled % 6 == 0 && !_isInningsOver()) {
+      _checkAndRecordMaidenOver();
       // End of over swap strike
       final temp = _striker;
       _striker = _nonStriker;
@@ -793,6 +963,7 @@ class _ScoringScreenState extends ConsumerState<ScoringScreen> {
 
   void _processByesConfirm(String type) {
     final extra = _selectedExtraRuns;
+    final facingBatter = _striker ?? 'Unknown'; // capture BEFORE any swap
     _runs += extra;
     _extraRuns += extra;
 
@@ -807,7 +978,7 @@ class _ScoringScreenState extends ConsumerState<ScoringScreen> {
     _ballsBowled += 1;
 
     // Append runs with type suffix if provided
-    _thisOver.add(type.isNotEmpty ? '$extra$type' : extra.toString());
+    _thisOver.add(extra == 0 ? '.' : '$extra$type');
 
     if (extra % 2 != 0) {
       final temp = _striker;
@@ -815,10 +986,11 @@ class _ScoringScreenState extends ConsumerState<ScoringScreen> {
       _nonStriker = temp;
     }
 
-    _localBalls.add(LocalBallEvent(runs: extra, isWicket: false, isExtra: true, extraType: type == 'B' ? 'Bye' : 'LegBye', batterName: _striker ?? 'Unknown', bowlerName: _currentBowler ?? 'Unknown'));
+    _localBalls.add(LocalBallEvent(runs: extra, isWicket: false, isExtra: true, extraType: type == 'B' ? 'Bye' : 'LegBye', batterName: facingBatter, bowlerName: _currentBowler ?? 'Unknown'));
     _commitState();
 
     if (_ballsBowled % 6 == 0 && !_isInningsOver()) {
+      _checkAndRecordMaidenOver();
       final temp = _striker;
       _striker = _nonStriker;
       _nonStriker = temp;
@@ -827,13 +999,19 @@ class _ScoringScreenState extends ConsumerState<ScoringScreen> {
   }
 
 
-  void _processWicketConfirm() {
+  Future<void> _processWicketConfirm() async {
     final isStrikerOut = _selectedWicketBatter != 'Non-Striker';
     final outPlayerName = isStrikerOut ? _striker! : _nonStriker!;
 
     _wickets++;
+    SoundService.instance.playWicket();
     _batterStats[outPlayerName]?.isOut = true;
     _batterStats[outPlayerName]?.dismissalInfo = _buildDismissalString();
+
+    // The striker faced this delivery
+    if (_striker != null) {
+      _batterStats[_striker!]?.balls += 1;
+    }
 
     if (_selectedWicketType != 'Run Out' && _currentBowler != null) {
       _bowlerStats[_currentBowler!]?.wickets += 1;
@@ -847,14 +1025,28 @@ class _ScoringScreenState extends ConsumerState<ScoringScreen> {
     _thisOver.add('W');
     _wicketsHistory.add(outPlayerName);
 
-    _localBalls.add(LocalBallEvent(runs: 0, isWicket: true, wicketType: _selectedWicketType, isExtra: false, batterName: outPlayerName, bowlerName: _currentBowler ?? 'Unknown'));
+    _localBalls.add(LocalBallEvent(
+      runs: 0,
+      isWicket: true,
+      wicketType: _selectedWicketType,
+      isExtra: false,
+      batterName: outPlayerName,
+      bowlerName: _currentBowler ?? 'Unknown',
+    ));
     _commitState();
 
     if (!_isInningsOver()) {
-      _promptIncomingBatter(outPlayerName, isStrikerOut);
+      // 1. Wait for incoming batter modal to complete first
+      await _promptIncomingBatter(outPlayerName, isStrikerOut);
 
-      if (_ballsBowled % 6 == 0) {
-        _promptOverCompleteBowlerChange();
+      // 2. If end of over, check maiden, swap strike, and prompt bowler change
+      if (_ballsBowled % 6 == 0 && !_isInningsOver()) {
+        _checkAndRecordMaidenOver();
+        final temp = _striker;
+        _striker = _nonStriker;
+        _nonStriker = temp;
+        _commitState();
+        await _promptOverCompleteBowlerChange();
       }
     }
   }
@@ -880,7 +1072,7 @@ class _ScoringScreenState extends ConsumerState<ScoringScreen> {
     }
   }
 
-  void _promptIncomingBatter(String outPlayerName, bool isStrikerOut) {
+  Future<void> _promptIncomingBatter(String outPlayerName, bool isStrikerOut) async {
     final unbatted = _battingPlayers
         .where((p) => !_batterOrder.contains(p.name))
         .toList();
@@ -889,7 +1081,7 @@ class _ScoringScreenState extends ConsumerState<ScoringScreen> {
       return;
     }
 
-    showModalBottomSheet(
+    await showModalBottomSheet(
       context: context,
       backgroundColor: const Color(0xFF0F172A),
       isDismissible: false,
@@ -952,10 +1144,21 @@ class _ScoringScreenState extends ConsumerState<ScoringScreen> {
     );
   }
 
-  void _promptOverCompleteBowlerChange() {
-    final list =
-        _fieldingPlayers.where((p) => p.name != _currentBowler).toList();
-    showModalBottomSheet(
+  /// Tracks the bowler who bowled the previous over — cannot bowl consecutive overs.
+  String? _previousOverBowler;
+
+  Future<void> _promptOverCompleteBowlerChange() async {
+    final maxOvers = _setup.maxOversPerBowler;
+    // Exclude current bowler AND the bowler of the previous over (no consecutive overs)
+    final String? prevBowler = _previousOverBowler;
+    final list = _fieldingPlayers
+        .where((p) => p.name != _currentBowler)
+        .toList();
+    final bool allMaxed = maxOvers > 0 &&
+        list.every((p) =>
+            ((_bowlerStats[p.name]?.ballsBowled ?? 0) ~/ 6) >= maxOvers);
+
+    await showModalBottomSheet(
       context: context,
       backgroundColor: const Color(0xFF0F172A),
       isDismissible: false,
@@ -985,23 +1188,58 @@ class _ScoringScreenState extends ConsumerState<ScoringScreen> {
                   itemCount: list.length,
                   itemBuilder: (context, idx) {
                     final p = list[idx];
+                    final oversBowled =
+                        (_bowlerStats[p.name]?.ballsBowled ?? 0) ~/ 6;
+                    final isQuotaFinished =
+                        !allMaxed && maxOvers > 0 && oversBowled >= maxOvers;
+                    // Consecutive over restriction — grey out but allow if ALL others are ineligible
+                    final isConsecutive = !allMaxed && p.name == prevBowler;
+                    final isDisabled = isQuotaFinished || isConsecutive;
+
+                    String subtitle;
+                    if (isQuotaFinished) {
+                      subtitle = '${p.role.displayName} • $oversBowled/${maxOvers > 0 ? maxOvers : '∞'} ov (Quota Completed)';
+                    } else if (isConsecutive) {
+                      subtitle = '${p.role.displayName} • $oversBowled ov (Bowled previous over)';
+                    } else {
+                      subtitle = maxOvers > 0
+                          ? '${p.role.displayName} • $oversBowled/$maxOvers ov'
+                          : '${p.role.displayName} • $oversBowled ov';
+                    }
+
                     return ListTile(
-                      title: Text(p.name,
-                          style: GoogleFonts.inter(color: Colors.white)),
-                      subtitle: Text(p.role.displayName,
-                          style: GoogleFonts.inter(color: Colors.grey)),
-                      onTap: () {
-                        setState(() {
-                          _currentBowler = p.name;
-                          if (!_bowlerStats.containsKey(_currentBowler)) {
-                            _bowlerStats[_currentBowler!] =
-                                BowlerStats(name: _currentBowler!);
-                          }
-                          _thisOver.clear();
-                        });
-                        Navigator.pop(context);
-                        _commitState();
-                      },
+                      title: Text(
+                        p.name,
+                        style: GoogleFonts.inter(
+                          color: isDisabled ? Colors.white38 : Colors.white,
+                          fontWeight:
+                              isDisabled ? FontWeight.normal : FontWeight.w600,
+                        ),
+                      ),
+                      subtitle: Text(
+                        subtitle,
+                        style: GoogleFonts.inter(
+                          color: isDisabled
+                              ? Colors.redAccent.shade200
+                              : Colors.grey,
+                        ),
+                      ),
+                      enabled: !isDisabled,
+                      onTap: isDisabled
+                          ? null
+                          : () {
+                              setState(() {
+                                _previousOverBowler = _currentBowler;
+                                _currentBowler = p.name;
+                                if (!_bowlerStats.containsKey(_currentBowler)) {
+                                  _bowlerStats[_currentBowler!] =
+                                      BowlerStats(name: _currentBowler!);
+                                }
+                                _thisOver.clear();
+                              });
+                              Navigator.pop(context);
+                              _commitState();
+                            },
                     );
                   },
                 ),
@@ -1036,6 +1274,15 @@ class _ScoringScreenState extends ConsumerState<ScoringScreen> {
   }
 
   void _endFirstInnings() {
+    NotificationService.instance.showInningsBreakNotification(
+      battingTeam: _battingTeam,
+      runs: _runs,
+      wickets: _wickets,
+      overs: '${_ballsBowled ~/ 6}.${_ballsBowled % 6}',
+      chasingTeam: _fieldingTeam,
+      target: _runs + 1,
+    );
+
     final nextTeam = _fieldingTeam;
     showDialog(
       context: context,
@@ -1129,29 +1376,122 @@ class _ScoringScreenState extends ConsumerState<ScoringScreen> {
       _wicketsHistory.clear();
       _batterOrder.clear();
       _nextBatterIndex = 2;
+      _previousOverBowler = null;
 
-      // Default striker / non-striker
-      if (_battingPlayers.isNotEmpty) {
-        _striker = _battingPlayers[0].name;
-        _batterOrder.add(_striker!);
-        _batterStats[_striker!] = BatterStats(name: _striker!);
-      }
-      if (_battingPlayers.length > 1) {
-        _nonStriker = _battingPlayers[1].name;
-        _batterOrder.add(_nonStriker!);
-        _batterStats[_nonStriker!] = BatterStats(name: _nonStriker!);
-      }
-
-      // Default bowler
-      if (_fieldingPlayers.isNotEmpty) {
-        _currentBowler = _fieldingPlayers.firstWhere(
-            (p) => p.role == PlayerRole.bowler,
-            orElse: () => _fieldingPlayers[0]).name;
-        _bowlerStats[_currentBowler!] = BowlerStats(name: _currentBowler!);
-      }
+      // Clear active players — will be chosen via opener selection prompt
+      _striker = null;
+      _nonStriker = null;
+      _currentBowler = null;
 
       _commitState();
     });
+
+    // Prompt for 2nd innings openers after state is settled
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _promptSecondInningsLineup();
+    });
+  }
+
+  void _promptSecondInningsLineup() {
+    final battingTeamName = _battingTeam;
+    final fieldingTeamName = _fieldingTeam;
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) {
+        String? opener1;
+        String? opener2;
+        String? openBowler;
+        return StatefulBuilder(
+          builder: (ctx, setDlg) {
+            return AlertDialog(
+              backgroundColor: const Color(0xFF1E293B),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+              title: Text('2nd INNINGS LINEUP', style: GoogleFonts.inter(fontWeight: FontWeight.bold, color: Colors.white)),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('$battingTeamName — Opening Batters', style: GoogleFonts.inter(color: Colors.grey, fontSize: 13)),
+                    const SizedBox(height: 8),
+                    DropdownButtonFormField<String>(
+                      dropdownColor: const Color(0xFF0F172A),
+                      decoration: InputDecoration(
+                        labelText: 'Striker',
+                        labelStyle: GoogleFonts.inter(color: Colors.grey),
+                        filled: true,
+                        fillColor: const Color(0xFF0F172A),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
+                      ),
+                      items: _battingPlayers.map((p) => DropdownMenuItem(value: p.name, child: Text(p.name, style: GoogleFonts.inter(color: Colors.white)))).toList(),
+                      onChanged: (v) => setDlg(() => opener1 = v),
+                    ),
+                    const SizedBox(height: 8),
+                    DropdownButtonFormField<String>(
+                      dropdownColor: const Color(0xFF0F172A),
+                      decoration: InputDecoration(
+                        labelText: 'Non-Striker',
+                        labelStyle: GoogleFonts.inter(color: Colors.grey),
+                        filled: true,
+                        fillColor: const Color(0xFF0F172A),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
+                      ),
+                      items: _battingPlayers.map((p) => DropdownMenuItem(value: p.name, child: Text(p.name, style: GoogleFonts.inter(color: Colors.white)))).toList(),
+                      onChanged: (v) => setDlg(() => opener2 = v),
+                    ),
+                    const SizedBox(height: 16),
+                    Text('$fieldingTeamName — Opening Bowler', style: GoogleFonts.inter(color: Colors.grey, fontSize: 13)),
+                    const SizedBox(height: 8),
+                    DropdownButtonFormField<String>(
+                      dropdownColor: const Color(0xFF0F172A),
+                      decoration: InputDecoration(
+                        labelText: 'Bowler',
+                        labelStyle: GoogleFonts.inter(color: Colors.grey),
+                        filled: true,
+                        fillColor: const Color(0xFF0F172A),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
+                      ),
+                      items: _fieldingPlayers.map((p) => DropdownMenuItem(value: p.name, child: Text(p.name, style: GoogleFonts.inter(color: Colors.white)))).toList(),
+                      onChanged: (v) => setDlg(() => openBowler = v),
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFBA0013),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  onPressed: (opener1 == null || opener2 == null || openBowler == null || opener1 == opener2)
+                      ? null
+                      : () {
+                          setState(() {
+                            _striker = opener1;
+                            _nonStriker = opener2;
+                            _currentBowler = openBowler;
+                            _batterOrder.addAll([_striker!, _nonStriker!]);
+                            _batterStats[_striker!] = BatterStats(name: _striker!);
+                            _batterStats[_nonStriker!] = BatterStats(name: _nonStriker!);
+                            _bowlerStats[_currentBowler!] = BowlerStats(name: _currentBowler!);
+                          });
+                          Navigator.pop(ctx);
+                          _commitState();
+                        },
+                  child: Text(
+                    opener1 == opener2 && opener1 != null
+                        ? 'Striker ≠ Non-Striker'
+                        : 'Start Innings',
+                    style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
   }
 
   void _endMatch({String? winner, required bool tie}) async {
@@ -1162,12 +1502,24 @@ class _ScoringScreenState extends ConsumerState<ScoringScreen> {
     } else {
       final runsDiff = (_target! - 1) - _runs;
       if (winner == _battingTeam) {
-        final wktsDiff = _battingPlayers.length - 1 - _wickets;
+        final totalAllowedWickets = _battingPlayers.isNotEmpty
+            ? (_battingPlayers.length - 1)
+            : 10;
+        final wktsDiff = (totalAllowedWickets - _wickets).clamp(0, 10);
         message = 'Won the Match! 🎉\nBy\n$wktsDiff Wickets';
       } else {
         message = 'Won the Match! 🎉\nBy\n$runsDiff Runs';
       }
     }
+
+    SoundService.instance.playMatchEnd();
+    final cleanResult = tie
+        ? 'Match Tied!'
+        : '${winner ?? "Team"} ${message.replaceAll("\n", " ")}';
+    NotificationService.instance.showMatchCompleteNotification(
+      matchTitle: '${_setup.teamAName} vs ${_setup.teamBName}',
+      resultSummary: cleanResult,
+    );
 
     String format;
     if (_setup.overs <= 5) {
@@ -1193,25 +1545,60 @@ class _ScoringScreenState extends ConsumerState<ScoringScreen> {
       final db = ref.read(databaseServiceProvider);
 
       await db.transaction(() async {
-        // 1. Insert Teams
-        final tAId = await db.into(db.teams).insert(TeamsCompanion.insert(name: _setup.teamAName));
-        final tBId = await db.into(db.teams).insert(TeamsCompanion.insert(name: _setup.teamBName));
+        // 1. Find or Insert Teams (deduplicate)
+        int tAId;
+        final existingTeamA = await (db.select(db.teams)
+              ..where((t) => t.name.equals(_setup.teamAName)))
+            .getSingleOrNull();
+        if (existingTeamA != null) {
+          tAId = existingTeamA.id;
+        } else {
+          tAId = await db
+              .into(db.teams)
+              .insert(TeamsCompanion.insert(name: _setup.teamAName));
+        }
 
-        // 2. Insert Players
+        int tBId;
+        final existingTeamB = await (db.select(db.teams)
+              ..where((t) => t.name.equals(_setup.teamBName)))
+            .getSingleOrNull();
+        if (existingTeamB != null) {
+          tBId = existingTeamB.id;
+        } else {
+          tBId = await db
+              .into(db.teams)
+              .insert(TeamsCompanion.insert(name: _setup.teamBName));
+        }
+
+        // 2. Find or Insert Players (deduplicate)
         Map<String, int> playerMap = {};
         for (var p in _setup.teamAPlayers) {
-          final pId = await db.into(db.players).insert(PlayersCompanion.insert(
-            name: p.name,
-            teamId: drift.Value(tAId),
-          ));
-          playerMap[p.name] = pId;
+          final existingPlayer = await (db.select(db.players)
+                ..where((pl) => pl.name.equals(p.name) & pl.teamId.equals(tAId)))
+              .getSingleOrNull();
+          if (existingPlayer != null) {
+            playerMap[p.name] = existingPlayer.id;
+          } else {
+            final pId = await db.into(db.players).insert(PlayersCompanion.insert(
+              name: p.name,
+              teamId: drift.Value(tAId),
+            ));
+            playerMap[p.name] = pId;
+          }
         }
         for (var p in _setup.teamBPlayers) {
-          final pId = await db.into(db.players).insert(PlayersCompanion.insert(
-            name: p.name,
-            teamId: drift.Value(tBId),
-          ));
-          playerMap[p.name] = pId;
+          final existingPlayer = await (db.select(db.players)
+                ..where((pl) => pl.name.equals(p.name) & pl.teamId.equals(tBId)))
+              .getSingleOrNull();
+          if (existingPlayer != null) {
+            playerMap[p.name] = existingPlayer.id;
+          } else {
+            final pId = await db.into(db.players).insert(PlayersCompanion.insert(
+              name: p.name,
+              teamId: drift.Value(tBId),
+            ));
+            playerMap[p.name] = pId;
+          }
         }
 
         // 3. Insert Match
@@ -1287,10 +1674,18 @@ class _ScoringScreenState extends ConsumerState<ScoringScreen> {
       });
 
       await ref.read(matchHistoryProvider.notifier).loadMatches();
+      ref.invalidate(recentMatchesProvider);
+      ref.invalidate(liveMatchProvider);
       // Trigger an immediate sync attempt — SyncManager will retry later on reconnect if this fails.
       if (matchId != null) {
         ref.read(syncManagerProvider).onMatchCompleted(matchId!);
       }
+
+      // Clear ongoing match snapshot since match is fully saved
+      final ongoingId = _setup.id.isNotEmpty
+          ? _setup.id
+          : 'quick_${_setup.teamAName}_vs_${_setup.teamBName}';
+      await OngoingMatchService.instance.clearSnapshot(ongoingId);
 
       // Mark scheduled match as completed in InsForge
       if (!_setup.isQuickMatch && _setup.id.isNotEmpty) {
@@ -1334,6 +1729,7 @@ class _ScoringScreenState extends ConsumerState<ScoringScreen> {
         innings2Score: '$_runs/$_wickets',
         innings2Overs: '${_ballsBowled ~/ 6}.${_ballsBowled % 6} overs',
         ballType: _setup.ballType,
+        setupData: _setup,
       );
       context.go('/match-result', extra: data);
     }
@@ -1556,15 +1952,27 @@ class _ScoringScreenState extends ConsumerState<ScoringScreen> {
               backgroundColor: const Color(0xFF202A46),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             ),
-            onPressed: () {
-              // Confirm wicket with current selections
-              _processWicketConfirm();
-              // Reset selections for next wicket
+            onPressed: () async {
+              // Clear selection FIRST so panel closes and W button deselects
               setState(() {
-                _selectedWicketType = null;
-                _selectedWicketBatter = null;
-                _selectedWicketFielder = null;
+                _selectedAction = null;
+                _selectedExtraRuns = 0;
+                _selectedWicketType = _selectedWicketType; // keep for processing below
+                _selectedWicketBatter = _selectedWicketBatter;
+                _selectedWicketFielder = _selectedWicketFielder;
               });
+              // Process wicket asynchronously (may show batter/bowler selection sheets)
+              await _processWicketConfirm();
+              // Check innings status ONCE after all dialogs are complete
+              _checkInningsStatus();
+              // Now clear wicket fields
+              if (mounted) {
+                setState(() {
+                  _selectedWicketType = null;
+                  _selectedWicketBatter = null;
+                  _selectedWicketFielder = null;
+                });
+              }
             },
             child: Text('Confirm Wicket',
                 style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.bold)),

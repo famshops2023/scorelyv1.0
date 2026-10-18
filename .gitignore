@@ -58,3 +58,9 @@ app.*.map.json
 .roo
 .trae
 .windsurf
+
+# Android Keystore & Release Signing
+*.jks
+*.keystore
+/android/key.properties
+.env.local

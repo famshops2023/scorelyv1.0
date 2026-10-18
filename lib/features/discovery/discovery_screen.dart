@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
 
+import '../../core/config/insforge_config.dart';
 import '../teams/providers/teams_provider.dart';
 
 class DiscoveryItem {
@@ -27,8 +28,17 @@ class DiscoveryItem {
 
 class DiscoveryScreen extends ConsumerStatefulWidget {
   final bool isSelectionMode;
+  final String? initialTab;
+  final bool signedUpOnly;  // if true, only show players who have a profile_id
+  final bool multiSelect;   // if true, allow selecting multiple players
 
-  const DiscoveryScreen({super.key, this.isSelectionMode = false});
+  const DiscoveryScreen({
+    super.key,
+    this.isSelectionMode = false,
+    this.initialTab,
+    this.signedUpOnly = false,
+    this.multiSelect = false,
+  });
 
   @override
   ConsumerState<DiscoveryScreen> createState() => _DiscoveryScreenState();
@@ -44,10 +54,19 @@ class _DiscoveryScreenState extends ConsumerState<DiscoveryScreen> {
   bool _isLoading = true;
   List<DiscoveryItem> _fetchedItems = [];
 
+  // Multi-select state
+  final Set<String> _selectedRawIds = {};
+
   @override
   void initState() {
     super.initState();
-    if (widget.isSelectionMode) {
+    if (widget.initialTab != null && widget.initialTab!.isNotEmpty) {
+      final match = _tabs.firstWhere(
+        (t) => t.toLowerCase() == widget.initialTab!.toLowerCase(),
+        orElse: () => 'Players',
+      );
+      _selectedTab = match;
+    } else if (widget.isSelectionMode) {
       _selectedTab = 'Teams';
     }
     _fetchData();
@@ -62,11 +81,8 @@ class _DiscoveryScreenState extends ConsumerState<DiscoveryScreen> {
   Future<void> _fetchData() async {
     setState(() => _isLoading = true);
 
-    const baseUrl = 'https://ip53vj9s.ap-southeast.insforge.app/api/database/records';
-    const headers = {
-      'apikey': 'ik_d23aa9a406864853f254a0722fc1e56b',
-      'Authorization': 'Bearer ik_d23aa9a406864853f254a0722fc1e56b',
-    };
+    final baseUrl = InsforgeConfig.recordsUrl;
+    final headers = InsforgeConfig.headers;
 
     List<DiscoveryItem> items = [];
 
@@ -99,18 +115,30 @@ class _DiscoveryScreenState extends ConsumerState<DiscoveryScreen> {
       }
 
       // 2. Fetch players from backend database
+      // When signedUpOnly=true, only fetch players that have a linked profile_id
+      final playersUrl = widget.signedUpOnly
+          ? '$baseUrl/players?select=*&profile_id=not.is.null'
+          : '$baseUrl/players?select=*';
       final playersRes = await http.get(
-        Uri.parse('$baseUrl/players?select=*'),
+        Uri.parse(playersUrl),
         headers: headers,
       );
       if (playersRes.statusCode == 200) {
         final List<dynamic> data = json.decode(playersRes.body);
         for (var p in data) {
+          // Extra guard: skip rows without a profile_id when signedUpOnly
+          if (widget.signedUpOnly) {
+            final pid = p['profile_id'];
+            if (pid == null || pid.toString().isEmpty) continue;
+          }
           final rawId = p['id']?.toString() ?? '';
+          final playingRole = p['playing_role'] as String?;
           final rolesList = (p['roles'] as List?)?.map((e) => e.toString()).join('/') ?? '';
-          final roleStr = rolesList.isNotEmpty
-              ? rolesList
-              : (p['attribute'] as String? ?? p['role'] as String? ?? 'Cricketer');
+          final roleStr = (playingRole != null && playingRole.isNotEmpty)
+              ? playingRole
+              : (rolesList.isNotEmpty
+                  ? rolesList
+                  : (p['attribute'] as String? ?? p['role'] as String? ?? 'Cricketer'));
 
           items.add(DiscoveryItem(
             id: rawId.length >= 8 ? 'P-${rawId.substring(0, 4).toUpperCase()}' : rawId,
@@ -169,14 +197,9 @@ class _DiscoveryScreenState extends ConsumerState<DiscoveryScreen> {
 
     return allItems.where((item) {
       // Tab filter
-      if (!widget.isSelectionMode) {
-        if (_selectedTab == 'Teams' && item.type != 'team') return false;
-        if (_selectedTab == 'Players' && item.type != 'player') return false;
-        if (_selectedTab == 'Tournaments' && item.type != 'tournament') return false;
-      } else {
-        // Selection mode always forces 'team' type
-        if (item.type != 'team') return false;
-      }
+      if (_selectedTab == 'Teams' && item.type != 'team') return false;
+      if (_selectedTab == 'Players' && item.type != 'player') return false;
+      if (_selectedTab == 'Tournaments' && item.type != 'tournament') return false;
 
       // Search query filter (name, id, location, or player attribute)
       if (_searchQuery.isNotEmpty) {
@@ -196,9 +219,10 @@ class _DiscoveryScreenState extends ConsumerState<DiscoveryScreen> {
   @override
   Widget build(BuildContext context) {
     final filtered = _filteredItems;
+    final isMulti = widget.multiSelect && widget.isSelectionMode;
 
     return Scaffold(
-      backgroundColor: const Color(0xFF111317), // surface
+      backgroundColor: const Color(0xFF111317),
       appBar: AppBar(
         backgroundColor: const Color(0xFF111317),
         elevation: 0,
@@ -207,16 +231,43 @@ class _DiscoveryScreenState extends ConsumerState<DiscoveryScreen> {
           onPressed: () => context.pop(),
         ),
         title: Text(
-          widget.isSelectionMode ? 'Select Team' : 'Discovery',
+          isMulti
+              ? (_selectedRawIds.isEmpty
+                  ? 'Select Players'
+                  : '${_selectedRawIds.length} selected')
+              : widget.isSelectionMode
+                  ? (_selectedTab == 'Players' ? 'Select Player' : 'Select Team')
+                  : 'Discovery',
           style: GoogleFonts.plusJakartaSans(
-            fontSize: 24,
+            fontSize: 20,
             fontWeight: FontWeight.w700,
             color: Colors.white,
           ),
         ),
+        actions: [
+          if (isMulti && _selectedRawIds.isNotEmpty)
+            TextButton(
+              onPressed: () {
+                final selected = _fetchedItems
+                    .where((i) => _selectedRawIds.contains(i.rawId))
+                    .toList();
+                context.pop(selected);
+              },
+              child: Text(
+                'Done',
+                style: GoogleFonts.inter(
+                  color: const Color(0xFFBA0013),
+                  fontWeight: FontWeight.w700,
+                  fontSize: 15,
+                ),
+              ),
+            ),
+        ],
       ),
-      body: Column(
+      body: Stack(
         children: [
+          Column(
+            children: [
           // Search Bar
           Padding(
             padding: const EdgeInsets.all(16.0),
@@ -250,19 +301,18 @@ class _DiscoveryScreenState extends ConsumerState<DiscoveryScreen> {
             ),
           ),
 
-          // Filter Tabs (only if not in selection mode)
-          if (!widget.isSelectionMode)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: Row(
-                  children: _tabs.map((tab) => _buildTab(tab)).toList(),
-                ),
+          // Filter Tabs
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0),
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: _tabs.map((tab) => _buildTab(tab)).toList(),
               ),
             ),
+          ),
 
-          if (!widget.isSelectionMode) const SizedBox(height: 16),
+          const SizedBox(height: 16),
 
           // List with Pull-To-Refresh
           Expanded(
@@ -313,13 +363,51 @@ class _DiscoveryScreenState extends ConsumerState<DiscoveryScreen> {
                         : ListView.builder(
                             padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
                             itemCount: filtered.length,
+                            // Extra bottom padding so items aren't hidden under the confirm button
                             itemBuilder: (context, index) {
                               final item = filtered[index];
                               return _buildItemCard(item);
                             },
                           ),
                   ),
+              ),
+            ],
           ),
+
+          // ── Floating confirm button for multi-select ─────────────────────
+          if (isMulti && _selectedRawIds.isNotEmpty)
+            Positioned(
+              left: 16,
+              right: 16,
+              bottom: 24,
+              child: SafeArea(
+                top: false,
+                child: ElevatedButton(
+                  onPressed: () {
+                    final selected = _fetchedItems
+                        .where((i) => _selectedRawIds.contains(i.rawId))
+                        .toList();
+                    context.pop(selected);
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFBA0013),
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    elevation: 4,
+                  ),
+                  child: Text(
+                    'Add ${_selectedRawIds.length} Player${_selectedRawIds.length == 1 ? '' : 's'} to Squad',
+                    style: GoogleFonts.inter(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 15,
+                    ),
+                  ),
+                ),
+              ),
+            ),
         ],
       ),
     );
@@ -349,13 +437,24 @@ class _DiscoveryScreenState extends ConsumerState<DiscoveryScreen> {
   }
 
   Widget _buildItemCard(DiscoveryItem item) {
+    final isMulti = widget.multiSelect && widget.isSelectionMode;
+    final isSelected = _selectedRawIds.contains(item.rawId);
+
     return GestureDetector(
       onTap: () {
-        if (widget.isSelectionMode) {
-          context.pop(item.name);
+        if (isMulti) {
+          // Toggle selection
+          setState(() {
+            if (isSelected) {
+              _selectedRawIds.remove(item.rawId);
+            } else {
+              _selectedRawIds.add(item.rawId);
+            }
+          });
+        } else if (widget.isSelectionMode) {
+          context.pop(item);
         } else {
           if (item.type == 'team') {
-            // Use rawId (UUID) for team-squad navigation
             context.push('/team-squad', extra: {
               'teamId': item.rawId,
               'readOnly': true,
@@ -369,9 +468,12 @@ class _DiscoveryScreenState extends ConsumerState<DiscoveryScreen> {
         margin: const EdgeInsets.only(bottom: 12),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: const Color(0xFF1e2024),
+          color: isSelected ? const Color(0xFF2A0A0D) : const Color(0xFF1e2024),
           borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: const Color(0xFF333539)),
+          border: Border.all(
+            color: isSelected ? const Color(0xFFBA0013) : const Color(0xFF333539),
+            width: isSelected ? 1.5 : 1,
+          ),
         ),
         child: Row(
           children: [
@@ -427,7 +529,7 @@ class _DiscoveryScreenState extends ConsumerState<DiscoveryScreen> {
                           style: GoogleFonts.inter(
                             fontSize: 14,
                             fontWeight: FontWeight.w600,
-                            color: const Color(0xFF3ce36a), // Tertiary Green
+                            color: const Color(0xFF3ce36a),
                           ),
                         ),
                       ],
@@ -450,6 +552,26 @@ class _DiscoveryScreenState extends ConsumerState<DiscoveryScreen> {
                 ],
               ),
             ),
+            // Multi-select checkbox
+            if (isMulti) ...[
+              const SizedBox(width: 12),
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 150),
+                width: 24,
+                height: 24,
+                decoration: BoxDecoration(
+                  color: isSelected ? const Color(0xFFBA0013) : Colors.transparent,
+                  borderRadius: BorderRadius.circular(6),
+                  border: Border.all(
+                    color: isSelected ? const Color(0xFFBA0013) : const Color(0xFF5A6278),
+                    width: 2,
+                  ),
+                ),
+                child: isSelected
+                    ? const Icon(Icons.check, color: Colors.white, size: 16)
+                    : null,
+              ),
+            ],
           ],
         ),
       ),

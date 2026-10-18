@@ -3,19 +3,15 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
+import '../../../core/config/insforge_config.dart';
 import '../match_setup_screen.dart';
 import '../../../providers/profile_provider.dart';
 
 class PendingMatchesNotifier extends Notifier<List<MatchSetupData>> {
   static const _key = 'pending_matches_v1';
   
-  static const _url = 'https://ip53vj9s.ap-southeast.insforge.app/api/database/records/pending_matches';
-  static const _headers = {
-    'apikey': 'ik_d23aa9a406864853f254a0722fc1e56b',
-    'Authorization': 'Bearer ik_d23aa9a406864853f254a0722fc1e56b',
-    'Content-Type': 'application/json',
-    'Prefer': 'return=representation',
-  };
+  static String get _url => '${InsforgeConfig.recordsUrl}/pending_matches';
+  static Map<String, String> get _headers => InsforgeConfig.headers;
 
   @override
   List<MatchSetupData> build() {

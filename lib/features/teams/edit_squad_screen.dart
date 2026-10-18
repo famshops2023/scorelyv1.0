@@ -10,6 +10,7 @@ import 'package:share_plus/share_plus.dart';
 
 import 'providers/teams_provider.dart';
 import '../../providers/profile_provider.dart';
+import '../discovery/discovery_screen.dart';
 
 class EditSquadScreen extends ConsumerStatefulWidget {
   final String teamId;
@@ -29,14 +30,11 @@ class _EditSquadScreenState extends ConsumerState<EditSquadScreen> {
     members: [],
   );
   bool _isLoading = true;
-  bool _showAddPlayerCard = false;
-  List<String> _newPlayerRoles = [];
   String? _localLogoPath;
   final TextEditingController _teamNameController = TextEditingController();
   final TextEditingController _cityController = TextEditingController();
   final TextEditingController _stateController = TextEditingController();
   final TextEditingController _countryController = TextEditingController();
-  final TextEditingController _addPlayerController = TextEditingController();
 
   @override
   void initState() {
@@ -76,7 +74,11 @@ class _EditSquadScreenState extends ConsumerState<EditSquadScreen> {
   /// Generates the deep-link invite URL for this team.
   String _buildInviteLink() {
     final code = _team.teamCode.isNotEmpty ? _team.teamCode : _team.id;
-    return 'https://scorely.app/join?team=$code';
+    final name = _teamNameController.text.trim().isNotEmpty
+        ? _teamNameController.text.trim()
+        : _team.name;
+    final encodedName = Uri.encodeComponent(name);
+    return 'scorely://join?team=$code${encodedName.isNotEmpty ? '&name=$encodedName' : ''}';
   }
 
   /// Copies [text] to clipboard and shows a SnackBar.
@@ -98,7 +100,11 @@ class _EditSquadScreenState extends ConsumerState<EditSquadScreen> {
 
   /// Shows the invite bottom sheet with QR code and share options.
   void _showInviteSheet() {
+    if (!_validateMandatoryFields(actionName: 'inviting players')) return;
     final link = _buildInviteLink();
+    final displayTeamName = _teamNameController.text.trim().isNotEmpty
+        ? _teamNameController.text.trim()
+        : _team.name;
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -170,7 +176,10 @@ class _EditSquadScreenState extends ConsumerState<EditSquadScreen> {
 
               // Link row
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 12,
+                ),
                 decoration: BoxDecoration(
                   color: const Color(0xFFF7F9FC),
                   borderRadius: BorderRadius.circular(10),
@@ -221,8 +230,8 @@ class _EditSquadScreenState extends ConsumerState<EditSquadScreen> {
                     SharePlus.instance.share(
                       ShareParams(
                         text:
-                            'Join my cricket team *${_team.name}* on Scorely! Tap to join:\n$link',
-                        subject: 'Join ${_team.name} on Scorely',
+                            'Join my cricket team *$displayTeamName* on Scorely! Tap to join:\n$link',
+                        subject: 'Join $displayTeamName on Scorely',
                         uri: Uri.parse(whatsappUrl),
                       ),
                     );
@@ -256,12 +265,16 @@ class _EditSquadScreenState extends ConsumerState<EditSquadScreen> {
                     SharePlus.instance.share(
                       ShareParams(
                         text:
-                            'Join my cricket team *${_team.name}* on Scorely! Tap to join:\n$link',
-                        subject: 'Join ${_team.name} on Scorely',
+                            'Join my cricket team *$displayTeamName* on Scorely! Tap to join:\n$link',
+                        subject: 'Join $displayTeamName on Scorely',
                       ),
                     );
                   },
-                  icon: const Icon(Icons.share, size: 18, color: Color(0xFF191C1E)),
+                  icon: const Icon(
+                    Icons.share,
+                    size: 18,
+                    color: Color(0xFF191C1E),
+                  ),
                   label: Text(
                     'Share via Other Apps',
                     style: GoogleFonts.inter(
@@ -286,23 +299,130 @@ class _EditSquadScreenState extends ConsumerState<EditSquadScreen> {
     );
   }
 
+  void _showValidationPopup({
+    required String title,
+    required String message,
+  }) {
+    showDialog<void>(
+      context: context,
+      barrierDismissible: true,
+      builder: (ctx) {
+        return Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(20),
+            child: Container(
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                border: Border(
+                  top: BorderSide(color: Color(0xFFBA0013), width: 5),
+                ),
+              ),
+              padding: const EdgeInsets.fromLTRB(24, 24, 24, 20),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 56,
+                    height: 56,
+                    decoration: const BoxDecoration(
+                      color: Color(0xFFFDEBED),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.error_outline_rounded,
+                      color: Color(0xFFBA0013),
+                      size: 28,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    title,
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                      color: const Color(0xFF191C1E),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  Text(
+                    message,
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.inter(
+                      fontSize: 13,
+                      color: const Color(0xFF575D78),
+                      height: 1.5,
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 44,
+                    child: ElevatedButton(
+                      onPressed: () => Navigator.pop(ctx),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFFBA0013),
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      child: Text(
+                        'OK, GOT IT',
+                        style: GoogleFonts.inter(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
 
+  bool _validateMandatoryFields({required String actionName}) {
+    final name = _teamNameController.text.trim();
+    final city = _cityController.text.trim();
+    final state = _stateController.text.trim();
+
+    final List<String> missing = [];
+    if (name.isEmpty) missing.add('Team Name');
+    if (city.isEmpty) missing.add('City');
+    if (state.isEmpty) missing.add('State');
+
+    if (missing.isNotEmpty) {
+      final String missingStr;
+      if (missing.length == 1) {
+        missingStr = missing.first;
+      } else if (missing.length == 2) {
+        missingStr = '${missing[0]} & ${missing[1]}';
+      } else {
+        missingStr = '${missing[0]}, ${missing[1]} & ${missing[2]}';
+      }
+
+      _showValidationPopup(
+        title: 'Enter Team Details',
+        message: 'Please enter $missingStr before $actionName.',
+      );
+      return false;
+    }
+    return true;
+  }
 
   void _saveChanges() {
+    if (!_validateMandatoryFields(actionName: 'saving team details')) return;
     final name = _teamNameController.text.trim();
-    if (name.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Please enter a team name',
-              style: GoogleFonts.inter(color: Colors.white)),
-          backgroundColor: const Color(0xFFBA0013),
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-        ),
-      );
-      return;
-    }
-    final location = '${_cityController.text}, ${_stateController.text}';
+    final location =
+        '${_cityController.text.trim()}, ${_stateController.text.trim()}';
 
     if (_team.id.isEmpty) {
       // New team — add with the logged-in user as admin creator
@@ -312,49 +432,152 @@ class _EditSquadScreenState extends ConsumerState<EditSquadScreen> {
       final newTeam = _team.copyWith(
         name: name,
         location: location,
+        createdBy: creatorId.isNotEmpty ? creatorId : null,
       );
-      ref.read(teamsProvider.notifier).addTeam(
-        newTeam,
-        creatorId: creatorId.isNotEmpty ? creatorId : null,
-        creatorName: creatorName,
-      );
+      ref
+          .read(teamsProvider.notifier)
+          .addTeam(
+            newTeam,
+            creatorId: creatorId.isNotEmpty ? creatorId : null,
+            creatorName: creatorName,
+          );
     } else {
       // Existing team — update it
+      final profile = ref.read(profileProvider);
+      final creatorId = profile.id;
+      final ownerId = (_team.createdBy != null && _team.createdBy!.isNotEmpty)
+          ? _team.createdBy
+          : (creatorId.isNotEmpty ? creatorId : null);
       final updatedTeam = _team.copyWith(
         name: name,
         location: location,
+        createdBy: ownerId,
       );
       ref.read(teamsProvider.notifier).updateTeam(updatedTeam);
     }
     context.pop();
   }
 
-  void _addNewPlayer() {
-    final name = _addPlayerController.text.trim();
-    if (name.isNotEmpty) {
-      final newMember = TeamMember(
-        id: DateTime.now().millisecondsSinceEpoch.toString(),
-        name: name,
-        roles: _newPlayerRoles.isEmpty ? ['BAT'] : List.from(_newPlayerRoles),
-      );
-      setState(() {
-        _team = _team.copyWith(members: [..._team.members, newMember]);
-        // Keep card open but reset fields for quick batch-adding
-        _newPlayerRoles = [];
-      });
-      _addPlayerController.clear();
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('${newMember.name} added to squad',
-              style: GoogleFonts.inter(color: Colors.white, fontSize: 13)),
-          backgroundColor: const Color(0xFF191C1E),
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-          duration: const Duration(seconds: 2),
-        ),
-      );
+  /// Opens Discovery in Players-only, signed-up-only, multi-select mode.
+  /// Returns a `List<DiscoveryItem>` of selected players.
+  Future<void> _openDiscoveryForPlayers() async {
+    if (!_validateMandatoryFields(actionName: 'adding players')) return;
+    final result = await context.push<dynamic>(
+      '/discovery',
+      extra: {
+        'isSelectionMode': true,
+        'initialTab': 'Players',
+        'signedUpOnly': true, // only show players with a profile_id
+        'multiSelect': true, // enable multi-select mode
+      },
+    );
+
+    if (result != null && mounted) {
+      // Handle multi-select result (List<DiscoveryItem>)
+      final List<DiscoveryItem> selected;
+      if (result is List) {
+        selected = result.whereType<DiscoveryItem>().toList();
+      } else if (result is DiscoveryItem) {
+        selected = [result];
+      } else {
+        return;
+      }
+
+      if (selected.isEmpty) return;
+
+      final List<TeamMember> toAdd = [];
+      final List<String> duplicates = [];
+
+      for (final item in selected) {
+        // Skip duplicates already in squad (by name or profileId)
+        if (_team.members.any(
+          (m) =>
+              m.name.toLowerCase() == item.name.toLowerCase() ||
+              (m.profileId != null && m.profileId == item.rawId),
+        )) {
+          duplicates.add(item.name);
+          continue;
+        }
+
+        String playerRole = 'BAT';
+        if (item.role != null && item.role!.isNotEmpty) {
+          final r = item.role!.toUpperCase();
+          if (r.contains('WK') || r.contains('WICKET')) {
+            playerRole = 'WK';
+          } else if (r.contains('AR') || r.contains('ALL')) {
+            playerRole = 'AR';
+          } else if (r.contains('BOWL')) {
+            playerRole = 'BOWL';
+          }
+        }
+
+        toAdd.add(
+          TeamMember(
+            id: item.rawId,
+            profileId: item.rawId,
+            name: item.name,
+            roles: [playerRole],
+          ),
+        );
+      }
+
+      if (toAdd.isNotEmpty) {
+        setState(() {
+          _team = _team.copyWith(members: [..._team.members, ...toAdd]);
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              toAdd.length == 1
+                  ? '${toAdd.first.name} added to squad'
+                  : '${toAdd.length} players added to squad',
+              style: GoogleFonts.inter(color: Colors.white, fontSize: 13),
+            ),
+            backgroundColor: const Color(0xFF191C1E),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+
+      if (duplicates.isNotEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              '${duplicates.join(', ')} already in squad',
+              style: GoogleFonts.inter(color: Colors.white, fontSize: 13),
+            ),
+            backgroundColor: const Color(0xFFBA0013),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
     }
   }
+
+  // --- Inline add-player method (commented out: replaced by Discovery flow) ---
+  // void _addNewPlayer() {
+  //   final name = _addPlayerController.text.trim();
+  //   if (name.isNotEmpty) {
+  //     final newMember = TeamMember(
+  //       id: DateTime.now().millisecondsSinceEpoch.toString(),
+  //       name: name,
+  //       roles: _newPlayerRoles.isEmpty ? ['BAT'] : List.from(_newPlayerRoles),
+  //     );
+  //     setState(() {
+  //       _team = _team.copyWith(members: [..._team.members, newMember]);
+  //       _newPlayerRoles = [];
+  //     });
+  //     _addPlayerController.clear();
+  //   }
+  // }
 
   void _removePlayer(String id) {
     setState(() {
@@ -566,10 +789,10 @@ class _EditSquadScreenState extends ConsumerState<EditSquadScreen> {
                         ),
                       ),
                     const SizedBox(height: 16),
-                    _buildTextField('TEAM NAME', _teamNameController),
+                    _buildTextField('TEAM NAME*', _teamNameController),
                     const SizedBox(height: 12),
                     _buildTextField(
-                      'CITY',
+                      'CITY*',
                       _cityController,
                       icon: Icons.location_on_outlined,
                     ),
@@ -577,7 +800,7 @@ class _EditSquadScreenState extends ConsumerState<EditSquadScreen> {
                     Row(
                       children: [
                         Expanded(
-                          child: _buildTextField('STATE', _stateController),
+                          child: _buildTextField('STATE*', _stateController),
                         ),
                         const SizedBox(width: 12),
                         Expanded(
@@ -651,7 +874,13 @@ class _EditSquadScreenState extends ConsumerState<EditSquadScreen> {
                           color: Color(0xFF575D78),
                           size: 20,
                         ),
-                        onPressed: () => _copyToClipboard(_buildInviteLink()),
+                        onPressed: () {
+                          if (_validateMandatoryFields(
+                            actionName: 'copying invite link',
+                          )) {
+                            _copyToClipboard(_buildInviteLink());
+                          }
+                        },
                       ),
                     ],
                   ),
@@ -739,7 +968,7 @@ class _EditSquadScreenState extends ConsumerState<EditSquadScreen> {
               ),
               const SizedBox(height: 24),
 
-              // Roster Title
+              // Roster Title & Actions
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -751,49 +980,44 @@ class _EditSquadScreenState extends ConsumerState<EditSquadScreen> {
                       fontSize: 18,
                     ),
                   ),
-                  ElevatedButton.icon(
-                    onPressed: () {
-                      setState(() {
-                        _showAddPlayerCard = !_showAddPlayerCard;
-                        if (_showAddPlayerCard) {
-                          _addPlayerController.clear();
-                          _newPlayerRoles = [];
-                        }
-                      });
-                    },
-                    icon: Icon(
-                      _showAddPlayerCard ? Icons.close : Icons.person_add_alt_1,
-                      size: 16,
-                      color: Colors.white,
-                    ),
-                    label: Text(
-                      _showAddPlayerCard ? 'Cancel' : 'Add Player',
-                      style: GoogleFonts.inter(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w700,
-                        fontSize: 10,
+                  Row(
+                    children: [
+                      ElevatedButton.icon(
+                        // Navigates directly to Discovery (Players filter, signed-up only, multi-select)
+                        onPressed: _openDiscoveryForPlayers,
+                        icon: const Icon(
+                          Icons.person_search,
+                          size: 15,
+                          color: Colors.white,
+                        ),
+                        label: Text(
+                          'Add Players',
+                          style: GoogleFonts.inter(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 11,
+                          ),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFFBA0013),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 7,
+                          ),
+                          minimumSize: Size.zero,
+                        ),
                       ),
-                    ),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: _showAddPlayerCard
-                          ? const Color(0xFF575D78)
-                          : const Color(0xFFBA0013),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 8,
-                      ),
-                      minimumSize: Size.zero,
-                    ),
+                    ],
                   ),
                 ],
               ),
               const SizedBox(height: 12),
 
-              // New Player Input Card — shown only when Add Player is tapped
-              if (_showAddPlayerCard) _buildNewPlayerCard(),
+              // --- Inline new-player input card (commented out: replaced by Discovery flow) ---
+              // if (_showAddPlayerCard) _buildNewPlayerCard(),
 
               // Existing Players List
               ListView.builder(
@@ -806,37 +1030,67 @@ class _EditSquadScreenState extends ConsumerState<EditSquadScreen> {
                 },
               ),
 
-              // Add more players placeholder
-              Container(
-                margin: const EdgeInsets.only(top: 8, bottom: 80),
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(vertical: 24),
-                decoration: BoxDecoration(
-                  color: Colors.transparent,
-                  border: Border.all(
-                    color: const Color(0xFFE7BDB8),
-                    width: 1,
-                    style: BorderStyle.solid,
-                  ), // Cannot do dashed border easily without package, using solid light red
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Column(
-                  children: [
-                    const Icon(
-                      Icons.group_add_outlined,
-                      color: Color(0xFF8E95A5),
-                      size: 32,
+              // Add more players placeholder / Discover prompt
+              GestureDetector(
+                onTap: _openDiscoveryForPlayers,
+                child: Container(
+                  margin: const EdgeInsets.only(top: 8, bottom: 80),
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 20,
+                    horizontal: 16,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    border: Border.all(
+                      color: const Color(0xFFE7BDB8),
+                      width: 1,
+                      style: BorderStyle.solid,
                     ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Add more players to complete your\nstarting XI',
-                      textAlign: TextAlign.center,
-                      style: GoogleFonts.inter(
-                        color: const Color(0xFF8E95A5),
-                        fontSize: 12,
+                    borderRadius: BorderRadius.circular(8),
+                    boxShadow: const [
+                      BoxShadow(
+                        color: Color.fromRGBO(26, 33, 56, 0.03),
+                        blurRadius: 6,
+                        offset: Offset(0, 2),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
+                  child: Column(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: const BoxDecoration(
+                          color: Color(0xFFFDEBED),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.travel_explore,
+                          color: Color(0xFFBA0013),
+                          size: 24,
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      Text(
+                        'Find players in Discovery',
+                        textAlign: TextAlign.center,
+                        style: GoogleFonts.plusJakartaSans(
+                          color: const Color(0xFF191C1E),
+                          fontWeight: FontWeight.w700,
+                          fontSize: 14,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Tap here to browse & add registered players to squad',
+                        textAlign: TextAlign.center,
+                        style: GoogleFonts.inter(
+                          color: const Color(0xFF8E95A5),
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ],
@@ -892,147 +1146,6 @@ class _EditSquadScreenState extends ConsumerState<EditSquadScreen> {
           ),
         ),
       ],
-    );
-  }
-
-  Widget _buildNewPlayerCard() {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(8),
-        border: const Border(
-          left: BorderSide(color: Color(0xFFBA0013), width: 4),
-        ),
-        boxShadow: const [
-          BoxShadow(
-            color: Color.fromRGBO(26, 33, 56, 0.05),
-            blurRadius: 10,
-            offset: Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                const CircleAvatar(
-                  radius: 16,
-                  backgroundColor: Color(0xFFFDEBED),
-                  child: Icon(Icons.person, color: Color(0xFFBA0013), size: 18),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: TextField(
-                    controller: _addPlayerController,
-                    autofocus: true,
-                    style: GoogleFonts.plusJakartaSans(
-                      color: const Color(0xFF191C1E),
-                      fontWeight: FontWeight.w700,
-                      fontSize: 14,
-                    ),
-                    decoration: InputDecoration(
-                      hintText: 'Enter player name...',
-                      hintStyle: GoogleFonts.plusJakartaSans(
-                        color: const Color(0xFF8E95A5),
-                        fontWeight: FontWeight.w500,
-                        fontSize: 14,
-                      ),
-                      isDense: true,
-                      contentPadding: const EdgeInsets.symmetric(
-                        vertical: 4,
-                        horizontal: 0,
-                      ),
-                      border: const UnderlineInputBorder(
-                        borderSide: BorderSide(color: Color(0xFFE7BDB8)),
-                      ),
-                    ),
-                    onSubmitted: (_) => _addNewPlayer(),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            // Role Pills — dynamic selection
-            Row(
-              children: [
-                _buildNewRolePill('BAT'),
-                _buildNewRolePill('WK'),
-                _buildNewRolePill('BOWL'),
-                _buildNewRolePill('AR'),
-              ],
-            ),
-            const SizedBox(height: 12),
-            // Admin / Captain toggles
-            Row(
-              children: [
-                _buildToggleRow('Admin', false, (v) {}),
-                const SizedBox(width: 16),
-                _buildToggleRow('Captain', false, (v) {}),
-                const Spacer(),
-                // Add button
-                ElevatedButton(
-                  onPressed: _addNewPlayer,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFBA0013),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 20,
-                      vertical: 8,
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    minimumSize: Size.zero,
-                  ),
-                  child: Text(
-                    'Add',
-                    style: GoogleFonts.inter(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w700,
-                      fontSize: 12,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildNewRolePill(String label) {
-    final isSelected = _newPlayerRoles.contains(label);
-    return GestureDetector(
-      onTap: () {
-        setState(() {
-          if (isSelected) {
-            _newPlayerRoles.remove(label);
-          } else {
-            _newPlayerRoles.add(label);
-          }
-        });
-      },
-      child: Container(
-        margin: const EdgeInsets.only(right: 6),
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-        decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFFBA0013) : const Color(0xFFE0E3E6),
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Text(
-          label,
-          style: GoogleFonts.inter(
-            color: isSelected ? Colors.white : const Color(0xFF575D78),
-            fontSize: 9,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-      ),
     );
   }
 

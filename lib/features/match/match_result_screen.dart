@@ -9,6 +9,7 @@ import 'dart:math';
 import '../../models/match_result_data.dart';
 import '../teams/providers/teams_provider.dart';
 import 'match_setup_screen.dart';
+import 'helpers/live_match_promo.dart';
 
 import 'package:share_plus/share_plus.dart';
 
@@ -906,7 +907,7 @@ class _CloneSetupDialogState extends State<CloneSetupDialog> {
         tossWonBy: '',
         battingFirstTeam: '',
       );
-      navContext.push('/toss', extra: newSetup);
+      proceedToToss(navContext, widget.ref, newSetup);
     } else if (!_matchSetupChecked && _teamSquadChecked) {
       // Team Squad checked, Match Setup unchecked: go to Match Setup pre-filled to change settings
       final extraData = {
@@ -916,34 +917,39 @@ class _CloneSetupDialogState extends State<CloneSetupDialog> {
         'teamBPlayers': setup.teamBPlayers,
         'isQuickMatch': setup.isQuickMatch,
       };
-      navContext.go('/match-setup', extra: extraData);
+      navContext.push('/match-setup', extra: extraData);
     } else if (_matchSetupChecked && !_teamSquadChecked) {
-      // Match Setup checked, Team Squad unchecked: reset players
-      final newSetup = setup.copyWith(
-        id: const Uuid().v4(),
-        status: 'draft',
-        tossWonBy: '',
-        battingFirstTeam: '',
-        teamAPlayers: [],
-        teamBPlayers: [],
-      );
-
+      // Match Setup checked, Team Squad unchecked:
+      // Pre-fill the existing squad so the user can add/remove individual players
+      // without re-entering the whole squad from scratch.
       if (setup.isQuickMatch) {
-        navContext.go('/create-team', extra: {
+        navContext.push('/create-team', extra: {
           'isQuickMatch': true,
           'overs': setup.overs,
           'matchType': setup.matchType,
           'ballType': setup.ballType,
+          'teamAName': setup.teamAName,
+          'teamBName': setup.teamBName,
+          // Pass existing players so the squad editor is pre-populated
+          'teamAPlayers': setup.teamAPlayers,
+          'teamBPlayers': setup.teamBPlayers,
         });
       } else {
-        // Scheduled match: go to select playing XI for team A
+        // Scheduled match: navigate to playing XI selector with pre-filled squad
+        final newSetup = setup.copyWith(
+          id: const Uuid().v4(),
+          status: 'draft',
+          tossWonBy: '',
+          battingFirstTeam: '',
+          // Keep existing players — user will edit from the populated squad
+        );
         final teams = widget.ref.read(teamsProvider).value ?? [];
         final teamA = teams.firstWhere(
           (t) => t.name.toLowerCase() == setup.teamAName.toLowerCase(),
           orElse: () => TeamData(id: '', name: '', location: '', dateActive: DateTime.now(), members: []),
         );
         if (teamA.id.isNotEmpty) {
-          navContext.go('/team-squad', extra: {
+          navContext.push('/team-squad', extra: {
             'teamId': teamA.id,
             'readOnly': false,
             'singleSelectionMode': false,
@@ -953,7 +959,7 @@ class _CloneSetupDialogState extends State<CloneSetupDialog> {
           });
         } else {
           // Fallback: go to Match Setup screen
-          navContext.go('/match-setup', extra: newSetup.toJson());
+          navContext.push('/match-setup', extra: newSetup.toJson());
         }
       }
     } else {

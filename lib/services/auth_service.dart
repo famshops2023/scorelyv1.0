@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:http/http.dart' as http;
+import '../core/config/insforge_config.dart';
 import '../models/user_profile.dart';
 
 /// Result returned by all [AuthService] calls.
@@ -39,8 +40,7 @@ class AuthResult {
 ///   Sign-up : POST /api/auth/users
 ///   Sign-in : POST /api/auth/sessions
 class AuthService {
-  static const _host = 'https://ip53vj9s.ap-southeast.insforge.app';
-  static const _apiKey = 'ik_d23aa9a406864853f254a0722fc1e56b';
+  static String get _host => InsforgeConfig.baseUrl;
   static const _googleServerClientId = String.fromEnvironment(
     'GOOGLE_SERVER_CLIENT_ID',
     defaultValue:
@@ -49,11 +49,7 @@ class AuthService {
 
   static Future<void>? _googleInitialization;
 
-  static const Map<String, String> _headers = {
-    'apikey': _apiKey,
-    'Authorization': 'Bearer $_apiKey',
-    'Content-Type': 'application/json',
-  };
+  static Map<String, String> get _headers => InsforgeConfig.headers;
 
   // ─────────────────────────────── SIGN UP ────────────────────────────────
 
