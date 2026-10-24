@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:scorely/core/theme/colors.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -150,7 +151,7 @@ class _OpeningLineupScreenState extends ConsumerState<OpeningLineupScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Team "$targetTeamName" not found in database.'),
-          backgroundColor: const Color(0xFFBA0013),
+          backgroundColor: AppColors.primary,
         ),
       );
       return;
@@ -209,9 +210,9 @@ class _OpeningLineupScreenState extends ConsumerState<OpeningLineupScreen> {
     }
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF7F9FC),
+      backgroundColor: AppColors.lightBg,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF1A2138), // Header background color from comments
+        backgroundColor: AppColors.darkSurface, // Header background color from comments
         elevation: 0,
         centerTitle: true,
         leading: IconButton(
@@ -238,7 +239,7 @@ class _OpeningLineupScreenState extends ConsumerState<OpeningLineupScreen> {
                 style: GoogleFonts.inter(
                   fontSize: 12,
                   fontWeight: FontWeight.w700,
-                  color: const Color(0xFF575D78),
+                  color: AppColors.lightTextSecondary,
                   letterSpacing: 1.0,
                 ),
               ),
@@ -315,7 +316,7 @@ class _OpeningLineupScreenState extends ConsumerState<OpeningLineupScreen> {
                         'Ensure all primary roles are filled before starting the match.',
                         style: GoogleFonts.inter(
                           fontSize: 12,
-                          color: const Color(0xFF575D78),
+                          color: AppColors.lightTextSecondary,
                           height: 1.5,
                         ),
                       ),
@@ -332,7 +333,7 @@ class _OpeningLineupScreenState extends ConsumerState<OpeningLineupScreen> {
                 child: ElevatedButton(
                   onPressed: _isReady ? _proceedToScore : null,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFBA0013),
+                    backgroundColor: AppColors.primary,
                     disabledBackgroundColor: const Color(0xFFD6888A),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
@@ -391,7 +392,7 @@ class _OpeningLineupScreenState extends ConsumerState<OpeningLineupScreen> {
               style: GoogleFonts.inter(
                 fontSize: 10,
                 fontWeight: FontWeight.w600,
-                color: const Color(0xFF575D78),
+                color: AppColors.lightTextSecondary,
               ),
             ),
           ),
@@ -404,14 +405,14 @@ class _OpeningLineupScreenState extends ConsumerState<OpeningLineupScreen> {
                 color: Color(0xFFF2F4F8),
                 shape: BoxShape.circle,
               ),
-              child: Icon(icon, color: const Color(0xFFBA0013), size: 24),
+              child: Icon(icon, color: AppColors.primary, size: 24),
             )
           else
             Column(
               children: [
                 CircleAvatar(
                   radius: 28,
-                  backgroundColor: const Color(0xFF191C1E),
+                  backgroundColor: AppColors.lightTextPrimary,
                   child: Text(
                     player.name[0].toUpperCase(),
                     style: GoogleFonts.plusJakartaSans(
@@ -427,7 +428,7 @@ class _OpeningLineupScreenState extends ConsumerState<OpeningLineupScreen> {
                   style: GoogleFonts.inter(
                     fontSize: 12,
                     fontWeight: FontWeight.w700,
-                    color: const Color(0xFF191C1E),
+                    color: AppColors.lightTextPrimary,
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -451,7 +452,7 @@ class _OpeningLineupScreenState extends ConsumerState<OpeningLineupScreen> {
                 style: GoogleFonts.inter(
                   fontSize: 12,
                   fontWeight: FontWeight.w700,
-                  color: const Color(0xFFBA0013),
+                  color: AppColors.primary,
                 ),
               ),
             ),

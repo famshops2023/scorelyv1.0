@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:scorely/core/theme/colors.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -21,13 +22,13 @@ class LiveMatchScreen extends ConsumerWidget {
     );
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF7F9FC),
+      backgroundColor: AppColors.lightBg,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF1A2138),
+        backgroundColor: AppColors.darkSurface,
         elevation: 0,
         centerTitle: false,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Color(0xFFF7F9FC), size: 24),
+          icon: const Icon(Icons.arrow_back, color: AppColors.lightBg, size: 24),
           onPressed: () => context.pop(),
         ),
         title: Text(
@@ -43,7 +44,7 @@ class LiveMatchScreen extends ConsumerWidget {
             margin: const EdgeInsets.only(right: 16),
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             decoration: BoxDecoration(
-              color: const Color(0xFFBA0013).withValues(alpha: 0.2),
+              color: AppColors.primary.withValues(alpha: 0.2),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Row(
@@ -52,7 +53,7 @@ class LiveMatchScreen extends ConsumerWidget {
                   width: 6,
                   height: 6,
                   decoration: const BoxDecoration(
-                    color: Color(0xFFBA0013),
+                    color: AppColors.primary,
                     shape: BoxShape.circle,
                   ),
                 ),
@@ -60,7 +61,7 @@ class LiveMatchScreen extends ConsumerWidget {
                 Text(
                   'LIVE',
                   style: GoogleFonts.inter(
-                    color: const Color(0xFFBA0013),
+                    color: AppColors.primary,
                     fontSize: 10,
                     fontWeight: FontWeight.bold,
                   ),
@@ -91,7 +92,7 @@ class LiveMatchScreen extends ConsumerWidget {
                   'Auto-refreshing every 20 seconds',
                   style: GoogleFonts.inter(
                     fontSize: 11,
-                    color: const Color(0xFF575D78),
+                    color: AppColors.lightTextSecondary,
                     fontStyle: FontStyle.italic,
                   ),
                 ),
@@ -112,7 +113,7 @@ class LiveMatchScreen extends ConsumerWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFF1A2138),
+        color: AppColors.darkSurface,
         borderRadius: BorderRadius.circular(16),
         boxShadow: const [
           BoxShadow(
@@ -242,7 +243,7 @@ class LiveMatchScreen extends ConsumerWidget {
                   style: GoogleFonts.inter(
                     fontSize: 11,
                     fontWeight: FontWeight.bold,
-                    color: const Color(0xFFBA0013),
+                    color: AppColors.primary,
                   ),
                 ),
                 const SizedBox(height: 12),
@@ -292,7 +293,7 @@ class LiveMatchScreen extends ConsumerWidget {
                   style: GoogleFonts.inter(
                     fontSize: 11,
                     fontWeight: FontWeight.bold,
-                    color: const Color(0xFFBA0013),
+                    color: AppColors.primary,
                   ),
                 ),
                 const SizedBox(height: 12),
@@ -336,7 +337,7 @@ class LiveMatchScreen extends ConsumerWidget {
       style: GoogleFonts.inter(
         fontSize: 10,
         fontWeight: FontWeight.bold,
-        color: const Color(0xFF575D78),
+        color: AppColors.lightTextSecondary,
         letterSpacing: 0.5,
       ),
     );
@@ -358,7 +359,7 @@ class LiveMatchScreen extends ConsumerWidget {
             style: GoogleFonts.inter(
               fontSize: 14,
               fontWeight: isStriker ? FontWeight.bold : FontWeight.w500,
-              color: const Color(0xFF191C1E),
+              color: AppColors.lightTextPrimary,
             ),
           ),
         ),
@@ -373,7 +374,7 @@ class LiveMatchScreen extends ConsumerWidget {
           child: Text(
             b,
             textAlign: TextAlign.right,
-            style: GoogleFonts.inter(fontSize: 14, color: const Color(0xFF575D78)),
+            style: GoogleFonts.inter(fontSize: 14, color: AppColors.lightTextSecondary),
           ),
         ),
         Expanded(
@@ -381,7 +382,7 @@ class LiveMatchScreen extends ConsumerWidget {
           child: Text(
             sr,
             textAlign: TextAlign.right,
-            style: GoogleFonts.inter(fontSize: 14, color: const Color(0xFF575D78)),
+            style: GoogleFonts.inter(fontSize: 14, color: AppColors.lightTextSecondary),
           ),
         ),
       ],
@@ -408,7 +409,7 @@ class LiveMatchScreen extends ConsumerWidget {
             style: GoogleFonts.inter(
               fontSize: 14,
               fontWeight: FontWeight.bold,
-              color: const Color(0xFF191C1E),
+              color: AppColors.lightTextPrimary,
             ),
           ),
         ),
@@ -423,7 +424,7 @@ class LiveMatchScreen extends ConsumerWidget {
           child: Text(
             r,
             textAlign: TextAlign.right,
-            style: GoogleFonts.inter(fontSize: 14, color: const Color(0xFF575D78)),
+            style: GoogleFonts.inter(fontSize: 14, color: AppColors.lightTextSecondary),
           ),
         ),
         Expanded(
@@ -433,7 +434,7 @@ class LiveMatchScreen extends ConsumerWidget {
             style: GoogleFonts.inter(
               fontSize: 14,
               fontWeight: FontWeight.bold,
-              color: const Color(0xFFBA0013),
+              color: AppColors.primary,
             ),
           ),
         ),
@@ -442,7 +443,7 @@ class LiveMatchScreen extends ConsumerWidget {
           child: Text(
             econ.toStringAsFixed(2),
             textAlign: TextAlign.right,
-            style: GoogleFonts.inter(fontSize: 14, color: const Color(0xFF575D78)),
+            style: GoogleFonts.inter(fontSize: 14, color: AppColors.lightTextSecondary),
           ),
         ),
       ],
@@ -474,7 +475,7 @@ class LiveMatchScreen extends ConsumerWidget {
             style: GoogleFonts.inter(
               fontSize: 10,
               fontWeight: FontWeight.bold,
-              color: const Color(0xFF575D78),
+              color: AppColors.lightTextSecondary,
             ),
           ),
           const SizedBox(height: 12),
@@ -487,16 +488,16 @@ class LiveMatchScreen extends ConsumerWidget {
             Row(
               children: ballsList.map((ball) {
                 Color bg = const Color(0xFFE0E3E6);
-                Color fg = const Color(0xFF575D78);
+                Color fg = AppColors.lightTextSecondary;
                 if (ball.contains('Wd') || ball.contains('Nb')) {
                   bg = const Color(0xFFFFF2CC);
                   fg = const Color(0xFFB45F06);
                 } else if (ball == 'W') {
                   bg = const Color(0xFFFFD8D6);
-                  fg = const Color(0xFFBA0013);
+                  fg = AppColors.primary;
                 } else if (ball == '4' || ball == '6') {
                   bg = const Color(0xFFE2F9E1);
-                  fg = const Color(0xFF006B1B);
+                  fg = AppColors.successDark;
                 }
                 return Container(
                   margin: const EdgeInsets.only(right: 8),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:scorely/core/theme/colors.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../services/error_reporter.dart';
 
@@ -28,12 +29,12 @@ class AppErrorWidget extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFBA0013).withValues(alpha: 0.15),
+                  color: AppColors.primary.withValues(alpha: 0.15),
                   shape: BoxShape.circle,
                 ),
                 child: const Icon(
                   Icons.warning_amber_rounded,
-                  color: Color(0xFFBA0013),
+                  color: AppColors.primary,
                   size: 48,
                 ),
               ),
@@ -72,7 +73,7 @@ class AppErrorWidget extends StatelessWidget {
                   icon: const Icon(Icons.mail_outline, size: 18),
                   label: const Text('Send Bug Report to Support'),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFBA0013),
+                    backgroundColor: AppColors.primary,
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 14),
                     shape: RoundedRectangleBorder(

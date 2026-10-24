@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:scorely/core/theme/colors.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -13,7 +14,7 @@ class HistoryScreen extends ConsumerWidget {
     final pendingCount = ref.watch(pendingSyncCountProvider).value ?? 0;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF7F9FC),
+      backgroundColor: AppColors.lightBg,
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
@@ -23,7 +24,7 @@ class HistoryScreen extends ConsumerWidget {
           style: GoogleFonts.plusJakartaSans(
             fontSize: 20,
             fontWeight: FontWeight.w800,
-            color: const Color(0xFF191C1E),
+            color: AppColors.lightTextPrimary,
             letterSpacing: 0.5,
           ),
         ),
@@ -77,7 +78,7 @@ class HistoryScreen extends ConsumerWidget {
                         style: GoogleFonts.inter(
                           fontSize: 13,
                           fontWeight: FontWeight.w500,
-                          color: const Color(0xFF575D78),
+                          color: AppColors.lightTextSecondary,
                         ),
                         textAlign: TextAlign.center,
                       ),
@@ -94,7 +95,7 @@ class HistoryScreen extends ConsumerWidget {
                     padding: const EdgeInsets.only(right: 24),
                     margin: const EdgeInsets.only(bottom: 16),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFBA0013),
+                      color: AppColors.primary,
                       borderRadius: BorderRadius.circular(16),
                     ),
                     child: const Icon(Icons.delete_outline, color: Colors.white, size: 28),
@@ -151,7 +152,7 @@ class HistoryScreen extends ConsumerWidget {
                   style: GoogleFonts.plusJakartaSans(
                     fontSize: 14,
                     fontWeight: FontWeight.w700,
-                    color: const Color(0xFF191C1E),
+                    color: AppColors.lightTextPrimary,
                     letterSpacing: 0.5,
                   ),
                   maxLines: 1,
@@ -170,7 +171,7 @@ class HistoryScreen extends ConsumerWidget {
                   style: GoogleFonts.inter(
                     fontSize: 10,
                     fontWeight: FontWeight.w700,
-                    color: const Color(0xFF006B1B),
+                    color: AppColors.successDark,
                     letterSpacing: 0.5,
                   ),
                 ),
@@ -202,7 +203,7 @@ class HistoryScreen extends ConsumerWidget {
                   style: GoogleFonts.plusJakartaSans(
                     fontSize: 12,
                     fontWeight: FontWeight.w800,
-                    color: const Color(0xFF575D78),
+                    color: AppColors.lightTextSecondary,
                   ),
                 ),
               ),
@@ -220,7 +221,7 @@ class HistoryScreen extends ConsumerWidget {
             width: double.infinity,
             padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
             decoration: BoxDecoration(
-              color: const Color(0xFF1A2138),
+              color: AppColors.darkSurface,
               borderRadius: BorderRadius.circular(10),
             ),
             child: Row(
@@ -253,7 +254,7 @@ class HistoryScreen extends ConsumerWidget {
           style: GoogleFonts.inter(
             fontSize: 12,
             fontWeight: FontWeight.w600,
-            color: const Color(0xFF575D78),
+            color: AppColors.lightTextSecondary,
           ),
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
@@ -264,7 +265,7 @@ class HistoryScreen extends ConsumerWidget {
           style: GoogleFonts.plusJakartaSans(
             fontSize: 24,
             fontWeight: FontWeight.w800,
-            color: const Color(0xFF191C1E),
+            color: AppColors.lightTextPrimary,
           ),
         ),
         Text(
@@ -272,7 +273,7 @@ class HistoryScreen extends ConsumerWidget {
           style: GoogleFonts.inter(
             fontSize: 11,
             fontWeight: FontWeight.w500,
-            color: const Color(0xFF575D78),
+            color: AppColors.lightTextSecondary,
           ),
         ),
       ],
@@ -293,7 +294,7 @@ class HistoryScreen extends ConsumerWidget {
             child: const Icon(
               Icons.history,
               size: 56,
-              color: Color(0xFF575D78),
+              color: AppColors.lightTextSecondary,
             ),
           ),
           const SizedBox(height: 20),
@@ -302,7 +303,7 @@ class HistoryScreen extends ConsumerWidget {
             style: GoogleFonts.plusJakartaSans(
               fontSize: 18,
               fontWeight: FontWeight.w800,
-              color: const Color(0xFF191C1E),
+              color: AppColors.lightTextPrimary,
               letterSpacing: 0.5,
             ),
           ),
@@ -311,7 +312,7 @@ class HistoryScreen extends ConsumerWidget {
             'Completed matches will appear here',
             style: GoogleFonts.inter(
               fontSize: 14,
-              color: const Color(0xFF575D78),
+              color: AppColors.lightTextSecondary,
             ),
           ),
         ],

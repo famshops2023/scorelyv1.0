@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:scorely/core/theme/colors.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -46,9 +47,9 @@ class _TossScreenState extends State<TossScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF7F9FC),
+      backgroundColor: AppColors.lightBg,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF191C1E),
+        backgroundColor: AppColors.lightTextPrimary,
         elevation: 0,
         centerTitle: true,
         leading: IconButton(
@@ -75,7 +76,7 @@ class _TossScreenState extends State<TossScreen> {
               style: GoogleFonts.inter(
                 fontSize: 11,
                 fontWeight: FontWeight.w700,
-                color: const Color(0xFF575D78),
+                color: AppColors.lightTextSecondary,
                 letterSpacing: 0.8,
               ),
             ),
@@ -104,7 +105,7 @@ class _TossScreenState extends State<TossScreen> {
                 style: GoogleFonts.inter(
                   fontSize: 11,
                   fontWeight: FontWeight.w700,
-                  color: const Color(0xFF575D78),
+                  color: AppColors.lightTextSecondary,
                   letterSpacing: 0.8,
                 ),
               ),
@@ -124,12 +125,12 @@ class _TossScreenState extends State<TossScreen> {
               child: ElevatedButton.icon(
                 onPressed: _startScoring,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFFBA0013),
+                  backgroundColor: AppColors.primary,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
                   elevation: 4,
-                  shadowColor: const Color(0xFFBA0013).withValues(alpha: 0.4),
+                  shadowColor: AppColors.primary.withValues(alpha: 0.4),
                 ),
                 icon: const Icon(
                   Icons.sports_cricket,
@@ -163,7 +164,7 @@ class _TossScreenState extends State<TossScreen> {
           color: Colors.white,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: isSelected ? const Color(0xFF191C1E) : Colors.transparent,
+            color: isSelected ? AppColors.lightTextPrimary : Colors.transparent,
             width: 1.5,
           ),
           boxShadow: [
@@ -181,14 +182,14 @@ class _TossScreenState extends State<TossScreen> {
               decoration: BoxDecoration(
                 color: isSelected
                     ? const Color(0xFFECEEF1)
-                    : const Color(0xFFF7F9FC),
+                    : AppColors.lightBg,
                 shape: BoxShape.circle,
               ),
               child: Icon(
                 icon,
                 size: 28,
                 color: isSelected
-                    ? const Color(0xFF191C1E)
+                    ? AppColors.lightTextPrimary
                     : const Color(0xFFBFC5E4),
               ),
             ),
@@ -199,7 +200,7 @@ class _TossScreenState extends State<TossScreen> {
                 fontSize: 14,
                 fontWeight: FontWeight.w700,
                 color: isSelected
-                    ? const Color(0xFF191C1E)
+                    ? AppColors.lightTextPrimary
                     : const Color(0xFFBFC5E4),
               ),
               textAlign: TextAlign.center,
@@ -219,7 +220,7 @@ class _TossScreenState extends State<TossScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 16),
         decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFFBA0013) : const Color(0xFFECEEF1),
+          color: isSelected ? AppColors.primary : const Color(0xFFECEEF1),
           borderRadius: BorderRadius.circular(8),
         ),
         alignment: Alignment.center,
@@ -228,7 +229,7 @@ class _TossScreenState extends State<TossScreen> {
           style: GoogleFonts.inter(
             fontSize: 14,
             fontWeight: FontWeight.w700,
-            color: isSelected ? Colors.white : const Color(0xFF575D78),
+            color: isSelected ? Colors.white : AppColors.lightTextSecondary,
           ),
         ),
       ),

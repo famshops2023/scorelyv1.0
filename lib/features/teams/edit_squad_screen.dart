@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:scorely/core/theme/colors.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -90,7 +91,7 @@ class _EditSquadScreenState extends ConsumerState<EditSquadScreen> {
           'Invite link copied!',
           style: GoogleFonts.inter(color: Colors.white, fontSize: 13),
         ),
-        backgroundColor: const Color(0xFF191C1E),
+        backgroundColor: AppColors.lightTextPrimary,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         duration: const Duration(seconds: 2),
@@ -134,7 +135,7 @@ class _EditSquadScreenState extends ConsumerState<EditSquadScreen> {
               Text(
                 'Invite Players to Join',
                 style: GoogleFonts.plusJakartaSans(
-                  color: const Color(0xFF191C1E),
+                  color: AppColors.lightTextPrimary,
                   fontWeight: FontWeight.w700,
                   fontSize: 18,
                 ),
@@ -143,7 +144,7 @@ class _EditSquadScreenState extends ConsumerState<EditSquadScreen> {
               Text(
                 'Share the link or scan the QR code below',
                 style: GoogleFonts.inter(
-                  color: const Color(0xFF8E95A5),
+                  color: AppColors.lightTextMuted,
                   fontSize: 12,
                 ),
               ),
@@ -153,7 +154,7 @@ class _EditSquadScreenState extends ConsumerState<EditSquadScreen> {
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF7F9FC),
+                  color: AppColors.lightBg,
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(color: const Color(0xFFE0E3E6)),
                 ),
@@ -164,11 +165,11 @@ class _EditSquadScreenState extends ConsumerState<EditSquadScreen> {
                   backgroundColor: Colors.transparent,
                   eyeStyle: const QrEyeStyle(
                     eyeShape: QrEyeShape.square,
-                    color: Color(0xFF191C1E),
+                    color: AppColors.lightTextPrimary,
                   ),
                   dataModuleStyle: const QrDataModuleStyle(
                     dataModuleShape: QrDataModuleShape.square,
-                    color: Color(0xFF191C1E),
+                    color: AppColors.lightTextPrimary,
                   ),
                 ),
               ),
@@ -181,7 +182,7 @@ class _EditSquadScreenState extends ConsumerState<EditSquadScreen> {
                   vertical: 12,
                 ),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF7F9FC),
+                  color: AppColors.lightBg,
                   borderRadius: BorderRadius.circular(10),
                   border: Border.all(color: const Color(0xFFE0E3E6)),
                 ),
@@ -191,7 +192,7 @@ class _EditSquadScreenState extends ConsumerState<EditSquadScreen> {
                       child: Text(
                         link,
                         style: GoogleFonts.inter(
-                          color: const Color(0xFF575D78),
+                          color: AppColors.lightTextSecondary,
                           fontSize: 12,
                         ),
                         overflow: TextOverflow.ellipsis,
@@ -209,7 +210,7 @@ class _EditSquadScreenState extends ConsumerState<EditSquadScreen> {
                         child: const Icon(
                           Icons.copy,
                           size: 16,
-                          color: Color(0xFF575D78),
+                          color: AppColors.lightTextSecondary,
                         ),
                       ),
                     ),
@@ -273,12 +274,12 @@ class _EditSquadScreenState extends ConsumerState<EditSquadScreen> {
                   icon: const Icon(
                     Icons.share,
                     size: 18,
-                    color: Color(0xFF191C1E),
+                    color: AppColors.lightTextPrimary,
                   ),
                   label: Text(
                     'Share via Other Apps',
                     style: GoogleFonts.inter(
-                      color: const Color(0xFF191C1E),
+                      color: AppColors.lightTextPrimary,
                       fontWeight: FontWeight.w700,
                       fontSize: 14,
                     ),
@@ -317,7 +318,7 @@ class _EditSquadScreenState extends ConsumerState<EditSquadScreen> {
               decoration: const BoxDecoration(
                 color: Colors.white,
                 border: Border(
-                  top: BorderSide(color: Color(0xFFBA0013), width: 5),
+                  top: BorderSide(color: AppColors.primary, width: 5),
                 ),
               ),
               padding: const EdgeInsets.fromLTRB(24, 24, 24, 20),
@@ -333,7 +334,7 @@ class _EditSquadScreenState extends ConsumerState<EditSquadScreen> {
                     ),
                     child: const Icon(
                       Icons.error_outline_rounded,
-                      color: Color(0xFFBA0013),
+                      color: AppColors.primary,
                       size: 28,
                     ),
                   ),
@@ -344,7 +345,7 @@ class _EditSquadScreenState extends ConsumerState<EditSquadScreen> {
                     style: GoogleFonts.plusJakartaSans(
                       fontSize: 18,
                       fontWeight: FontWeight.w700,
-                      color: const Color(0xFF191C1E),
+                      color: AppColors.lightTextPrimary,
                     ),
                   ),
                   const SizedBox(height: 10),
@@ -353,7 +354,7 @@ class _EditSquadScreenState extends ConsumerState<EditSquadScreen> {
                     textAlign: TextAlign.center,
                     style: GoogleFonts.inter(
                       fontSize: 13,
-                      color: const Color(0xFF575D78),
+                      color: AppColors.lightTextSecondary,
                       height: 1.5,
                     ),
                   ),
@@ -364,7 +365,7 @@ class _EditSquadScreenState extends ConsumerState<EditSquadScreen> {
                     child: ElevatedButton(
                       onPressed: () => Navigator.pop(ctx),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFFBA0013),
+                        backgroundColor: AppColors.primary,
                         elevation: 0,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(8),
@@ -533,7 +534,7 @@ class _EditSquadScreenState extends ConsumerState<EditSquadScreen> {
                   : '${toAdd.length} players added to squad',
               style: GoogleFonts.inter(color: Colors.white, fontSize: 13),
             ),
-            backgroundColor: const Color(0xFF191C1E),
+            backgroundColor: AppColors.lightTextPrimary,
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(8),
@@ -550,7 +551,7 @@ class _EditSquadScreenState extends ConsumerState<EditSquadScreen> {
               '${duplicates.join(', ')} already in squad',
               style: GoogleFonts.inter(color: Colors.white, fontSize: 13),
             ),
-            backgroundColor: const Color(0xFFBA0013),
+            backgroundColor: AppColors.primary,
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(8),
@@ -640,9 +641,9 @@ class _EditSquadScreenState extends ConsumerState<EditSquadScreen> {
     }
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF7F9FC),
+      backgroundColor: AppColors.lightBg,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF191C1E),
+        backgroundColor: AppColors.lightTextPrimary,
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.white),
@@ -735,7 +736,7 @@ class _EditSquadScreenState extends ConsumerState<EditSquadScreen> {
                                         ? _team.name[0].toUpperCase()
                                         : 'T',
                                     style: GoogleFonts.plusJakartaSans(
-                                      color: const Color(0xFFBA0013),
+                                      color: AppColors.primary,
                                       fontSize: 32,
                                       fontWeight: FontWeight.bold,
                                     ),
@@ -746,7 +747,7 @@ class _EditSquadScreenState extends ConsumerState<EditSquadScreen> {
                             width: 26,
                             height: 26,
                             decoration: BoxDecoration(
-                              color: const Color(0xFFBA0013),
+                              color: AppColors.primary,
                               shape: BoxShape.circle,
                               border: Border.all(color: Colors.white, width: 2),
                             ),
@@ -781,7 +782,7 @@ class _EditSquadScreenState extends ConsumerState<EditSquadScreen> {
                         child: Text(
                           _team.teamCode,
                           style: GoogleFonts.inter(
-                            color: const Color(0xFFBA0013),
+                            color: AppColors.primary,
                             fontSize: 11,
                             fontWeight: FontWeight.w700,
                             letterSpacing: 1.2,
@@ -842,7 +843,7 @@ class _EditSquadScreenState extends ConsumerState<EditSquadScreen> {
                         ),
                         child: const Icon(
                           Icons.qr_code_2,
-                          color: Color(0xFFBA0013),
+                          color: AppColors.primary,
                         ),
                       ),
                       const SizedBox(width: 12),
@@ -853,7 +854,7 @@ class _EditSquadScreenState extends ConsumerState<EditSquadScreen> {
                             Text(
                               'Invite players to join',
                               style: GoogleFonts.plusJakartaSans(
-                                color: const Color(0xFF191C1E),
+                                color: AppColors.lightTextPrimary,
                                 fontWeight: FontWeight.w600,
                                 fontSize: 14,
                               ),
@@ -861,7 +862,7 @@ class _EditSquadScreenState extends ConsumerState<EditSquadScreen> {
                             Text(
                               'Tap to share link or QR code',
                               style: GoogleFonts.inter(
-                                color: const Color(0xFF8E95A5),
+                                color: AppColors.lightTextMuted,
                                 fontSize: 11,
                               ),
                             ),
@@ -871,7 +872,7 @@ class _EditSquadScreenState extends ConsumerState<EditSquadScreen> {
                       IconButton(
                         icon: const Icon(
                           Icons.copy,
-                          color: Color(0xFF575D78),
+                          color: AppColors.lightTextSecondary,
                           size: 20,
                         ),
                         onPressed: () {
@@ -910,7 +911,7 @@ class _EditSquadScreenState extends ConsumerState<EditSquadScreen> {
                           Text(
                             '${_team.members.length}',
                             style: GoogleFonts.plusJakartaSans(
-                              color: const Color(0xFFBA0013),
+                              color: AppColors.primary,
                               fontWeight: FontWeight.w700,
                               fontSize: 20,
                             ),
@@ -918,7 +919,7 @@ class _EditSquadScreenState extends ConsumerState<EditSquadScreen> {
                           Text(
                             'Players',
                             style: GoogleFonts.inter(
-                              color: const Color(0xFF191C1E),
+                              color: AppColors.lightTextPrimary,
                               fontWeight: FontWeight.w600,
                               fontSize: 10,
                             ),
@@ -947,7 +948,7 @@ class _EditSquadScreenState extends ConsumerState<EditSquadScreen> {
                           Text(
                             'Live',
                             style: GoogleFonts.plusJakartaSans(
-                              color: const Color(0xFF006B1B),
+                              color: AppColors.successDark,
                               fontWeight: FontWeight.w700,
                               fontSize: 20,
                             ),
@@ -955,7 +956,7 @@ class _EditSquadScreenState extends ConsumerState<EditSquadScreen> {
                           Text(
                             'Status',
                             style: GoogleFonts.inter(
-                              color: const Color(0xFF191C1E),
+                              color: AppColors.lightTextPrimary,
                               fontWeight: FontWeight.w600,
                               fontSize: 10,
                             ),
@@ -975,7 +976,7 @@ class _EditSquadScreenState extends ConsumerState<EditSquadScreen> {
                   Text(
                     'Roster',
                     style: GoogleFonts.plusJakartaSans(
-                      color: const Color(0xFF191C1E),
+                      color: AppColors.lightTextPrimary,
                       fontWeight: FontWeight.w700,
                       fontSize: 18,
                     ),
@@ -999,7 +1000,7 @@ class _EditSquadScreenState extends ConsumerState<EditSquadScreen> {
                           ),
                         ),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFFBA0013),
+                          backgroundColor: AppColors.primary,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(6),
                           ),
@@ -1066,7 +1067,7 @@ class _EditSquadScreenState extends ConsumerState<EditSquadScreen> {
                         ),
                         child: const Icon(
                           Icons.travel_explore,
-                          color: Color(0xFFBA0013),
+                          color: AppColors.primary,
                           size: 24,
                         ),
                       ),
@@ -1075,7 +1076,7 @@ class _EditSquadScreenState extends ConsumerState<EditSquadScreen> {
                         'Find players in Discovery',
                         textAlign: TextAlign.center,
                         style: GoogleFonts.plusJakartaSans(
-                          color: const Color(0xFF191C1E),
+                          color: AppColors.lightTextPrimary,
                           fontWeight: FontWeight.w700,
                           fontSize: 14,
                         ),
@@ -1085,7 +1086,7 @@ class _EditSquadScreenState extends ConsumerState<EditSquadScreen> {
                         'Tap here to browse & add registered players to squad',
                         textAlign: TextAlign.center,
                         style: GoogleFonts.inter(
-                          color: const Color(0xFF8E95A5),
+                          color: AppColors.lightTextMuted,
                           fontSize: 12,
                         ),
                       ),
@@ -1099,7 +1100,7 @@ class _EditSquadScreenState extends ConsumerState<EditSquadScreen> {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: _saveChanges,
-        backgroundColor: const Color(0xFFBA0013),
+        backgroundColor: AppColors.primary,
         child: const Icon(Icons.save, color: Colors.white),
       ),
     );
@@ -1126,12 +1127,12 @@ class _EditSquadScreenState extends ConsumerState<EditSquadScreen> {
         TextField(
           controller: controller,
           style: GoogleFonts.inter(
-            color: const Color(0xFF191C1E),
+            color: AppColors.lightTextPrimary,
             fontSize: 14,
           ),
           decoration: InputDecoration(
             prefixIcon: icon != null
-                ? Icon(icon, color: const Color(0xFF575D78), size: 18)
+                ? Icon(icon, color: AppColors.lightTextSecondary, size: 18)
                 : null,
             filled: true,
             fillColor: Colors.white,
@@ -1157,7 +1158,7 @@ class _EditSquadScreenState extends ConsumerState<EditSquadScreen> {
         borderRadius: BorderRadius.circular(8),
         border: const Border(
           left: BorderSide(
-            color: Color(0xFF191C1E),
+            color: AppColors.lightTextPrimary,
             width: 4,
           ), // existing players dark border
         ),
@@ -1177,7 +1178,7 @@ class _EditSquadScreenState extends ConsumerState<EditSquadScreen> {
             const CircleAvatar(
               radius: 16,
               backgroundColor: Color(0xFFECEEF1),
-              child: Icon(Icons.person, color: Color(0xFF575D78), size: 18),
+              child: Icon(Icons.person, color: AppColors.lightTextSecondary, size: 18),
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -1189,7 +1190,7 @@ class _EditSquadScreenState extends ConsumerState<EditSquadScreen> {
                       Text(
                         member.name,
                         style: GoogleFonts.plusJakartaSans(
-                          color: const Color(0xFF191C1E),
+                          color: AppColors.lightTextPrimary,
                           fontWeight: FontWeight.w700,
                           fontSize: 14,
                         ),
@@ -1208,7 +1209,7 @@ class _EditSquadScreenState extends ConsumerState<EditSquadScreen> {
                           child: Text(
                             'C',
                             style: GoogleFonts.inter(
-                              color: const Color(0xFFBA0013),
+                              color: AppColors.primary,
                               fontWeight: FontWeight.w700,
                               fontSize: 8,
                             ),
@@ -1254,7 +1255,7 @@ class _EditSquadScreenState extends ConsumerState<EditSquadScreen> {
                   padding: EdgeInsets.zero,
                   icon: const Icon(
                     Icons.delete_outline,
-                    color: Color(0xFF575D78),
+                    color: AppColors.lightTextSecondary,
                     size: 18,
                   ),
                   onPressed: () => _removePlayer(member.id),
@@ -1285,13 +1286,13 @@ class _EditSquadScreenState extends ConsumerState<EditSquadScreen> {
         margin: const EdgeInsets.only(right: 4),
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFFBA0013) : const Color(0xFFE0E3E6),
+          color: isSelected ? AppColors.primary : const Color(0xFFE0E3E6),
           borderRadius: BorderRadius.circular(12),
         ),
         child: Text(
           label,
           style: GoogleFonts.inter(
-            color: isSelected ? Colors.white : const Color(0xFF575D78),
+            color: isSelected ? Colors.white : AppColors.lightTextSecondary,
             fontSize: 8,
             fontWeight: FontWeight.w700,
           ),
@@ -1311,7 +1312,7 @@ class _EditSquadScreenState extends ConsumerState<EditSquadScreen> {
         Text(
           label,
           style: GoogleFonts.inter(
-            color: const Color(0xFF191C1E),
+            color: AppColors.lightTextPrimary,
             fontSize: 10,
           ),
         ),
@@ -1325,7 +1326,7 @@ class _EditSquadScreenState extends ConsumerState<EditSquadScreen> {
               value: value,
               onChanged: onChanged,
               activeThumbColor: Colors.white,
-              activeTrackColor: const Color(0xFFBA0013),
+              activeTrackColor: AppColors.primary,
               inactiveThumbColor: Colors.white,
               inactiveTrackColor: const Color(0xFFE0E3E6),
             ),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:scorely/core/theme/colors.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -57,7 +58,7 @@ class _TeamsScreenState extends ConsumerState<TeamsScreen> {
               decoration: const BoxDecoration(
                 color: Colors.white,
                 border: Border(
-                  top: BorderSide(color: Color(0xFFBA0013), width: 6),
+                  top: BorderSide(color: AppColors.primary, width: 6),
                 ),
               ),
               padding: const EdgeInsets.fromLTRB(24, 28, 24, 24),
@@ -73,7 +74,7 @@ class _TeamsScreenState extends ConsumerState<TeamsScreen> {
                       shape: BoxShape.circle,
                       boxShadow: [
                         BoxShadow(
-                          color: const Color(0xFFBA0013).withValues(alpha: 0.15),
+                          color: AppColors.primary.withValues(alpha: 0.15),
                           blurRadius: 16,
                           offset: const Offset(0, 6),
                         ),
@@ -81,7 +82,7 @@ class _TeamsScreenState extends ConsumerState<TeamsScreen> {
                     ),
                     child: const Icon(
                       Icons.groups_2_rounded,
-                      color: Color(0xFFBA0013),
+                      color: AppColors.primary,
                       size: 30,
                     ),
                   ),
@@ -94,7 +95,7 @@ class _TeamsScreenState extends ConsumerState<TeamsScreen> {
                     style: GoogleFonts.plusJakartaSans(
                       fontSize: 20,
                       fontWeight: FontWeight.w700,
-                      color: const Color(0xFF1A2138),
+                      color: AppColors.darkSurface,
                     ),
                   ),
                   const SizedBox(height: 10),
@@ -123,14 +124,14 @@ class _TeamsScreenState extends ConsumerState<TeamsScreen> {
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Icon(Icons.bolt_rounded, size: 17, color: Color(0xFF575D78)),
+                        const Icon(Icons.bolt_rounded, size: 17, color: AppColors.lightTextSecondary),
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(
                             'Prefer to stay offline? Use Quick Match to score without an account.',
                             style: GoogleFonts.inter(
                               fontSize: 12,
-                              color: const Color(0xFF575D78),
+                              color: AppColors.lightTextSecondary,
                               height: 1.5,
                             ),
                           ),
@@ -160,7 +161,7 @@ class _TeamsScreenState extends ConsumerState<TeamsScreen> {
                         ),
                       ),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFFBA0013),
+                        backgroundColor: AppColors.primary,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
@@ -178,14 +179,14 @@ class _TeamsScreenState extends ConsumerState<TeamsScreen> {
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
-                        side: const BorderSide(color: Color(0xFFDDE0E8)),
+                        side: const BorderSide(color: AppColors.lightBorder),
                       ),
                       child: Text(
                         'CANCEL',
                         style: GoogleFonts.plusJakartaSans(
                           fontSize: 14,
                           fontWeight: FontWeight.w700,
-                          color: const Color(0xFF1A2138),
+                          color: AppColors.darkSurface,
                         ),
                       ),
                     ),
@@ -218,9 +219,9 @@ class _TeamsScreenState extends ConsumerState<TeamsScreen> {
     }
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF7F9FC),
+      backgroundColor: AppColors.lightBg,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF191C1E),
+        backgroundColor: AppColors.lightTextPrimary,
         elevation: 0,
         title: Row(
           children: [
@@ -272,7 +273,7 @@ class _TeamsScreenState extends ConsumerState<TeamsScreen> {
                       ),
                     ),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFBA0013),
+                      backgroundColor: AppColors.primary,
                       foregroundColor: Colors.white,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(8),
@@ -298,7 +299,7 @@ class _TeamsScreenState extends ConsumerState<TeamsScreen> {
                             padding: const EdgeInsets.symmetric(vertical: 8),
                             decoration: BoxDecoration(
                               color: !_showMyTeams
-                                  ? const Color(0xFF1A2138)
+                                  ? AppColors.darkSurface
                                   : Colors.transparent,
                               borderRadius: BorderRadius.circular(6),
                             ),
@@ -307,7 +308,7 @@ class _TeamsScreenState extends ConsumerState<TeamsScreen> {
                               style: GoogleFonts.inter(
                                 color: !_showMyTeams
                                     ? Colors.white
-                                    : const Color(0xFF575D78),
+                                    : AppColors.lightTextSecondary,
                                 fontWeight: !_showMyTeams
                                     ? FontWeight.w600
                                     : FontWeight.w400,
@@ -325,7 +326,7 @@ class _TeamsScreenState extends ConsumerState<TeamsScreen> {
                             padding: const EdgeInsets.symmetric(vertical: 8),
                             decoration: BoxDecoration(
                               color: _showMyTeams
-                                  ? const Color(0xFF1A2138)
+                                  ? AppColors.darkSurface
                                   : Colors.transparent,
                               borderRadius: BorderRadius.circular(6),
                             ),
@@ -334,7 +335,7 @@ class _TeamsScreenState extends ConsumerState<TeamsScreen> {
                               style: GoogleFonts.inter(
                                 color: _showMyTeams
                                     ? Colors.white
-                                    : const Color(0xFF575D78),
+                                    : AppColors.lightTextSecondary,
                                 fontWeight: _showMyTeams
                                     ? FontWeight.w600
                                     : FontWeight.w400,
@@ -353,7 +354,7 @@ class _TeamsScreenState extends ConsumerState<TeamsScreen> {
                     color: const Color(0xFFF0F2F5), // light grey background
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
-                      color: const Color(0xFFDDE0E8),
+                      color: AppColors.lightBorder,
                       width: 1,
                     ),
                   ),
@@ -363,20 +364,20 @@ class _TeamsScreenState extends ConsumerState<TeamsScreen> {
                         child: TextField(
                           controller: _searchController,
                           onChanged: (val) => setState(() => _searchQuery = val),
-                          cursorColor: const Color(0xFF1A2138),
+                          cursorColor: AppColors.darkSurface,
                           style: GoogleFonts.inter(
-                            color: const Color(0xFF1A2138),
+                            color: AppColors.darkSurface,
                             fontSize: 14,
                           ),
                           decoration: InputDecoration(
                             hintText: 'Search teams, players, or IDs...',
                             hintStyle: GoogleFonts.inter(
-                              color: const Color(0xFF8E95A5),
+                              color: AppColors.lightTextMuted,
                               fontSize: 14,
                             ),
                             prefixIcon: const Icon(
                               Icons.search,
-                              color: Color(0xFF8E95A5),
+                              color: AppColors.lightTextMuted,
                             ),
                             border: InputBorder.none,
                             contentPadding: const EdgeInsets.symmetric(vertical: 14),
@@ -384,7 +385,7 @@ class _TeamsScreenState extends ConsumerState<TeamsScreen> {
                         ),
                       ),
                       IconButton(
-                        icon: const Icon(Icons.qr_code_scanner, color: Color(0xFF8E95A5)),
+                        icon: const Icon(Icons.qr_code_scanner, color: AppColors.lightTextMuted),
                         onPressed: () async {
                           final result = await context.push<String>('/team-scanner');
                           if (result != null && result.isNotEmpty) {
@@ -411,7 +412,7 @@ class _TeamsScreenState extends ConsumerState<TeamsScreen> {
                 Text(
                   _showMyTeams ? 'My Teams' : 'All Teams',
                   style: GoogleFonts.plusJakartaSans(
-                    color: const Color(0xFF575D78),
+                    color: AppColors.lightTextSecondary,
                     fontWeight: FontWeight.w600,
                     fontSize: 16,
                   ),
@@ -419,7 +420,7 @@ class _TeamsScreenState extends ConsumerState<TeamsScreen> {
                 Text(
                   '${displayTeams.length} TEAMS',
                   style: GoogleFonts.inter(
-                    color: const Color(0xFFBA0013),
+                    color: AppColors.primary,
                     fontWeight: FontWeight.w700,
                     fontSize: 10,
                     letterSpacing: 0.8,
@@ -430,7 +431,7 @@ class _TeamsScreenState extends ConsumerState<TeamsScreen> {
           ),
           Expanded(
             child: RefreshIndicator(
-              color: const Color(0xFFBA0013),
+              color: AppColors.primary,
               onRefresh: () => ref.read(teamsProvider.notifier).refresh(),
               child: displayTeams.isEmpty
                   ? SingleChildScrollView(
@@ -447,7 +448,7 @@ class _TeamsScreenState extends ConsumerState<TeamsScreen> {
                                   ? Icons.groups_3_outlined
                                   : Icons.shield_outlined,
                               size: 60,
-                              color: const Color(0xFF94A3B8),
+                              color: AppColors.darkTextSecondary,
                             ),
                             const SizedBox(height: 14),
                             Text(
@@ -457,7 +458,7 @@ class _TeamsScreenState extends ConsumerState<TeamsScreen> {
                               style: GoogleFonts.plusJakartaSans(
                                 fontSize: 18,
                                 fontWeight: FontWeight.w700,
-                                color: const Color(0xFF1E293B),
+                                color: AppColors.darkCard,
                               ),
                             ),
                             const SizedBox(height: 6),
@@ -468,7 +469,7 @@ class _TeamsScreenState extends ConsumerState<TeamsScreen> {
                               textAlign: TextAlign.center,
                               style: GoogleFonts.inter(
                                 fontSize: 13,
-                                color: const Color(0xFF64748B),
+                                color: AppColors.darkTextMuted,
                               ),
                             ),
                             if (_showMyTeams) ...[
@@ -488,7 +489,7 @@ class _TeamsScreenState extends ConsumerState<TeamsScreen> {
                                   ),
                                 ),
                                 style: ElevatedButton.styleFrom(
-                                  backgroundColor: const Color(0xFFBA0013),
+                                  backgroundColor: AppColors.primary,
                                   foregroundColor: Colors.white,
                                   padding: const EdgeInsets.symmetric(
                                     horizontal: 20,
@@ -581,7 +582,7 @@ class _TeamCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(8),
           child: Row(
           children: [
-            Container(width: 4, height: 80, color: const Color(0xFFBA0013)),
+            Container(width: 4, height: 80, color: AppColors.primary),
             Expanded(
               child: Padding(
                 padding: const EdgeInsets.all(12.0),
@@ -591,7 +592,7 @@ class _TeamCard extends StatelessWidget {
                       width: 50,
                       height: 50,
                       decoration: BoxDecoration(
-                        color: const Color(0xFFBA0013),
+                        color: AppColors.primary,
                         borderRadius: BorderRadius.circular(8),
                         image: team.logoUrl != null
                             ? DecorationImage(
@@ -623,7 +624,7 @@ class _TeamCard extends StatelessWidget {
                                 child: Text(
                                   team.name,
                                   style: GoogleFonts.plusJakartaSans(
-                                    color: const Color(0xFF191C1E),
+                                    color: AppColors.lightTextPrimary,
                                     fontWeight: FontWeight.w600,
                                     fontSize: 14,
                                   ),
@@ -638,7 +639,7 @@ class _TeamCard extends StatelessWidget {
                                     vertical: 2,
                                   ),
                                   decoration: BoxDecoration(
-                                    color: const Color(0xFF006B1B),
+                                    color: AppColors.successDark,
                                     borderRadius: BorderRadius.circular(4),
                                   ),
                                   child: Text(
@@ -660,13 +661,13 @@ class _TeamCard extends StatelessWidget {
                               const Icon(
                                 Icons.calendar_today,
                                 size: 10,
-                                color: Color(0xFF8E95A5),
+                                color: AppColors.lightTextMuted,
                               ),
                               const SizedBox(width: 4),
                               Text(
                                 'Active: $activeDate',
                                 style: GoogleFonts.inter(
-                                  color: const Color(0xFF575D78),
+                                  color: AppColors.lightTextSecondary,
                                   fontSize: 10,
                                 ),
                               ),
@@ -678,13 +679,13 @@ class _TeamCard extends StatelessWidget {
                               const Icon(
                                 Icons.location_on_outlined,
                                 size: 10,
-                                color: Color(0xFF8E95A5),
+                                color: AppColors.lightTextMuted,
                               ),
                               const SizedBox(width: 4),
                               Text(
                                 team.location,
                                 style: GoogleFonts.inter(
-                                  color: const Color(0xFF575D78),
+                                  color: AppColors.lightTextSecondary,
                                   fontSize: 10,
                                 ),
                               ),
@@ -702,7 +703,7 @@ class _TeamCard extends StatelessWidget {
                           padding: const EdgeInsets.all(8),
                           icon: const Icon(
                             Icons.qr_code,
-                            color: Color(0xFF575D78),
+                            color: AppColors.lightTextSecondary,
                             size: 18,
                           ),
                           onPressed: () {
@@ -718,7 +719,7 @@ class _TeamCard extends StatelessWidget {
                           padding: const EdgeInsets.all(8),
                           icon: const Icon(
                             Icons.remove_red_eye_outlined,
-                            color: Color(0xFF575D78),
+                            color: AppColors.lightTextSecondary,
                             size: 18,
                           ),
                           onPressed: () {
@@ -737,7 +738,7 @@ class _TeamCard extends StatelessWidget {
                             padding: const EdgeInsets.all(8),
                             icon: const Icon(
                               Icons.edit_outlined,
-                              color: Color(0xFF575D78),
+                              color: AppColors.lightTextSecondary,
                               size: 18,
                             ),
                             onPressed: () {
@@ -774,7 +775,7 @@ class _TeamCard extends StatelessWidget {
             width: 40,
             height: 4,
             decoration: BoxDecoration(
-              color: const Color(0xFFDDE0E8),
+              color: AppColors.lightBorder,
               borderRadius: BorderRadius.circular(2),
             ),
           ),
@@ -788,13 +789,13 @@ class _TeamCard extends StatelessWidget {
                   style: GoogleFonts.plusJakartaSans(
                     fontSize: 18,
                     fontWeight: FontWeight.w700,
-                    color: const Color(0xFF191C1E),
+                    color: AppColors.lightTextPrimary,
                   ),
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
               IconButton(
-                icon: const Icon(Icons.close, color: Color(0xFF575D78)),
+                icon: const Icon(Icons.close, color: AppColors.lightTextSecondary),
                 onPressed: () => Navigator.pop(context),
               ),
             ],
@@ -804,7 +805,7 @@ class _TeamCard extends StatelessWidget {
             'Scan this code to find this team in Discovery',
             style: GoogleFonts.inter(
               fontSize: 13,
-              color: const Color(0xFF575D78),
+              color: AppColors.lightTextSecondary,
             ),
           ),
           const SizedBox(height: 24),
@@ -822,21 +823,21 @@ class _TeamCard extends StatelessWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               decoration: BoxDecoration(
-                color: const Color(0xFFF7F9FC),
+                color: AppColors.lightBg,
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: const Color(0xFFDDE0E8)),
+                border: Border.all(color: AppColors.lightBorder),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(Icons.tag, size: 16, color: Color(0xFF575D78)),
+                  const Icon(Icons.tag, size: 16, color: AppColors.lightTextSecondary),
                   const SizedBox(width: 6),
                   Text(
                     team.teamCode,
                     style: GoogleFonts.inter(
                       fontSize: 14,
                       fontWeight: FontWeight.w700,
-                      color: const Color(0xFF191C1E),
+                      color: AppColors.lightTextPrimary,
                       letterSpacing: 1.2,
                     ),
                   ),

@@ -6,7 +6,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
 
 import '../../core/config/insforge_config.dart';
-import '../../core/theme/colors.dart';
+import 'package:scorely/core/theme/colors.dart';
 import '../../providers/profile_provider.dart';
 import 'providers/teams_provider.dart';
 
@@ -105,7 +105,7 @@ class _JoinTeamHandlerState extends ConsumerState<JoinTeamHandler> {
               'Successfully joined squad!',
               style: GoogleFonts.inter(color: Colors.white),
             ),
-            backgroundColor: const Color(0xFF006B1B),
+            backgroundColor: AppColors.successDark,
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(8),
@@ -138,9 +138,9 @@ class _JoinTeamHandlerState extends ConsumerState<JoinTeamHandler> {
 
     if (!profile.isLoggedIn) {
       return Scaffold(
-        backgroundColor: const Color(0xFFF7F9FC),
+        backgroundColor: AppColors.lightBg,
         appBar: AppBar(
-          backgroundColor: const Color(0xFF1A2138),
+          backgroundColor: AppColors.darkSurface,
           elevation: 0,
           title: Text(
             'JOIN TEAM',
@@ -171,7 +171,7 @@ class _JoinTeamHandlerState extends ConsumerState<JoinTeamHandler> {
                   ),
                   child: const Icon(
                     Icons.groups_2_rounded,
-                    color: Color(0xFFBA0013),
+                    color: AppColors.primary,
                     size: 40,
                   ),
                 ),
@@ -182,7 +182,7 @@ class _JoinTeamHandlerState extends ConsumerState<JoinTeamHandler> {
                   style: GoogleFonts.plusJakartaSans(
                     fontSize: 20,
                     fontWeight: FontWeight.w700,
-                    color: const Color(0xFF191C1E),
+                    color: AppColors.lightTextPrimary,
                   ),
                 ),
                 const SizedBox(height: 12),
@@ -191,7 +191,7 @@ class _JoinTeamHandlerState extends ConsumerState<JoinTeamHandler> {
                   textAlign: TextAlign.center,
                   style: GoogleFonts.inter(
                     fontSize: 13,
-                    color: const Color(0xFF575D78),
+                    color: AppColors.lightTextSecondary,
                     height: 1.5,
                   ),
                 ),
@@ -211,7 +211,7 @@ class _JoinTeamHandlerState extends ConsumerState<JoinTeamHandler> {
                       ),
                     ),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFBA0013),
+                      backgroundColor: AppColors.primary,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(10),
                       ),
@@ -225,7 +225,7 @@ class _JoinTeamHandlerState extends ConsumerState<JoinTeamHandler> {
                   child: Text(
                     'Cancel',
                     style: GoogleFonts.inter(
-                      color: const Color(0xFF575D78),
+                      color: AppColors.lightTextSecondary,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -244,7 +244,7 @@ class _JoinTeamHandlerState extends ConsumerState<JoinTeamHandler> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             if (_isJoining) ...[
-              const CircularProgressIndicator(color: Color(0xFFBA0013)),
+              const CircularProgressIndicator(color: AppColors.primary),
               const SizedBox(height: 16),
               Text(
                 'Joining team...',
@@ -255,7 +255,7 @@ class _JoinTeamHandlerState extends ConsumerState<JoinTeamHandler> {
                 ),
               ),
             ] else if (_errorMessage != null) ...[
-              const Icon(Icons.error_outline, color: Color(0xFFBA0013), size: 48),
+              const Icon(Icons.error_outline, color: AppColors.primary, size: 48),
               const SizedBox(height: 16),
               Text(
                 _errorMessage!,

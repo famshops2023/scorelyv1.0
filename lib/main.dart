@@ -122,7 +122,11 @@ class _ScorelyAppState extends ConsumerState<ScorelyApp> {
     return MaterialApp.router(
       title: 'Scorely',
       debugShowCheckedModeBanner: false,
-      theme: AppTheme.darkTheme,
+      theme: AppTheme.lightTheme,
+      darkTheme: AppTheme.darkTheme,
+      // Force light mode — dark screens manage their own Scaffold backgroundColor.
+      // Remove themeMode override to honour OS setting once full dark-mode is supported.
+      themeMode: ThemeMode.light,
       routerConfig: goRouter,
     );
   }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:scorely/core/theme/colors.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -69,7 +70,7 @@ class _ScorelyShellState extends ConsumerState<ScorelyShell> {
             child: Container(
               decoration: const BoxDecoration(
                 color: Colors.white,
-                border: Border(top: BorderSide(color: Color(0xFFBA0013), width: 6)),
+                border: Border(top: BorderSide(color: AppColors.primary, width: 6)),
               ),
               child: Padding(
                 padding: const EdgeInsets.all(24.0),
@@ -83,7 +84,7 @@ class _ScorelyShellState extends ConsumerState<ScorelyShell> {
                         color: Color(0xFFFFEBEE),
                         shape: BoxShape.circle,
                       ),
-                      child: const Icon(Icons.info, color: Color(0xFFBA0013), size: 32),
+                      child: const Icon(Icons.info, color: AppColors.primary, size: 32),
                     ),
                     const SizedBox(height: 16),
                     Text(
@@ -91,7 +92,7 @@ class _ScorelyShellState extends ConsumerState<ScorelyShell> {
                       style: GoogleFonts.plusJakartaSans(
                         fontSize: 20,
                         fontWeight: FontWeight.w700,
-                        color: const Color(0xFF1A2138),
+                        color: AppColors.darkSurface,
                       ),
                     ),
                     const SizedBox(height: 12),
@@ -100,7 +101,7 @@ class _ScorelyShellState extends ConsumerState<ScorelyShell> {
                       width: double.infinity,
                       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFF7F9FC),
+                        color: AppColors.lightBg,
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(color: const Color(0xFFE0E3E6)),
                       ),
@@ -114,7 +115,7 @@ class _ScorelyShellState extends ConsumerState<ScorelyShell> {
                                 style: GoogleFonts.plusJakartaSans(
                                   fontSize: 22,
                                   fontWeight: FontWeight.w800,
-                                  color: const Color(0xFFBA0013),
+                                  color: AppColors.primary,
                                 ),
                               ),
                               Text(
@@ -134,7 +135,7 @@ class _ScorelyShellState extends ConsumerState<ScorelyShell> {
                                 style: GoogleFonts.plusJakartaSans(
                                   fontSize: 22,
                                   fontWeight: FontWeight.w800,
-                                  color: const Color(0xFF1A2138),
+                                  color: AppColors.darkSurface,
                                 ),
                               ),
                               Text(
@@ -170,14 +171,14 @@ class _ScorelyShellState extends ConsumerState<ScorelyShell> {
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(12),
                               ),
-                              side: const BorderSide(color: Color(0xFF1A2138)),
+                              side: const BorderSide(color: AppColors.darkSurface),
                             ),
                             child: Text(
                               'CANCEL',
                               style: GoogleFonts.plusJakartaSans(
                                 fontSize: 14,
                                 fontWeight: FontWeight.w700,
-                                color: const Color(0xFF1A2138),
+                                color: AppColors.darkSurface,
                               ),
                             ),
                           ),
@@ -187,7 +188,7 @@ class _ScorelyShellState extends ConsumerState<ScorelyShell> {
                           child: ElevatedButton(
                             onPressed: () => Navigator.pop(context, true),
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFFBA0013),
+                              backgroundColor: AppColors.primary,
                               padding: const EdgeInsets.symmetric(vertical: 16),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(12),
@@ -263,7 +264,7 @@ class _ScorelyShellState extends ConsumerState<ScorelyShell> {
                 style: GoogleFonts.plusJakartaSans(
                   fontSize: 22,
                   fontWeight: FontWeight.w800,
-                  color: const Color(0xFF191C1E),
+                  color: AppColors.lightTextPrimary,
                 ),
               ),
               const SizedBox(height: 6),
@@ -271,7 +272,7 @@ class _ScorelyShellState extends ConsumerState<ScorelyShell> {
                 'Choose how you want to configure your cricket match',
                 style: GoogleFonts.inter(
                   fontSize: 14,
-                  color: const Color(0xFF575D78),
+                  color: AppColors.lightTextSecondary,
                 ),
               ),
               const SizedBox(height: 24),
@@ -285,11 +286,11 @@ class _ScorelyShellState extends ConsumerState<ScorelyShell> {
                 child: Container(
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFBA0013),
+                    color: AppColors.primary,
                     borderRadius: BorderRadius.circular(16),
                     boxShadow: [
                       BoxShadow(
-                        color: const Color(0xFFBA0013).withValues(alpha: 0.25),
+                        color: AppColors.primary.withValues(alpha: 0.25),
                         blurRadius: 16,
                         offset: const Offset(0, 8),
                       ),
@@ -357,7 +358,7 @@ class _ScorelyShellState extends ConsumerState<ScorelyShell> {
                           color: Colors.white,
                           shape: BoxShape.circle,
                         ),
-                        child: const Icon(Icons.calendar_today_outlined, color: Color(0xFFBA0013), size: 24),
+                        child: const Icon(Icons.calendar_today_outlined, color: AppColors.primary, size: 24),
                       ),
                       const SizedBox(width: 16),
                       Expanded(
@@ -369,7 +370,7 @@ class _ScorelyShellState extends ConsumerState<ScorelyShell> {
                               style: GoogleFonts.plusJakartaSans(
                                 fontSize: 18,
                                 fontWeight: FontWeight.w800,
-                                color: const Color(0xFF191C1E),
+                                color: AppColors.lightTextPrimary,
                                 letterSpacing: 0.5,
                               ),
                             ),
@@ -378,13 +379,13 @@ class _ScorelyShellState extends ConsumerState<ScorelyShell> {
                               'Configure a planned match with detailed configurations',
                               style: GoogleFonts.inter(
                                 fontSize: 12,
-                                color: const Color(0xFF575D78),
+                                color: AppColors.lightTextSecondary,
                               ),
                             ),
                           ],
                         ),
                       ),
-                      const Icon(Icons.arrow_forward_ios, color: Color(0xFF191C1E), size: 16),
+                      const Icon(Icons.arrow_forward_ios, color: AppColors.lightTextPrimary, size: 16),
                     ],
                   ),
                 ),
@@ -460,7 +461,7 @@ class _ScorelyShellState extends ConsumerState<ScorelyShell> {
                 ),
                 child: Icon(
                   isActive ? filledIcon : outlineIcon,
-                  color: isActive ? const Color(0xFFBA0013) : const Color(0xFF575D78),
+                  color: isActive ? AppColors.primary : AppColors.lightTextSecondary,
                   size: 22,
                 ),
               ),
@@ -470,7 +471,7 @@ class _ScorelyShellState extends ConsumerState<ScorelyShell> {
                 style: GoogleFonts.inter(
                   fontSize: 10,
                   fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
-                  color: isActive ? const Color(0xFFBA0013) : const Color(0xFF575D78),
+                  color: isActive ? AppColors.primary : AppColors.lightTextSecondary,
                 ),
               ),
             ],
@@ -487,11 +488,11 @@ class _ScorelyShellState extends ConsumerState<ScorelyShell> {
         width: 54,
         height: 54,
         decoration: BoxDecoration(
-          color: const Color(0xFFBA0013),
+          color: AppColors.primary,
           shape: BoxShape.circle,
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFFBA0013).withValues(alpha: 0.3),
+              color: AppColors.primary.withValues(alpha: 0.3),
               blurRadius: 12,
               offset: const Offset(0, 4),
             ),

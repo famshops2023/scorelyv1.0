@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:scorely/core/theme/colors.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:confetti/confetti.dart';
@@ -81,7 +82,7 @@ class _MatchResultScreenState extends ConsumerState<MatchResultScreen> {
     final String? logoUrl = winningTeam.id.isNotEmpty ? winningTeam.logoUrl : null;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF7F9FC),
+      backgroundColor: AppColors.lightBg,
       appBar: AppBar(
         backgroundColor: const Color(0xFF1a2238),
         elevation: 0,
@@ -133,7 +134,7 @@ class _MatchResultScreenState extends ConsumerState<MatchResultScreen> {
                 Colors.pink,
                 Colors.orange,
                 Colors.purple,
-                Color(0xFFBA0013),
+                AppColors.primary,
               ],
               createParticlePath: drawStar,
             ),
@@ -161,7 +162,7 @@ class _MatchResultScreenState extends ConsumerState<MatchResultScreen> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFBA0013), width: 1),
+        border: Border.all(color: AppColors.primary, width: 1),
         boxShadow: const [
           BoxShadow(
             color: Color.fromRGBO(26, 33, 56, 0.08),
@@ -177,7 +178,7 @@ class _MatchResultScreenState extends ConsumerState<MatchResultScreen> {
             width: double.infinity,
             padding: const EdgeInsets.symmetric(vertical: 12),
             decoration: const BoxDecoration(
-              color: Color(0xFFBA0013),
+              color: AppColors.primary,
               borderRadius: BorderRadius.only(
                 topLeft: Radius.circular(15),
                 topRight: Radius.circular(15),
@@ -296,7 +297,7 @@ class _MatchResultScreenState extends ConsumerState<MatchResultScreen> {
                         height: 40,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          color: const Color(0xFFBA0013),
+                          color: AppColors.primary,
                           border: Border.all(color: Colors.white, width: 2),
                           boxShadow: const [
                             BoxShadow(
@@ -318,7 +319,7 @@ class _MatchResultScreenState extends ConsumerState<MatchResultScreen> {
                   style: GoogleFonts.plusJakartaSans(
                     fontSize: 24,
                     fontWeight: FontWeight.w700,
-                    color: const Color(0xFF191C1E),
+                    color: AppColors.lightTextPrimary,
                   ),
                   textAlign: TextAlign.center,
                 ),
@@ -328,7 +329,7 @@ class _MatchResultScreenState extends ConsumerState<MatchResultScreen> {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFBA0013).withValues(alpha: 0.1),
+                    color: AppColors.primary.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(999),
                   ),
                   child: Text(
@@ -358,7 +359,7 @@ class _MatchResultScreenState extends ConsumerState<MatchResultScreen> {
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(12),
-              border: const Border(left: BorderSide(color: Color(0xFFBA0013), width: 4)),
+              border: const Border(left: BorderSide(color: AppColors.primary, width: 4)),
               boxShadow: const [
                 BoxShadow(
                   color: Color.fromRGBO(26, 33, 56, 0.08),
@@ -375,7 +376,7 @@ class _MatchResultScreenState extends ConsumerState<MatchResultScreen> {
                   style: GoogleFonts.inter(
                     fontSize: 12,
                     fontWeight: FontWeight.w700,
-                    color: const Color(0xFFBA0013),
+                    color: AppColors.primary,
                     letterSpacing: 0.5,
                   ),
                   maxLines: 1,
@@ -391,7 +392,7 @@ class _MatchResultScreenState extends ConsumerState<MatchResultScreen> {
                       style: GoogleFonts.plusJakartaSans(
                         fontSize: 24,
                         fontWeight: FontWeight.w700,
-                        color: const Color(0xFF191C1E),
+                        color: AppColors.lightTextPrimary,
                       ),
                     ),
                     Text(
@@ -399,7 +400,7 @@ class _MatchResultScreenState extends ConsumerState<MatchResultScreen> {
                       style: GoogleFonts.plusJakartaSans(
                         fontSize: 20,
                         fontWeight: FontWeight.w600,
-                        color: const Color(0xFF575D78),
+                        color: AppColors.lightTextSecondary,
                       ),
                     ),
                   ],
@@ -424,7 +425,7 @@ class _MatchResultScreenState extends ConsumerState<MatchResultScreen> {
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(12),
-              border: const Border(left: BorderSide(color: Color(0xFF575D78), width: 4)),
+              border: const Border(left: BorderSide(color: AppColors.lightTextSecondary, width: 4)),
               boxShadow: const [
                 BoxShadow(
                   color: Color.fromRGBO(26, 33, 56, 0.08),
@@ -441,7 +442,7 @@ class _MatchResultScreenState extends ConsumerState<MatchResultScreen> {
                   style: GoogleFonts.inter(
                     fontSize: 12,
                     fontWeight: FontWeight.w700,
-                    color: const Color(0xFF575D78),
+                    color: AppColors.lightTextSecondary,
                     letterSpacing: 0.5,
                   ),
                   maxLines: 1,
@@ -457,7 +458,7 @@ class _MatchResultScreenState extends ConsumerState<MatchResultScreen> {
                       style: GoogleFonts.plusJakartaSans(
                         fontSize: 24,
                         fontWeight: FontWeight.w700,
-                        color: const Color(0xFF191C1E),
+                        color: AppColors.lightTextPrimary,
                       ),
                     ),
                     Text(
@@ -465,7 +466,7 @@ class _MatchResultScreenState extends ConsumerState<MatchResultScreen> {
                       style: GoogleFonts.plusJakartaSans(
                         fontSize: 20,
                         fontWeight: FontWeight.w600,
-                        color: const Color(0xFF575D78),
+                        color: AppColors.lightTextSecondary,
                       ),
                     ),
                   ],
@@ -518,9 +519,9 @@ class _MatchResultScreenState extends ConsumerState<MatchResultScreen> {
               SharePlus.instance.share(ShareParams(text: shareText));
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFBA0013),
+              backgroundColor: AppColors.primary,
               elevation: 4,
-              shadowColor: const Color(0xFFBA0013).withValues(alpha: 0.5),
+              shadowColor: AppColors.primary.withValues(alpha: 0.5),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
@@ -572,7 +573,7 @@ class _MatchResultScreenState extends ConsumerState<MatchResultScreen> {
               style: GoogleFonts.plusJakartaSans(
                 fontSize: 18,
                 fontWeight: FontWeight.w600,
-                color: const Color(0xFF1A2138),
+                color: AppColors.darkSurface,
               ),
             ),
           ),
@@ -630,7 +631,7 @@ class _MatchResultScreenState extends ConsumerState<MatchResultScreen> {
   }
 
   Widget _buildNavItem(IconData icon, String label, {bool isActive = false, VoidCallback? onTap}) {
-    final color = isActive ? const Color(0xFFBA0013) : const Color(0xFF575D78);
+    final color = isActive ? AppColors.primary : AppColors.lightTextSecondary;
     
     return GestureDetector(
       onTap: onTap,
@@ -638,7 +639,7 @@ class _MatchResultScreenState extends ConsumerState<MatchResultScreen> {
       child: Container(
         padding: const EdgeInsets.all(4),
         decoration: isActive ? BoxDecoration(
-          color: const Color(0xFFBA0013).withValues(alpha: 0.1),
+          color: AppColors.primary.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(12),
         ) : null,
         child: Column(
@@ -704,7 +705,7 @@ class _CloneSetupDialogState extends State<CloneSetupDialog> {
               ),
               child: const Icon(
                 Icons.assignment_outlined,
-                color: Color(0xFFBA0013),
+                color: AppColors.primary,
                 size: 32,
               ),
             ),
@@ -715,7 +716,7 @@ class _CloneSetupDialogState extends State<CloneSetupDialog> {
               style: GoogleFonts.plusJakartaSans(
                 fontSize: 20,
                 fontWeight: FontWeight.w800,
-                color: const Color(0xFF191C1E),
+                color: AppColors.lightTextPrimary,
                 letterSpacing: -0.5,
               ),
               textAlign: TextAlign.center,
@@ -727,7 +728,7 @@ class _CloneSetupDialogState extends State<CloneSetupDialog> {
               style: GoogleFonts.inter(
                 fontSize: 14,
                 fontWeight: FontWeight.w400,
-                color: const Color(0xFF575D78),
+                color: AppColors.lightTextSecondary,
               ),
               textAlign: TextAlign.center,
             ),
@@ -777,7 +778,7 @@ class _CloneSetupDialogState extends State<CloneSetupDialog> {
                         style: GoogleFonts.plusJakartaSans(
                           fontSize: 14,
                           fontWeight: FontWeight.w700,
-                          color: const Color(0xFF575D78),
+                          color: AppColors.lightTextSecondary,
                           letterSpacing: 0.5,
                         ),
                       ),
@@ -794,7 +795,7 @@ class _CloneSetupDialogState extends State<CloneSetupDialog> {
                         _handleCloneAction();
                       },
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFFBA0013),
+                        backgroundColor: AppColors.primary,
                         elevation: 0,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
@@ -832,10 +833,10 @@ class _CloneSetupDialogState extends State<CloneSetupDialog> {
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: const Color(0xFFF7F9FC),
+          color: AppColors.lightBg,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: isSelected ? const Color(0xFFBA0013) : const Color(0xFFECEEF1),
+            color: isSelected ? AppColors.primary : const Color(0xFFECEEF1),
             width: isSelected ? 1.5 : 1,
           ),
         ),
@@ -848,7 +849,7 @@ class _CloneSetupDialogState extends State<CloneSetupDialog> {
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: Icon(icon, color: const Color(0xFF575D78), size: 20),
+              child: Icon(icon, color: AppColors.lightTextSecondary, size: 20),
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -860,7 +861,7 @@ class _CloneSetupDialogState extends State<CloneSetupDialog> {
                     style: GoogleFonts.plusJakartaSans(
                       fontSize: 15,
                       fontWeight: FontWeight.w700,
-                      color: const Color(0xFF191C1E),
+                      color: AppColors.lightTextPrimary,
                     ),
                   ),
                   const SizedBox(height: 2),
@@ -869,7 +870,7 @@ class _CloneSetupDialogState extends State<CloneSetupDialog> {
                     style: GoogleFonts.inter(
                       fontSize: 12,
                       fontWeight: FontWeight.w400,
-                      color: const Color(0xFF8E95A5),
+                      color: AppColors.lightTextMuted,
                     ),
                   ),
                 ],
@@ -878,7 +879,7 @@ class _CloneSetupDialogState extends State<CloneSetupDialog> {
             const SizedBox(width: 8),
             Icon(
               isSelected ? Icons.check_circle : Icons.radio_button_unchecked,
-              color: isSelected ? const Color(0xFFBA0013) : const Color(0xFFD8DADD),
+              color: isSelected ? AppColors.primary : const Color(0xFFD8DADD),
               size: 24,
             ),
           ],

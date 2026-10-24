@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:scorely/core/theme/colors.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -78,7 +79,7 @@ class _LiveMatchPromoDialog extends StatelessWidget {
               padding: const EdgeInsets.symmetric(vertical: 24),
               decoration: const BoxDecoration(
                 gradient: LinearGradient(
-                  colors: [Color(0xFFBA0013), Color(0xFF7B000D)],
+                  colors: [AppColors.primary, Color(0xFF7B000D)],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
@@ -119,7 +120,7 @@ class _LiveMatchPromoDialog extends StatelessWidget {
                     'Let others view the match!',
                     textAlign: TextAlign.center,
                     style: GoogleFonts.plusJakartaSans(
-                      color: const Color(0xFF1A2138),
+                      color: AppColors.darkSurface,
                       fontSize: 20,
                       fontWeight: FontWeight.w800,
                     ),
@@ -130,7 +131,7 @@ class _LiveMatchPromoDialog extends StatelessWidget {
                     'can follow the score in real-time from anywhere.',
                     textAlign: TextAlign.center,
                     style: GoogleFonts.inter(
-                      color: const Color(0xFF1A2138).withValues(alpha: 0.7),
+                      color: AppColors.darkSurface.withValues(alpha: 0.7),
                       fontSize: 14,
                       height: 1.5,
                     ),
@@ -155,7 +156,7 @@ class _LiveMatchPromoDialog extends StatelessWidget {
                     child: ElevatedButton(
                       onPressed: () => Navigator.of(context).pop(true),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFFBA0013),
+                        backgroundColor: AppColors.primary,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(14),
                         ),
@@ -178,7 +179,7 @@ class _LiveMatchPromoDialog extends StatelessWidget {
                     child: Text(
                       'Cancel — score offline',
                       style: GoogleFonts.inter(
-                        color: const Color(0xFF1A2138).withValues(alpha: 0.5),
+                        color: AppColors.darkSurface.withValues(alpha: 0.5),
                         fontSize: 13,
                       ),
                     ),
@@ -197,19 +198,19 @@ class _LiveMatchPromoDialog extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
-        color: const Color(0xFF1A2138).withValues(alpha: 0.05),
+        color: AppColors.darkSurface.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFF1A2138).withValues(alpha: 0.1)),
+        border: Border.all(color: AppColors.darkSurface.withValues(alpha: 0.1)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, color: const Color(0xFF1A2138).withValues(alpha: 0.6), size: 14),
+          Icon(icon, color: AppColors.darkSurface.withValues(alpha: 0.6), size: 14),
           const SizedBox(width: 6),
           Text(
             label,
             style: GoogleFonts.inter(
-              color: const Color(0xFF1A2138).withValues(alpha: 0.7),
+              color: AppColors.darkSurface.withValues(alpha: 0.7),
               fontSize: 12,
               fontWeight: FontWeight.w500,
             ),

@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../../core/theme/colors.dart';
+import 'package:scorely/core/theme/colors.dart';
 import '../../core/theme/typography.dart';
 import '../../providers/history_provider.dart';
 import '../../providers/profile_provider.dart';

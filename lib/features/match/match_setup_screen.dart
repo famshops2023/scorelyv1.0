@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:scorely/core/theme/colors.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -238,7 +239,7 @@ class _MatchSetupScreenState extends ConsumerState<MatchSetupScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Both Team A and Team B must be selected'),
-          backgroundColor: Color(0xFFBA0013),
+          backgroundColor: AppColors.primary,
         ),
       );
       return;
@@ -287,9 +288,9 @@ class _MatchSetupScreenState extends ConsumerState<MatchSetupScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF7F9FC),
+      backgroundColor: AppColors.lightBg,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF191C1E),
+        backgroundColor: AppColors.lightTextPrimary,
         elevation: 0,
         centerTitle: true,
         leading: IconButton(
@@ -391,12 +392,12 @@ class _MatchSetupScreenState extends ConsumerState<MatchSetupScreen> {
               child: ElevatedButton.icon(
                 onPressed: _startMatch,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFFBA0013),
+                  backgroundColor: AppColors.primary,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
                   elevation: 4,
-                  shadowColor: const Color(0xFFBA0013).withValues(alpha: 0.4),
+                  shadowColor: AppColors.primary.withValues(alpha: 0.4),
                 ),
                 icon: const Icon(
                   Icons.play_arrow,
@@ -427,7 +428,7 @@ class _MatchSetupScreenState extends ConsumerState<MatchSetupScreen> {
       style: GoogleFonts.inter(
         fontSize: 11,
         fontWeight: FontWeight.w700,
-        color: const Color(0xFF575D78),
+        color: AppColors.lightTextSecondary,
         letterSpacing: 0.8,
       ),
     );
@@ -459,8 +460,8 @@ class _MatchSetupScreenState extends ConsumerState<MatchSetupScreen> {
             height: 70,
             decoration: BoxDecoration(
               color: isTeamA
-                  ? const Color(0xFFBA0013)
-                  : const Color(0xFF191C1E),
+                  ? AppColors.primary
+                  : AppColors.lightTextPrimary,
               borderRadius: const BorderRadius.only(
                 topLeft: Radius.circular(12),
                 bottomLeft: Radius.circular(12),
@@ -479,8 +480,8 @@ class _MatchSetupScreenState extends ConsumerState<MatchSetupScreen> {
                       fontSize: 10,
                       fontWeight: FontWeight.w700,
                       color: isTeamA
-                          ? const Color(0xFFBA0013)
-                          : const Color(0xFF191C1E),
+                          ? AppColors.primary
+                          : AppColors.lightTextPrimary,
                     ),
                   ),
                   TextField(
@@ -500,7 +501,7 @@ class _MatchSetupScreenState extends ConsumerState<MatchSetupScreen> {
                     style: GoogleFonts.inter(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
-                      color: const Color(0xFF191C1E),
+                      color: AppColors.lightTextPrimary,
                     ),
                   ),
                 ],
@@ -524,7 +525,7 @@ class _MatchSetupScreenState extends ConsumerState<MatchSetupScreen> {
                     },
                     child: const Icon(
                       Icons.search,
-                      color: Color(0xFFBA0013),
+                      color: AppColors.primary,
                       size: 24,
                     ),
                   ),
@@ -574,7 +575,7 @@ class _MatchSetupScreenState extends ConsumerState<MatchSetupScreen> {
                 color: const Color(0xFFECEEF1),
                 borderRadius: BorderRadius.circular(16),
               ),
-              child: const Icon(Icons.remove, color: Color(0xFF191C1E)),
+              child: const Icon(Icons.remove, color: AppColors.lightTextPrimary),
             ),
           ),
           Column(
@@ -584,7 +585,7 @@ class _MatchSetupScreenState extends ConsumerState<MatchSetupScreen> {
                 style: GoogleFonts.plusJakartaSans(
                   fontSize: 48,
                   fontWeight: FontWeight.w700,
-                  color: const Color(0xFF191C1E),
+                  color: AppColors.lightTextPrimary,
                   height: 1.0,
                 ),
               ),
@@ -607,11 +608,11 @@ class _MatchSetupScreenState extends ConsumerState<MatchSetupScreen> {
               width: 48,
               height: 48,
               decoration: BoxDecoration(
-                color: const Color(0xFFBA0013),
+                color: AppColors.primary,
                 borderRadius: BorderRadius.circular(16),
                 boxShadow: [
                   BoxShadow(
-                    color: const Color(0xFFBA0013).withValues(alpha: 0.3),
+                    color: AppColors.primary.withValues(alpha: 0.3),
                     blurRadius: 12,
                     offset: const Offset(0, 4),
                   ),
@@ -639,17 +640,17 @@ class _MatchSetupScreenState extends ConsumerState<MatchSetupScreen> {
               margin: const EdgeInsets.symmetric(horizontal: 4),
               padding: const EdgeInsets.symmetric(vertical: 12),
               decoration: BoxDecoration(
-                color: isSelected ? const Color(0xFFBA0013) : Colors.white,
+                color: isSelected ? AppColors.primary : Colors.white,
                 borderRadius: BorderRadius.circular(8),
                 border: Border.all(
                   color: isSelected
-                      ? const Color(0xFFBA0013)
+                      ? AppColors.primary
                       : const Color(0xFFECEEF1),
                 ),
                 boxShadow: isSelected
                     ? [
                         BoxShadow(
-                          color: const Color(0xFFBA0013).withValues(alpha: 0.3),
+                          color: AppColors.primary.withValues(alpha: 0.3),
                           blurRadius: 8,
                           offset: const Offset(0, 2),
                         ),
@@ -662,7 +663,7 @@ class _MatchSetupScreenState extends ConsumerState<MatchSetupScreen> {
                 style: GoogleFonts.plusJakartaSans(
                   fontSize: 16,
                   fontWeight: FontWeight.w700,
-                  color: isSelected ? Colors.white : const Color(0xFF191C1E),
+                  color: isSelected ? Colors.white : AppColors.lightTextPrimary,
                 ),
               ),
             ),
@@ -721,17 +722,17 @@ class _MatchSetupScreenState extends ConsumerState<MatchSetupScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 12),
         decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFFBA0013) : Colors.white,
+          color: isSelected ? AppColors.primary : Colors.white,
           borderRadius: BorderRadius.circular(8),
           border: Border.all(
             color: isSelected
-                ? const Color(0xFFBA0013)
+                ? AppColors.primary
                 : const Color(0xFFECEEF1),
           ),
           boxShadow: isSelected
               ? [
                   BoxShadow(
-                    color: const Color(0xFFBA0013).withValues(alpha: 0.3),
+                    color: AppColors.primary.withValues(alpha: 0.3),
                     blurRadius: 8,
                     offset: const Offset(0, 2),
                   ),
@@ -744,7 +745,7 @@ class _MatchSetupScreenState extends ConsumerState<MatchSetupScreen> {
           style: GoogleFonts.inter(
             fontSize: 12,
             fontWeight: FontWeight.w700,
-            color: isSelected ? Colors.white : const Color(0xFF191C1E),
+            color: isSelected ? Colors.white : AppColors.lightTextPrimary,
           ),
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
@@ -772,7 +773,7 @@ class _MatchSetupScreenState extends ConsumerState<MatchSetupScreen> {
             width: 4,
             height: 56,
             decoration: const BoxDecoration(
-              color: Color(0xFF191C1E),
+              color: AppColors.lightTextPrimary,
               borderRadius: BorderRadius.only(
                 topLeft: Radius.circular(12),
                 bottomLeft: Radius.circular(12),
@@ -797,7 +798,7 @@ class _MatchSetupScreenState extends ConsumerState<MatchSetupScreen> {
                 style: GoogleFonts.inter(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
-                  color: const Color(0xFF191C1E),
+                  color: AppColors.lightTextPrimary,
                 ),
               ),
             ),
@@ -839,7 +840,7 @@ class _MatchSetupScreenState extends ConsumerState<MatchSetupScreen> {
                 style: GoogleFonts.inter(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
-                  color: const Color(0xFF191C1E),
+                  color: AppColors.lightTextPrimary,
                 ),
               ),
               Switch(
@@ -848,7 +849,7 @@ class _MatchSetupScreenState extends ConsumerState<MatchSetupScreen> {
                   setState(() => _isNow = val);
                 },
                 activeThumbColor: Colors.white,
-                activeTrackColor: const Color(0xFFBA0013),
+                activeTrackColor: AppColors.primary,
               ),
             ],
           ),
@@ -878,7 +879,7 @@ class _MatchSetupScreenState extends ConsumerState<MatchSetupScreen> {
                         horizontal: 16,
                       ),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFF7F9FC),
+                        color: AppColors.lightBg,
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Row(
@@ -886,7 +887,7 @@ class _MatchSetupScreenState extends ConsumerState<MatchSetupScreen> {
                           const Icon(
                             Icons.calendar_today,
                             size: 16,
-                            color: Color(0xFF575D78),
+                            color: AppColors.lightTextSecondary,
                           ),
                           const SizedBox(width: 8),
                           Text(
@@ -894,7 +895,7 @@ class _MatchSetupScreenState extends ConsumerState<MatchSetupScreen> {
                             style: GoogleFonts.inter(
                               fontSize: 14,
                               fontWeight: FontWeight.w600,
-                              color: const Color(0xFF191C1E),
+                              color: AppColors.lightTextPrimary,
                             ),
                           ),
                         ],
@@ -920,7 +921,7 @@ class _MatchSetupScreenState extends ConsumerState<MatchSetupScreen> {
                         horizontal: 16,
                       ),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFF7F9FC),
+                        color: AppColors.lightBg,
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Row(
@@ -928,7 +929,7 @@ class _MatchSetupScreenState extends ConsumerState<MatchSetupScreen> {
                           const Icon(
                             Icons.access_time,
                             size: 16,
-                            color: Color(0xFF575D78),
+                            color: AppColors.lightTextSecondary,
                           ),
                           const SizedBox(width: 8),
                           Text(
@@ -936,7 +937,7 @@ class _MatchSetupScreenState extends ConsumerState<MatchSetupScreen> {
                             style: GoogleFonts.inter(
                               fontSize: 14,
                               fontWeight: FontWeight.w600,
-                              color: const Color(0xFF191C1E),
+                              color: AppColors.lightTextPrimary,
                             ),
                           ),
                         ],
@@ -974,7 +975,7 @@ class _MatchSetupScreenState extends ConsumerState<MatchSetupScreen> {
             style: GoogleFonts.inter(
               fontSize: 10,
               fontWeight: FontWeight.w700,
-              color: const Color(0xFF575D78),
+              color: AppColors.lightTextSecondary,
               letterSpacing: 0.5,
             ),
           ),
@@ -996,7 +997,7 @@ class _MatchSetupScreenState extends ConsumerState<MatchSetupScreen> {
                   child: const Icon(
                     Icons.remove,
                     size: 16,
-                    color: Color(0xFF191C1E),
+                    color: AppColors.lightTextPrimary,
                   ),
                 ),
               ),
@@ -1005,7 +1006,7 @@ class _MatchSetupScreenState extends ConsumerState<MatchSetupScreen> {
                 style: GoogleFonts.plusJakartaSans(
                   fontSize: 24,
                   fontWeight: FontWeight.w700,
-                  color: const Color(0xFF191C1E),
+                  color: AppColors.lightTextPrimary,
                 ),
               ),
               GestureDetector(
@@ -1020,7 +1021,7 @@ class _MatchSetupScreenState extends ConsumerState<MatchSetupScreen> {
                   child: const Icon(
                     Icons.add,
                     size: 16,
-                    color: Color(0xFF191C1E),
+                    color: AppColors.lightTextPrimary,
                   ),
                 ),
               ),
@@ -1038,7 +1039,7 @@ class _MatchSetupScreenState extends ConsumerState<MatchSetupScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 12),
         decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFF191C1E) : const Color(0xFFECEEF1),
+          color: isSelected ? AppColors.lightTextPrimary : const Color(0xFFECEEF1),
           borderRadius: BorderRadius.circular(8),
         ),
         child: Row(
@@ -1047,7 +1048,7 @@ class _MatchSetupScreenState extends ConsumerState<MatchSetupScreen> {
             Icon(
               icon,
               size: 16,
-              color: isSelected ? Colors.white : const Color(0xFF575D78),
+              color: isSelected ? Colors.white : AppColors.lightTextSecondary,
             ),
             const SizedBox(width: 6),
             Text(
@@ -1055,7 +1056,7 @@ class _MatchSetupScreenState extends ConsumerState<MatchSetupScreen> {
               style: GoogleFonts.inter(
                 fontSize: 12,
                 fontWeight: FontWeight.w700,
-                color: isSelected ? Colors.white : const Color(0xFF575D78),
+                color: isSelected ? Colors.white : AppColors.lightTextSecondary,
               ),
             ),
           ],
@@ -1100,7 +1101,7 @@ class _MatchSetupScreenState extends ConsumerState<MatchSetupScreen> {
         children: [
           Icon(
             icon,
-            color: isSelected ? const Color(0xFFBA0013) : const Color(0xFF575D78),
+            color: isSelected ? AppColors.primary : AppColors.lightTextSecondary,
             size: 24,
           ),
           const SizedBox(height: 4),
@@ -1110,8 +1111,8 @@ class _MatchSetupScreenState extends ConsumerState<MatchSetupScreen> {
               fontSize: 10,
               fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
               color: isSelected
-                  ? const Color(0xFFBA0013)
-                  : const Color(0xFF575D78),
+                  ? AppColors.primary
+                  : AppColors.lightTextSecondary,
             ),
           ),
         ],

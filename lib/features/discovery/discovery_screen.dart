@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:scorely/core/theme/colors.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -256,7 +257,7 @@ class _DiscoveryScreenState extends ConsumerState<DiscoveryScreen> {
               child: Text(
                 'Done',
                 style: GoogleFonts.inter(
-                  color: const Color(0xFFBA0013),
+                  color: AppColors.primary,
                   fontWeight: FontWeight.w700,
                   fontSize: 15,
                 ),
@@ -317,9 +318,9 @@ class _DiscoveryScreenState extends ConsumerState<DiscoveryScreen> {
           // List with Pull-To-Refresh
           Expanded(
             child: _isLoading
-                ? const Center(child: CircularProgressIndicator(color: Color(0xFFBA0013)))
+                ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
                 : RefreshIndicator(
-                    color: const Color(0xFFBA0013),
+                    color: AppColors.primary,
                     backgroundColor: const Color(0xFF1e2024),
                     onRefresh: () async {
                       await ref.read(teamsProvider.notifier).refresh();
@@ -390,7 +391,7 @@ class _DiscoveryScreenState extends ConsumerState<DiscoveryScreen> {
                     context.pop(selected);
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFBA0013),
+                    backgroundColor: AppColors.primary,
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
@@ -421,7 +422,7 @@ class _DiscoveryScreenState extends ConsumerState<DiscoveryScreen> {
         margin: const EdgeInsets.only(right: 8),
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
         decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFFBA0013) : const Color(0xFF1a1c20),
+          color: isSelected ? AppColors.primary : const Color(0xFF1a1c20),
           borderRadius: BorderRadius.circular(24),
         ),
         child: Text(
@@ -471,7 +472,7 @@ class _DiscoveryScreenState extends ConsumerState<DiscoveryScreen> {
           color: isSelected ? const Color(0xFF2A0A0D) : const Color(0xFF1e2024),
           borderRadius: BorderRadius.circular(8),
           border: Border.all(
-            color: isSelected ? const Color(0xFFBA0013) : const Color(0xFF333539),
+            color: isSelected ? AppColors.primary : const Color(0xFF333539),
             width: isSelected ? 1.5 : 1,
           ),
         ),
@@ -488,7 +489,7 @@ class _DiscoveryScreenState extends ConsumerState<DiscoveryScreen> {
               ),
               child: Center(
                 child: item.type == 'team'
-                    ? const Icon(Icons.shield, color: Color(0xFFBA0013), size: 32)
+                    ? const Icon(Icons.shield, color: AppColors.primary, size: 32)
                     : const Icon(Icons.person, color: Color(0xFFbcc7de), size: 32),
               ),
             ),
@@ -560,10 +561,10 @@ class _DiscoveryScreenState extends ConsumerState<DiscoveryScreen> {
                 width: 24,
                 height: 24,
                 decoration: BoxDecoration(
-                  color: isSelected ? const Color(0xFFBA0013) : Colors.transparent,
+                  color: isSelected ? AppColors.primary : Colors.transparent,
                   borderRadius: BorderRadius.circular(6),
                   border: Border.all(
-                    color: isSelected ? const Color(0xFFBA0013) : const Color(0xFF5A6278),
+                    color: isSelected ? AppColors.primary : const Color(0xFF5A6278),
                     width: 2,
                   ),
                 ),

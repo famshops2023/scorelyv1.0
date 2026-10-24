@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:scorely/core/theme/colors.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../models/match_stats.dart';
 import '../../services/database.dart';
@@ -63,7 +64,7 @@ class _ScoreboardScreenState extends State<ScoreboardScreen> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
-        border: const Border(left: BorderSide(color: Color(0xFFBA0013), width: 4)),
+        border: const Border(left: BorderSide(color: AppColors.primary, width: 4)),
         boxShadow: const [
           BoxShadow(color: Color.fromRGBO(26, 33, 56, 0.08), blurRadius: 20, offset: Offset(0, 4)),
         ],
@@ -80,13 +81,13 @@ class _ScoreboardScreenState extends State<ScoreboardScreen> {
                 Row(
                   children: [
                     if (isLive) ...[
-                      Container(width: 8, height: 8, decoration: const BoxDecoration(color: Color(0xFF006B1B), shape: BoxShape.circle)),
+                      Container(width: 8, height: 8, decoration: const BoxDecoration(color: AppColors.successDark, shape: BoxShape.circle)),
                       const SizedBox(width: 4),
                     ],
                     Text(
                       '${isLive ? 'LIVE • ' : ''}$inningsText',
                       style: GoogleFonts.inter(
-                        color: isLive ? const Color(0xFF006B1B) : const Color(0xFF575D78),
+                        color: isLive ? AppColors.successDark : AppColors.lightTextSecondary,
                         fontSize: 12,
                         fontWeight: FontWeight.bold,
                       ),
@@ -96,7 +97,7 @@ class _ScoreboardScreenState extends State<ScoreboardScreen> {
                 const SizedBox(height: 4),
                 Text(
                   _selectedInnings.teamName,
-                  style: GoogleFonts.plusJakartaSans(fontSize: 24, fontWeight: FontWeight.w700, color: const Color(0xFF191C1E)),
+                  style: GoogleFonts.plusJakartaSans(fontSize: 24, fontWeight: FontWeight.w700, color: AppColors.lightTextPrimary),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -108,12 +109,12 @@ class _ScoreboardScreenState extends State<ScoreboardScreen> {
             children: [
               Text(
                 '${_selectedInnings.totalRuns}/${_selectedInnings.totalWickets}',
-                style: GoogleFonts.plusJakartaSans(fontSize: 36, fontWeight: FontWeight.bold, letterSpacing: -1.0, color: const Color(0xFF191C1E), height: 1.0),
+                style: GoogleFonts.plusJakartaSans(fontSize: 36, fontWeight: FontWeight.bold, letterSpacing: -1.0, color: AppColors.lightTextPrimary, height: 1.0),
               ),
               const SizedBox(height: 4),
               Text(
                 '${_selectedInnings.totalOvers} Overs',
-                style: GoogleFonts.inter(fontSize: 14, color: const Color(0xFF575D78)),
+                style: GoogleFonts.inter(fontSize: 14, color: AppColors.lightTextSecondary),
               ),
             ],
           ),
@@ -156,7 +157,7 @@ class _ScoreboardScreenState extends State<ScoreboardScreen> {
           style: GoogleFonts.inter(
             fontSize: 12,
             fontWeight: FontWeight.bold,
-            color: isSelected ? const Color(0xFFBA0013) : const Color(0xFF575D78),
+            color: isSelected ? AppColors.primary : AppColors.lightTextSecondary,
           ),
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
@@ -204,25 +205,25 @@ class _ScoreboardScreenState extends State<ScoreboardScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: Row(
               children: [
-                Expanded(flex: 4, child: Text('BATTER', style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.bold, color: const Color(0xFF575D78)))),
-                Expanded(flex: 1, child: Text('R', textAlign: TextAlign.center, style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.bold, color: const Color(0xFF575D78)))),
-                Expanded(flex: 1, child: Text('B', textAlign: TextAlign.center, style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.bold, color: const Color(0xFF575D78)))),
-                Expanded(flex: 1, child: Text('4s', textAlign: TextAlign.center, style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.bold, color: const Color(0xFF575D78)))),
-                Expanded(flex: 1, child: Text('6s', textAlign: TextAlign.center, style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.bold, color: const Color(0xFF575D78)))),
-                Expanded(flex: 2, child: Text('SR', textAlign: TextAlign.center, style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.bold, color: const Color(0xFF575D78)))),
+                Expanded(flex: 4, child: Text('BATTER', style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.lightTextSecondary))),
+                Expanded(flex: 1, child: Text('R', textAlign: TextAlign.center, style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.lightTextSecondary))),
+                Expanded(flex: 1, child: Text('B', textAlign: TextAlign.center, style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.lightTextSecondary))),
+                Expanded(flex: 1, child: Text('4s', textAlign: TextAlign.center, style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.lightTextSecondary))),
+                Expanded(flex: 1, child: Text('6s', textAlign: TextAlign.center, style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.lightTextSecondary))),
+                Expanded(flex: 2, child: Text('SR', textAlign: TextAlign.center, style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.lightTextSecondary))),
               ],
             ),
           ),
           if (batters.isEmpty)
             Padding(
               padding: const EdgeInsets.all(16),
-              child: Text('No batting data available', style: GoogleFonts.inter(fontSize: 14, color: const Color(0xFF575D78))),
+              child: Text('No batting data available', style: GoogleFonts.inter(fontSize: 14, color: AppColors.lightTextSecondary)),
             ),
           ...batters.asMap().entries.map((e) {
             final isNotOut = !e.value.isOut;
             return Container(
               decoration: BoxDecoration(
-                color: isNotOut ? const Color(0xFFBA0013).withValues(alpha: 0.05) : Colors.white,
+                color: isNotOut ? AppColors.primary.withValues(alpha: 0.05) : Colors.white,
                 border: const Border(bottom: BorderSide(color: Color(0xFFE0E3E6))),
               ),
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -238,13 +239,13 @@ class _ScoreboardScreenState extends State<ScoreboardScreen> {
                             Flexible(
                               child: Text(
                                 e.value.name,
-                                style: GoogleFonts.inter(fontSize: 14, fontWeight: isNotOut ? FontWeight.bold : FontWeight.w500, color: const Color(0xFF191C1E)),
+                                style: GoogleFonts.inter(fontSize: 14, fontWeight: isNotOut ? FontWeight.bold : FontWeight.w500, color: AppColors.lightTextPrimary),
                                 overflow: TextOverflow.ellipsis,
                               ),
                             ),
                             if (isNotOut) ...[
                               const SizedBox(width: 4),
-                              const Text('*', style: TextStyle(color: Color(0xFFBA0013), fontWeight: FontWeight.bold)),
+                              const Text('*', style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold)),
                             ]
                           ],
                         ),
@@ -255,7 +256,7 @@ class _ScoreboardScreenState extends State<ScoreboardScreen> {
                             fontSize: 10,
                             fontWeight: isNotOut ? FontWeight.bold : FontWeight.normal,
                             fontStyle: isNotOut ? FontStyle.normal : FontStyle.italic,
-                            color: isNotOut ? const Color(0xFF006B1B) : const Color(0xFF575D78),
+                            color: isNotOut ? AppColors.successDark : AppColors.lightTextSecondary,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -263,11 +264,11 @@ class _ScoreboardScreenState extends State<ScoreboardScreen> {
                       ],
                     ),
                   ),
-                  Expanded(flex: 1, child: Text('${e.value.runs}', textAlign: TextAlign.center, style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.bold, color: const Color(0xFF191C1E)))),
-                  Expanded(flex: 1, child: Text('${e.value.balls}', textAlign: TextAlign.center, style: GoogleFonts.inter(fontSize: 14, color: const Color(0xFF575D78)))),
-                  Expanded(flex: 1, child: Text('${e.value.fours}', textAlign: TextAlign.center, style: GoogleFonts.inter(fontSize: 14, color: const Color(0xFF575D78)))),
-                  Expanded(flex: 1, child: Text('${e.value.sixes}', textAlign: TextAlign.center, style: GoogleFonts.inter(fontSize: 14, color: const Color(0xFF575D78)))),
-                  Expanded(flex: 2, child: Text(e.value.strikeRate.toStringAsFixed(1), textAlign: TextAlign.center, style: GoogleFonts.inter(fontSize: 14, color: const Color(0xFF575D78)))),
+                  Expanded(flex: 1, child: Text('${e.value.runs}', textAlign: TextAlign.center, style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.lightTextPrimary))),
+                  Expanded(flex: 1, child: Text('${e.value.balls}', textAlign: TextAlign.center, style: GoogleFonts.inter(fontSize: 14, color: AppColors.lightTextSecondary))),
+                  Expanded(flex: 1, child: Text('${e.value.fours}', textAlign: TextAlign.center, style: GoogleFonts.inter(fontSize: 14, color: AppColors.lightTextSecondary))),
+                  Expanded(flex: 1, child: Text('${e.value.sixes}', textAlign: TextAlign.center, style: GoogleFonts.inter(fontSize: 14, color: AppColors.lightTextSecondary))),
+                  Expanded(flex: 2, child: Text(e.value.strikeRate.toStringAsFixed(1), textAlign: TextAlign.center, style: GoogleFonts.inter(fontSize: 14, color: AppColors.lightTextSecondary))),
                 ],
               ),
             );
@@ -280,12 +281,12 @@ class _ScoreboardScreenState extends State<ScoreboardScreen> {
             ),
             child: Row(
               children: [
-                Text('EXTRAS', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold, color: const Color(0xFF575D78))),
+                Text('EXTRAS', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.lightTextSecondary)),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
                     _selectedInnings.extrasInfo,
-                    style: GoogleFonts.inter(fontSize: 14, color: const Color(0xFF191C1E)),
+                    style: GoogleFonts.inter(fontSize: 14, color: AppColors.lightTextPrimary),
                   ),
                 ),
               ],
@@ -305,7 +306,7 @@ class _ScoreboardScreenState extends State<ScoreboardScreen> {
       children: [
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
-          child: Text('FALL OF WICKETS', style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.bold, color: const Color(0xFF575D78), letterSpacing: 1.0)),
+          child: Text('FALL OF WICKETS', style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.lightTextSecondary, letterSpacing: 1.0)),
         ),
         SingleChildScrollView(
           scrollDirection: Axis.horizontal,
@@ -324,9 +325,9 @@ class _ScoreboardScreenState extends State<ScoreboardScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('${w.score}/${w.wicketNumber}', style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.bold, color: const Color(0xFFBA0013))),
+                    Text('${w.score}/${w.wicketNumber}', style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.primary)),
                     const SizedBox(height: 2),
-                    Text('${w.playerName} (${w.overInfo})', style: GoogleFonts.inter(fontSize: 10, color: const Color(0xFF575D78))),
+                    Text('${w.playerName} (${w.overInfo})', style: GoogleFonts.inter(fontSize: 10, color: AppColors.lightTextSecondary)),
                   ],
                 ),
               );
@@ -362,19 +363,19 @@ class _ScoreboardScreenState extends State<ScoreboardScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: Row(
               children: [
-                Expanded(flex: 4, child: Text('BOWLER', style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.bold, color: const Color(0xFF575D78)))),
-                Expanded(flex: 1, child: Text('O', textAlign: TextAlign.center, style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.bold, color: const Color(0xFF575D78)))),
-                Expanded(flex: 1, child: Text('M', textAlign: TextAlign.center, style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.bold, color: const Color(0xFF575D78)))),
-                Expanded(flex: 1, child: Text('R', textAlign: TextAlign.center, style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.bold, color: const Color(0xFF575D78)))),
-                Expanded(flex: 1, child: Text('W', textAlign: TextAlign.center, style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.bold, color: const Color(0xFF575D78)))),
-                Expanded(flex: 2, child: Text('ER', textAlign: TextAlign.center, style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.bold, color: const Color(0xFF575D78)))),
+                Expanded(flex: 4, child: Text('BOWLER', style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.lightTextSecondary))),
+                Expanded(flex: 1, child: Text('O', textAlign: TextAlign.center, style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.lightTextSecondary))),
+                Expanded(flex: 1, child: Text('M', textAlign: TextAlign.center, style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.lightTextSecondary))),
+                Expanded(flex: 1, child: Text('R', textAlign: TextAlign.center, style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.lightTextSecondary))),
+                Expanded(flex: 1, child: Text('W', textAlign: TextAlign.center, style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.lightTextSecondary))),
+                Expanded(flex: 2, child: Text('ER', textAlign: TextAlign.center, style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.lightTextSecondary))),
               ],
             ),
           ),
           if (bowlers.isEmpty)
             Padding(
               padding: const EdgeInsets.all(16),
-              child: Text('No bowling data available', style: GoogleFonts.inter(fontSize: 14, color: const Color(0xFF575D78))),
+              child: Text('No bowling data available', style: GoogleFonts.inter(fontSize: 14, color: AppColors.lightTextSecondary)),
             ),
           ...bowlers.asMap().entries.map((e) {
             return Container(
@@ -384,12 +385,12 @@ class _ScoreboardScreenState extends State<ScoreboardScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               child: Row(
                 children: [
-                  Expanded(flex: 4, child: Text(e.value.name, style: GoogleFonts.inter(fontSize: 14, color: const Color(0xFF191C1E)), overflow: TextOverflow.ellipsis)),
-                  Expanded(flex: 1, child: Text(e.value.oversDisplay, textAlign: TextAlign.center, style: GoogleFonts.inter(fontSize: 14, color: const Color(0xFF575D78)))),
-                  Expanded(flex: 1, child: Text('${e.value.maidens}', textAlign: TextAlign.center, style: GoogleFonts.inter(fontSize: 14, color: const Color(0xFF575D78)))),
-                  Expanded(flex: 1, child: Text('${e.value.runsConceded}', textAlign: TextAlign.center, style: GoogleFonts.inter(fontSize: 14, color: const Color(0xFF575D78)))),
-                  Expanded(flex: 1, child: Text('${e.value.wickets}', textAlign: TextAlign.center, style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.bold, color: e.value.wickets > 0 ? const Color(0xFF006B1B) : const Color(0xFF191C1E)))),
-                  Expanded(flex: 2, child: Text(e.value.economy.toStringAsFixed(1), textAlign: TextAlign.center, style: GoogleFonts.inter(fontSize: 14, color: const Color(0xFF575D78)))),
+                  Expanded(flex: 4, child: Text(e.value.name, style: GoogleFonts.inter(fontSize: 14, color: AppColors.lightTextPrimary), overflow: TextOverflow.ellipsis)),
+                  Expanded(flex: 1, child: Text(e.value.oversDisplay, textAlign: TextAlign.center, style: GoogleFonts.inter(fontSize: 14, color: AppColors.lightTextSecondary))),
+                  Expanded(flex: 1, child: Text('${e.value.maidens}', textAlign: TextAlign.center, style: GoogleFonts.inter(fontSize: 14, color: AppColors.lightTextSecondary))),
+                  Expanded(flex: 1, child: Text('${e.value.runsConceded}', textAlign: TextAlign.center, style: GoogleFonts.inter(fontSize: 14, color: AppColors.lightTextSecondary))),
+                  Expanded(flex: 1, child: Text('${e.value.wickets}', textAlign: TextAlign.center, style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.bold, color: e.value.wickets > 0 ? AppColors.successDark : AppColors.lightTextPrimary))),
+                  Expanded(flex: 2, child: Text(e.value.economy.toStringAsFixed(1), textAlign: TextAlign.center, style: GoogleFonts.inter(fontSize: 14, color: AppColors.lightTextSecondary))),
                 ],
               ),
             );
@@ -421,7 +422,7 @@ class _ScoreboardScreenState extends State<ScoreboardScreen> {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('OVER-BY-OVER', style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.bold, color: const Color(0xFF575D78), letterSpacing: 1.0)),
+              Text('OVER-BY-OVER', style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.lightTextSecondary, letterSpacing: 1.0)),
               // View all button can be implemented later
             ],
           ),
@@ -456,8 +457,8 @@ class _ScoreboardScreenState extends State<ScoreboardScreen> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Text('OV', style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.bold, color: const Color(0xFF575D78), height: 1.0)),
-                      Text('${overNumber + 1}', style: GoogleFonts.plusJakartaSans(fontSize: 20, fontWeight: FontWeight.bold, color: overWickets > 0 ? const Color(0xFF191C1E) : const Color(0xFFBA0013), height: 1.0)),
+                      Text('OV', style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.lightTextSecondary, height: 1.0)),
+                      Text('${overNumber + 1}', style: GoogleFonts.plusJakartaSans(fontSize: 20, fontWeight: FontWeight.bold, color: overWickets > 0 ? AppColors.lightTextPrimary : AppColors.primary, height: 1.0)),
                     ],
                   ),
                 ),
@@ -469,10 +470,10 @@ class _ScoreboardScreenState extends State<ScoreboardScreen> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text('Over ${overNumber + 1}', style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.bold, color: const Color(0xFF191C1E))),
+                          Text('Over ${overNumber + 1}', style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.lightTextPrimary)),
                           Text(
                             '$overRuns Runs${overWickets > 0 ? ' • $overWickets Wicket' : ''}',
-                            style: GoogleFonts.inter(fontSize: 10, color: const Color(0xFF575D78)),
+                            style: GoogleFonts.inter(fontSize: 10, color: AppColors.lightTextSecondary),
                           ),
                         ],
                       ),
@@ -487,15 +488,15 @@ class _ScoreboardScreenState extends State<ScoreboardScreen> {
                           final isDot  = !isWicket && b.runs == 0;
 
                           Color bgColor   = const Color(0xFFECEEF1);
-                          Color textColor = const Color(0xFF191C1E);
+                          Color textColor = AppColors.lightTextPrimary;
                           String label = '${b.runs}';
 
                           if (isWicket) {
-                            bgColor   = const Color(0xFFBA0013);
+                            bgColor   = AppColors.primary;
                             textColor = Colors.white;
                             label = 'W';
                           } else if (isSix) {
-                            bgColor   = const Color(0xFF006B1B); // Green for 6
+                            bgColor   = AppColors.successDark; // Green for 6
                             textColor = Colors.white;
                           } else if (isFour) {
                             bgColor   = const Color(0xFF1565C0); // Blue for 4

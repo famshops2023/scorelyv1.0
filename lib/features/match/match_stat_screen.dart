@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:scorely/core/theme/colors.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -195,7 +196,7 @@ class _MatchStatScreenState extends ConsumerState<MatchStatScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF7F9FC),
+      backgroundColor: AppColors.lightBg,
       appBar: AppBar(
         backgroundColor: const Color(0xFF1a2238),
         elevation: 0,
@@ -341,7 +342,7 @@ class _MatchStatScreenState extends ConsumerState<MatchStatScreen> {
         children: [
           Icon(
             icon,
-            color: isSelected ? const Color(0xFFBA0013) : const Color(0xFF575D78),
+            color: isSelected ? AppColors.primary : AppColors.lightTextSecondary,
             size: 24,
           ),
           const SizedBox(height: 4),
@@ -350,7 +351,7 @@ class _MatchStatScreenState extends ConsumerState<MatchStatScreen> {
             style: GoogleFonts.inter(
               fontSize: 10,
               fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-              color: isSelected ? const Color(0xFFBA0013) : const Color(0xFF575D78),
+              color: isSelected ? AppColors.primary : AppColors.lightTextSecondary,
             ),
           ),
         ],
@@ -471,9 +472,9 @@ class _MatchStatScreenState extends ConsumerState<MatchStatScreen> {
         children: [
           Row(
             children: [
-              Container(width: 4, height: 16, decoration: BoxDecoration(color: const Color(0xFFBA0013), borderRadius: BorderRadius.circular(2))),
+              Container(width: 4, height: 16, decoration: BoxDecoration(color: AppColors.primary, borderRadius: BorderRadius.circular(2))),
               const SizedBox(width: 8),
-              Text('MATCH DETAILS', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold, color: const Color(0xFF191C1E), letterSpacing: 1.0)),
+              Text('MATCH DETAILS', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.lightTextPrimary, letterSpacing: 1.0)),
               const Spacer(),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -500,17 +501,17 @@ class _MatchStatScreenState extends ConsumerState<MatchStatScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('TOSS', style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.bold, color: const Color(0xFF575D78), letterSpacing: 1.0)),
+                    Text('TOSS', style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.lightTextSecondary, letterSpacing: 1.0)),
                     const SizedBox(height: 4),
-                    Text(tossText, style: GoogleFonts.inter(fontSize: 13, color: const Color(0xFF191C1E))),
+                    Text(tossText, style: GoogleFonts.inter(fontSize: 13, color: AppColors.lightTextPrimary)),
                     const SizedBox(height: 14),
-                    Text('DATE', style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.bold, color: const Color(0xFF575D78), letterSpacing: 1.0)),
+                    Text('DATE', style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.lightTextSecondary, letterSpacing: 1.0)),
                     const SizedBox(height: 4),
-                    Text(dateText, style: GoogleFonts.inter(fontSize: 13, color: const Color(0xFF191C1E))),
+                    Text(dateText, style: GoogleFonts.inter(fontSize: 13, color: AppColors.lightTextPrimary)),
                     const SizedBox(height: 14),
-                    Text('BALL TYPE', style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.bold, color: const Color(0xFF575D78), letterSpacing: 1.0)),
+                    Text('BALL TYPE', style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.lightTextSecondary, letterSpacing: 1.0)),
                     const SizedBox(height: 4),
-                    Text(ballTypeText, style: GoogleFonts.inter(fontSize: 13, color: const Color(0xFF191C1E))),
+                    Text(ballTypeText, style: GoogleFonts.inter(fontSize: 13, color: AppColors.lightTextPrimary)),
                   ],
                 ),
               ),
@@ -519,13 +520,13 @@ class _MatchStatScreenState extends ConsumerState<MatchStatScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('FORMAT', style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.bold, color: const Color(0xFF575D78), letterSpacing: 1.0)),
+                    Text('FORMAT', style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.lightTextSecondary, letterSpacing: 1.0)),
                     const SizedBox(height: 4),
-                    Text(formatText, style: GoogleFonts.inter(fontSize: 13, color: const Color(0xFF191C1E))),
+                    Text(formatText, style: GoogleFonts.inter(fontSize: 13, color: AppColors.lightTextPrimary)),
                     const SizedBox(height: 14),
-                    Text('VENUE', style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.bold, color: const Color(0xFF575D78), letterSpacing: 1.0)),
+                    Text('VENUE', style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.lightTextSecondary, letterSpacing: 1.0)),
                     const SizedBox(height: 4),
-                    Text(venueText, style: GoogleFonts.inter(fontSize: 13, color: const Color(0xFF191C1E))),
+                    Text(venueText, style: GoogleFonts.inter(fontSize: 13, color: AppColors.lightTextPrimary)),
                   ],
                 ),
               ),
@@ -552,9 +553,9 @@ class _MatchStatScreenState extends ConsumerState<MatchStatScreen> {
         children: [
           Row(
             children: [
-              Container(width: 4, height: 16, decoration: BoxDecoration(color: const Color(0xFFBA0013), borderRadius: BorderRadius.circular(2))),
+              Container(width: 4, height: 16, decoration: BoxDecoration(color: AppColors.primary, borderRadius: BorderRadius.circular(2))),
               const SizedBox(width: 8),
-              Text('INNINGS SUMMARY', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold, color: const Color(0xFF191C1E), letterSpacing: 1.0)),
+              Text('INNINGS SUMMARY', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.lightTextPrimary, letterSpacing: 1.0)),
             ],
           ),
           const SizedBox(height: 16),
@@ -564,13 +565,13 @@ class _MatchStatScreenState extends ConsumerState<MatchStatScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(_innings1!.teamName.toUpperCase(), style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.bold, color: const Color(0xFF575D78))),
+                    Text(_innings1!.teamName.toUpperCase(), style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.lightTextSecondary)),
                     const SizedBox(height: 4),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text('${_innings1!.totalRuns}/${_innings1!.totalWickets}', style: GoogleFonts.plusJakartaSans(fontSize: 24, fontWeight: FontWeight.bold, color: const Color(0xFF191C1E))),
-                        Text('(${_innings1!.totalOvers})', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w500, color: const Color(0xFF575D78))),
+                        Text('${_innings1!.totalRuns}/${_innings1!.totalWickets}', style: GoogleFonts.plusJakartaSans(fontSize: 24, fontWeight: FontWeight.bold, color: AppColors.lightTextPrimary)),
+                        Text('(${_innings1!.totalOvers})', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w500, color: AppColors.lightTextSecondary)),
                       ],
                     ),
                   ],
@@ -581,13 +582,13 @@ class _MatchStatScreenState extends ConsumerState<MatchStatScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(_innings2!.teamName.toUpperCase(), style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.bold, color: const Color(0xFF575D78))),
+                    Text(_innings2!.teamName.toUpperCase(), style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.lightTextSecondary)),
                     const SizedBox(height: 4),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text('${_innings2!.totalRuns}/${_innings2!.totalWickets}', style: GoogleFonts.plusJakartaSans(fontSize: 24, fontWeight: FontWeight.bold, color: const Color(0xFFBA0013))),
-                        Text('(${_innings2!.totalOvers})', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w500, color: const Color(0xFF575D78))),
+                        Text('${_innings2!.totalRuns}/${_innings2!.totalWickets}', style: GoogleFonts.plusJakartaSans(fontSize: 24, fontWeight: FontWeight.bold, color: AppColors.primary)),
+                        Text('(${_innings2!.totalOvers})', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w500, color: AppColors.lightTextSecondary)),
                       ],
                     ),
                   ],
@@ -614,9 +615,9 @@ class _MatchStatScreenState extends ConsumerState<MatchStatScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Match Analytics', style: GoogleFonts.plusJakartaSans(fontSize: 20, fontWeight: FontWeight.bold, color: const Color(0xFF191C1E))),
+          Text('Match Analytics', style: GoogleFonts.plusJakartaSans(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.lightTextPrimary)),
           const SizedBox(height: 16),
-          Text('RUN RATE PROGRESSION', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold, color: const Color(0xFF575D78), letterSpacing: 1.0)),
+          Text('RUN RATE PROGRESSION', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.lightTextSecondary, letterSpacing: 1.0)),
           const SizedBox(height: 8),
           Container(
             height: 180,
@@ -629,7 +630,7 @@ class _MatchStatScreenState extends ConsumerState<MatchStatScreen> {
               children: [
                 RotatedBox(
                   quarterTurns: 3,
-                  child: Text('RUNS', style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.bold, color: const Color(0xFF575D78), letterSpacing: 2.0)),
+                  child: Text('RUNS', style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.lightTextSecondary, letterSpacing: 2.0)),
                 ),
                 const SizedBox(width: 8),
                 Expanded(
@@ -645,7 +646,7 @@ class _MatchStatScreenState extends ConsumerState<MatchStatScreen> {
                         ),
                       ),
                       const SizedBox(height: 8),
-                      Text('OVERS', style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.bold, color: const Color(0xFF575D78), letterSpacing: 2.0)),
+                      Text('OVERS', style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.lightTextSecondary, letterSpacing: 2.0)),
                     ],
                   ),
                 ),
@@ -658,9 +659,9 @@ class _MatchStatScreenState extends ConsumerState<MatchStatScreen> {
             children: [
               Row(
                 children: [
-                  Container(width: 12, height: 12, decoration: const BoxDecoration(color: Color(0xFFBA0013), shape: BoxShape.circle)),
+                  Container(width: 12, height: 12, decoration: const BoxDecoration(color: AppColors.primary, shape: BoxShape.circle)),
                   const SizedBox(width: 4),
-                  Text(_innings1!.teamName.toUpperCase(), style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.bold, color: const Color(0xFF575D78))),
+                  Text(_innings1!.teamName.toUpperCase(), style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.lightTextSecondary)),
                 ],
               ),
               const SizedBox(width: 24),
@@ -668,7 +669,7 @@ class _MatchStatScreenState extends ConsumerState<MatchStatScreen> {
                 children: [
                   Container(width: 12, height: 12, decoration: const BoxDecoration(color: Color(0xFF131B31), shape: BoxShape.circle)),
                   const SizedBox(width: 4),
-                  Text(_innings2!.teamName.toUpperCase(), style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.bold, color: const Color(0xFF575D78))),
+                  Text(_innings2!.teamName.toUpperCase(), style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.lightTextSecondary)),
                 ],
               ),
             ],
@@ -704,9 +705,9 @@ class _MatchStatScreenState extends ConsumerState<MatchStatScreen> {
       children: [
         Row(
           children: [
-            Container(width: 4, height: 16, decoration: BoxDecoration(color: const Color(0xFFBA0013), borderRadius: BorderRadius.circular(2))),
+            Container(width: 4, height: 16, decoration: BoxDecoration(color: AppColors.primary, borderRadius: BorderRadius.circular(2))),
             const SizedBox(width: 8),
-            Text('MATCH AWARDS', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold, color: const Color(0xFF191C1E), letterSpacing: 1.0)),
+            Text('MATCH AWARDS', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.lightTextPrimary, letterSpacing: 1.0)),
           ],
         ),
         const SizedBox(height: 12),
@@ -750,7 +751,7 @@ class _MatchStatScreenState extends ConsumerState<MatchStatScreen> {
               color: const Color(0xFFF2F4F7),
               borderRadius: BorderRadius.circular(8),
             ),
-            child: const Icon(Icons.person, size: 40, color: Color(0xFF575D78)),
+            child: const Icon(Icons.person, size: 40, color: AppColors.lightTextSecondary),
           ),
           const SizedBox(width: 16),
           Expanded(
@@ -760,15 +761,15 @@ class _MatchStatScreenState extends ConsumerState<MatchStatScreen> {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFBA0013),
+                    color: AppColors.primary,
                     borderRadius: BorderRadius.circular(4),
                   ),
                   child: Text(tag.toUpperCase(), style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white, letterSpacing: 1.0)),
                 ),
                 const SizedBox(height: 4),
-                Text(player, style: GoogleFonts.plusJakartaSans(fontSize: 20, fontWeight: FontWeight.bold, color: const Color(0xFF191C1E)), overflow: TextOverflow.ellipsis),
+                Text(player, style: GoogleFonts.plusJakartaSans(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.lightTextPrimary), overflow: TextOverflow.ellipsis),
                 const SizedBox(height: 2),
-                Text(subtext, style: GoogleFonts.inter(fontSize: 14, color: const Color(0xFF575D78)), overflow: TextOverflow.ellipsis),
+                Text(subtext, style: GoogleFonts.inter(fontSize: 14, color: AppColors.lightTextSecondary), overflow: TextOverflow.ellipsis),
               ],
             ),
           ),
@@ -816,7 +817,7 @@ class _MatchStatScreenState extends ConsumerState<MatchStatScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('MVP Analysis', style: GoogleFonts.plusJakartaSans(fontSize: 20, fontWeight: FontWeight.bold, color: const Color(0xFF191C1E))),
+          Text('MVP Analysis', style: GoogleFonts.plusJakartaSans(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.lightTextPrimary)),
           const SizedBox(height: 24),
           Center(
             child: SizedBox(
@@ -829,10 +830,10 @@ class _MatchStatScreenState extends ConsumerState<MatchStatScreen> {
                       painter: RadarChartPainter(strikeRate, consistency, impact, bowling, fielding),
                     ),
                   ),
-                  Align(alignment: Alignment.topCenter, child: Text('STRIKE RATE', style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.bold, color: const Color(0xFF575D78)))),
-                  Align(alignment: Alignment.centerRight, child: Text('CONSISTENCY', style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.bold, color: const Color(0xFF575D78)))),
-                  Align(alignment: Alignment.bottomCenter, child: Text('IMPACT', style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.bold, color: const Color(0xFF575D78)))),
-                  Align(alignment: Alignment.centerLeft, child: Text('BOWLING', style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.bold, color: const Color(0xFF575D78)))),
+                  Align(alignment: Alignment.topCenter, child: Text('STRIKE RATE', style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.lightTextSecondary))),
+                  Align(alignment: Alignment.centerRight, child: Text('CONSISTENCY', style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.lightTextSecondary))),
+                  Align(alignment: Alignment.bottomCenter, child: Text('IMPACT', style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.lightTextSecondary))),
+                  Align(alignment: Alignment.centerLeft, child: Text('BOWLING', style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.lightTextSecondary))),
                 ],
               ),
             ),
@@ -847,9 +848,9 @@ class _MatchStatScreenState extends ConsumerState<MatchStatScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('IMPACT SCORE', style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.bold, color: const Color(0xFF575D78))),
+                      Text('IMPACT SCORE', style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.lightTextSecondary)),
                       const SizedBox(height: 4),
-                      Text('${(impact * 10).toStringAsFixed(1)}/10', style: GoogleFonts.plusJakartaSans(fontSize: 20, fontWeight: FontWeight.bold, color: const Color(0xFFBA0013))),
+                      Text('${(impact * 10).toStringAsFixed(1)}/10', style: GoogleFonts.plusJakartaSans(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.primary)),
                     ],
                   ),
                 ),
@@ -862,9 +863,9 @@ class _MatchStatScreenState extends ConsumerState<MatchStatScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('MATCH MVP RANK', style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.bold, color: const Color(0xFF575D78))),
+                      Text('MATCH MVP RANK', style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.lightTextSecondary)),
                       const SizedBox(height: 4),
-                      Text('#1', style: GoogleFonts.plusJakartaSans(fontSize: 20, fontWeight: FontWeight.bold, color: const Color(0xFF191C1E))),
+                      Text('#1', style: GoogleFonts.plusJakartaSans(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.lightTextPrimary)),
                     ],
                   ),
                 ),
@@ -884,9 +885,9 @@ class _MatchStatScreenState extends ConsumerState<MatchStatScreen> {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(14),
       child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Expanded(child: _squadCard(_teamA?.name ?? 'Team 1', teamA, const Color(0xFFBA0013))),
+        Expanded(child: _squadCard(_teamA?.name ?? 'Team 1', teamA, AppColors.primary)),
         const SizedBox(width: 10),
-        Expanded(child: _squadCard(_teamB?.name ?? 'Team 2', teamB, const Color(0xFF1A2138))),
+        Expanded(child: _squadCard(_teamB?.name ?? 'Team 2', teamB, AppColors.darkSurface)),
       ]),
     );
   }
@@ -925,7 +926,7 @@ class RunRateChartPainter extends CustomPainter {
   
   @override
   void paint(Canvas canvas, Size size) {
-    final paint1 = Paint()..color = const Color(0xFFBA0013)..strokeWidth = 3..style = PaintingStyle.stroke..strokeCap = StrokeCap.round..strokeJoin = StrokeJoin.round;
+    final paint1 = Paint()..color = AppColors.primary..strokeWidth = 3..style = PaintingStyle.stroke..strokeCap = StrokeCap.round..strokeJoin = StrokeJoin.round;
     final paint2 = Paint()..color = const Color(0xFF131B31)..strokeWidth = 3..style = PaintingStyle.stroke..strokeCap = StrokeCap.round..strokeJoin = StrokeJoin.round;
     
     final maxOvers = max(runs1.length, runs2.length).clamp(1, 100);
@@ -980,8 +981,8 @@ class RadarChartPainter extends CustomPainter {
       _drawPentagon(canvas, center, radius * (i / 4), bgPaint);
     }
     
-    final dataPaint = Paint()..color = const Color(0xFFBA0013).withValues(alpha: 0.3)..style = PaintingStyle.fill;
-    final dataStrokePaint = Paint()..color = const Color(0xFFBA0013)..style = PaintingStyle.stroke..strokeWidth = 2.0;
+    final dataPaint = Paint()..color = AppColors.primary.withValues(alpha: 0.3)..style = PaintingStyle.fill;
+    final dataStrokePaint = Paint()..color = AppColors.primary..style = PaintingStyle.stroke..strokeWidth = 2.0;
     
     final path = Path();
     final values = [strikeRate, consistency, impact, bowling, fielding];

@@ -97,7 +97,7 @@ class BowlingTab extends StatelessWidget {
               _HeroStatCard(
                 label: 'ECONOMY',
                 value: stats.economy.toStringAsFixed(1),
-                color: const Color(0xFF006B1B),
+                color: AppColors.successDark,
                 isLarge: false,
               ),
               const SizedBox(height: 10),
@@ -147,7 +147,7 @@ class BowlingTab extends StatelessWidget {
         children: [
           Text(
             'Wickets per match',
-            style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600, color: const Color(0xFF575D78)),
+            style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.lightTextSecondary),
           ),
           const SizedBox(height: 12),
           Expanded(
@@ -186,7 +186,7 @@ class BowlingTab extends StatelessWidget {
                       style: GoogleFonts.plusJakartaSans(
                         fontSize: 16,
                         fontWeight: FontWeight.w700,
-                        color: wickets >= 3 ? AppColors.primary : const Color(0xFF191C1E),
+                        color: wickets >= 3 ? AppColors.primary : AppColors.lightTextPrimary,
                       ),
                     ),
                     const Spacer(),
@@ -196,7 +196,7 @@ class BowlingTab extends StatelessWidget {
                       _WicketBadge(label: '4W', color: const Color(0xFF6A1B9A)),
                     Text(
                       'Match ${e.key + 1}',
-                      style: GoogleFonts.inter(fontSize: 12, color: const Color(0xFF575D78)),
+                      style: GoogleFonts.inter(fontSize: 12, color: AppColors.lightTextSecondary),
                     ),
                   ],
                 ),
@@ -214,7 +214,7 @@ class BowlingTab extends StatelessWidget {
       _DonutSegment(label: 'Bowled', value: 30, color: const Color(0xFF1565C0)),
       _DonutSegment(label: 'LBW', value: 20, color: const Color(0xFF6A1B9A)),
       _DonutSegment(label: 'Stumped', value: 10, color: const Color(0xFFF9A825)),
-      _DonutSegment(label: 'Run Out', value: 5, color: const Color(0xFF006B1B)),
+      _DonutSegment(label: 'Run Out', value: 5, color: AppColors.successDark),
     ];
     return _DonutChartCard(segments: segments);
   }
@@ -228,7 +228,7 @@ class BowlingTab extends StatelessWidget {
         const SizedBox(width: 10),
         Expanded(child: _MilestoneCard(label: '5W HAULS', value: '${stats.fiveWicketHauls}', icon: Icons.emoji_events, color: const Color(0xFFF9A825))),
         const SizedBox(width: 10),
-        Expanded(child: _MilestoneCard(label: 'BEST', value: stats.bestBowling, icon: Icons.military_tech, color: const Color(0xFF006B1B))),
+        Expanded(child: _MilestoneCard(label: 'BEST', value: stats.bestBowling, icon: Icons.military_tech, color: AppColors.successDark)),
       ],
     );
   }
@@ -255,7 +255,7 @@ class BowlingTab extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: _cardDeco(),
-      child: Center(child: Text(message, style: GoogleFonts.inter(fontSize: 13, color: const Color(0xFF575D78)))),
+      child: Center(child: Text(message, style: GoogleFonts.inter(fontSize: 13, color: AppColors.lightTextSecondary))),
     );
   }
 
@@ -269,15 +269,15 @@ class BowlingTab extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(20),
               decoration: const BoxDecoration(color: Color(0xFFECEEF1), shape: BoxShape.circle),
-              child: const Icon(Icons.crisis_alert, size: 48, color: Color(0xFF575D78)),
+              child: const Icon(Icons.crisis_alert, size: 48, color: AppColors.lightTextSecondary),
             ),
             const SizedBox(height: 16),
-            Text('No Bowling Data', style: GoogleFonts.plusJakartaSans(fontSize: 18, fontWeight: FontWeight.w700, color: const Color(0xFF191C1E))),
+            Text('No Bowling Data', style: GoogleFonts.plusJakartaSans(fontSize: 18, fontWeight: FontWeight.w700, color: AppColors.lightTextPrimary)),
             const SizedBox(height: 8),
             Text(
               'Your bowling statistics will appear here once you start scoring matches.',
               textAlign: TextAlign.center,
-              style: GoogleFonts.inter(fontSize: 13, color: const Color(0xFF575D78)),
+              style: GoogleFonts.inter(fontSize: 13, color: AppColors.lightTextSecondary),
             ),
           ],
         ),
@@ -316,7 +316,7 @@ class _HeroStatCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label, style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w700, color: isLarge ? Colors.white.withValues(alpha: 0.85) : const Color(0xFF575D78), letterSpacing: 0.8)),
+          Text(label, style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w700, color: isLarge ? Colors.white.withValues(alpha: 0.85) : AppColors.lightTextSecondary, letterSpacing: 0.8)),
           const SizedBox(height: 6),
           Text(value, style: GoogleFonts.plusJakartaSans(fontSize: isLarge ? 32 : 20, fontWeight: FontWeight.w800, color: isLarge ? Colors.white : color, height: 1.0)),
         ],
@@ -338,9 +338,9 @@ class _SecondaryStatTile extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Text(value, style: GoogleFonts.plusJakartaSans(fontSize: 18, fontWeight: FontWeight.w800, color: const Color(0xFF191C1E))),
+          Text(value, style: GoogleFonts.plusJakartaSans(fontSize: 18, fontWeight: FontWeight.w800, color: AppColors.lightTextPrimary)),
           const SizedBox(height: 2),
-          Text(label, style: GoogleFonts.inter(fontSize: 9, fontWeight: FontWeight.w600, color: const Color(0xFF575D78), letterSpacing: 0.5)),
+          Text(label, style: GoogleFonts.inter(fontSize: 9, fontWeight: FontWeight.w600, color: AppColors.lightTextSecondary, letterSpacing: 0.5)),
         ],
       ),
     );
@@ -367,8 +367,8 @@ class _MilestoneCard extends StatelessWidget {
         children: [
           Icon(icon, color: color, size: 18),
           const SizedBox(height: 6),
-          Text(value, style: GoogleFonts.plusJakartaSans(fontSize: 18, fontWeight: FontWeight.w800, color: const Color(0xFF191C1E))),
-          Text(label, style: GoogleFonts.inter(fontSize: 9, fontWeight: FontWeight.w600, color: const Color(0xFF575D78))),
+          Text(value, style: GoogleFonts.plusJakartaSans(fontSize: 18, fontWeight: FontWeight.w800, color: AppColors.lightTextPrimary)),
+          Text(label, style: GoogleFonts.inter(fontSize: 9, fontWeight: FontWeight.w600, color: AppColors.lightTextSecondary)),
         ],
       ),
     );
@@ -385,8 +385,8 @@ class _MetricRow extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(label, style: GoogleFonts.inter(fontSize: 13, color: const Color(0xFF575D78))),
-        Text(value, style: GoogleFonts.plusJakartaSans(fontSize: 15, fontWeight: FontWeight.w700, color: const Color(0xFF191C1E))),
+        Text(label, style: GoogleFonts.inter(fontSize: 13, color: AppColors.lightTextSecondary)),
+        Text(value, style: GoogleFonts.plusJakartaSans(fontSize: 15, fontWeight: FontWeight.w700, color: AppColors.lightTextPrimary)),
       ],
     );
   }
@@ -445,8 +445,8 @@ class _DonutChartCard extends StatelessWidget {
                   children: [
                     Container(width: 10, height: 10, decoration: BoxDecoration(color: s.color, shape: BoxShape.circle)),
                     const SizedBox(width: 8),
-                    Expanded(child: Text(s.label, style: GoogleFonts.inter(fontSize: 12, color: const Color(0xFF575D78)))),
-                    Text('${s.value.toInt()}%', style: GoogleFonts.plusJakartaSans(fontSize: 12, fontWeight: FontWeight.w700, color: const Color(0xFF191C1E))),
+                    Expanded(child: Text(s.label, style: GoogleFonts.inter(fontSize: 12, color: AppColors.lightTextSecondary))),
+                    Text('${s.value.toInt()}%', style: GoogleFonts.plusJakartaSans(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.lightTextPrimary)),
                   ],
                 ),
               )).toList(),

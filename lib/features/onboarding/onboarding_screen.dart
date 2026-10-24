@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import '../../core/theme/colors.dart';
+import 'package:scorely/core/theme/colors.dart';
 import '../../core/theme/typography.dart';
 
 class OnboardingScreen extends StatefulWidget {

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:scorely/core/theme/colors.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -242,14 +243,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
           height: 52,
           decoration: BoxDecoration(
             gradient: const LinearGradient(
-              colors: [Color(0xFFBA0013), Color(0xFF7B000D)],
+              colors: [AppColors.primary, Color(0xFF7B000D)],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
             borderRadius: BorderRadius.circular(16),
             boxShadow: [
               BoxShadow(
-                color: const Color(0xFFBA0013).withValues(alpha: 0.4),
+                color: AppColors.primary.withValues(alpha: 0.4),
                 blurRadius: 16,
                 offset: const Offset(0, 6),
               ),
@@ -317,7 +318,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
           duration: const Duration(milliseconds: 200),
           margin: const EdgeInsets.all(4),
           decoration: BoxDecoration(
-            color: active ? const Color(0xFFBA0013) : Colors.transparent,
+            color: active ? AppColors.primary : Colors.transparent,
             borderRadius: BorderRadius.circular(10),
           ),
           alignment: Alignment.center,
@@ -379,7 +380,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(14),
-              borderSide: const BorderSide(color: Color(0xFFBA0013), width: 1.5),
+              borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
             ),
           ),
         ),
@@ -437,7 +438,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(14),
-              borderSide: const BorderSide(color: Color(0xFFBA0013), width: 1.5),
+              borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
             ),
           ),
         ),
@@ -479,8 +480,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
       child: ElevatedButton(
         onPressed: _loading ? null : _submit,
         style: ElevatedButton.styleFrom(
-          backgroundColor: const Color(0xFFBA0013),
-          disabledBackgroundColor: const Color(0xFFBA0013).withValues(alpha: 0.5),
+          backgroundColor: AppColors.primary,
+          disabledBackgroundColor: AppColors.primary.withValues(alpha: 0.5),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
           elevation: 0,
         ),
@@ -610,7 +611,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
         label: Text(
           'Continue with Google',
           style: GoogleFonts.inter(
-            color: const Color(0xFF191C1E),
+            color: AppColors.lightTextPrimary,
             fontSize: 14,
             fontWeight: FontWeight.w700,
             letterSpacing: 0.5,

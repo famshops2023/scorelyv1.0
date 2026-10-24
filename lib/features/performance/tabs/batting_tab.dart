@@ -102,7 +102,7 @@ class BattingTab extends StatelessWidget {
               _HeroStatCard(
                 label: 'AVERAGE',
                 value: stats.battingAvg.toStringAsFixed(1),
-                color: const Color(0xFF006B1B),
+                color: AppColors.successDark,
                 isLarge: false,
               ),
               const SizedBox(height: 10),
@@ -161,7 +161,7 @@ class BattingTab extends StatelessWidget {
         children: [
           Text(
             'Runs per match',
-            style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600, color: const Color(0xFF575D78)),
+            style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.lightTextSecondary),
           ),
           const SizedBox(height: 12),
           Expanded(
@@ -206,21 +206,21 @@ class BattingTab extends StatelessWidget {
                         style: GoogleFonts.plusJakartaSans(
                           fontSize: 18,
                           fontWeight: FontWeight.w800,
-                          color: isNotOut ? const Color(0xFF006B1B) : const Color(0xFF191C1E),
+                          color: isNotOut ? AppColors.successDark : AppColors.lightTextPrimary,
                         ),
                       ),
                     ),
                     Expanded(
                       child: Text(
                         '($balls balls)  •  SR ${sr.toStringAsFixed(1)}',
-                        style: GoogleFonts.inter(fontSize: 12, color: const Color(0xFF575D78)),
+                        style: GoogleFonts.inter(fontSize: 12, color: AppColors.lightTextSecondary),
                       ),
                     ),
                     if (isNotOut)
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF006B1B).withValues(alpha: 0.1),
+                          color: AppColors.successDark.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(4),
                         ),
                         child: Text(
@@ -228,7 +228,7 @@ class BattingTab extends StatelessWidget {
                           style: GoogleFonts.inter(
                             fontSize: 9,
                             fontWeight: FontWeight.w700,
-                            color: const Color(0xFF006B1B),
+                            color: AppColors.successDark,
                           ),
                         ),
                       ),
@@ -261,7 +261,7 @@ class BattingTab extends StatelessWidget {
       _DonutSegment(label: 'Bowled', value: 25, color: const Color(0xFF1565C0)),
       _DonutSegment(label: 'LBW', value: 15, color: const Color(0xFF6A1B9A)),
       _DonutSegment(label: 'Run Out', value: 12, color: const Color(0xFFF9A825)),
-      _DonutSegment(label: 'Stumped', value: 8, color: const Color(0xFF006B1B)),
+      _DonutSegment(label: 'Stumped', value: 8, color: AppColors.successDark),
     ];
     return _DonutChartCard(segments: segments, title: 'Dismissal Types');
   }
@@ -287,7 +287,7 @@ class BattingTab extends StatelessWidget {
       padding: const EdgeInsets.all(20),
       decoration: _cardDeco(),
       child: Center(
-        child: Text(message, style: GoogleFonts.inter(fontSize: 13, color: const Color(0xFF575D78))),
+        child: Text(message, style: GoogleFonts.inter(fontSize: 13, color: AppColors.lightTextSecondary)),
       ),
     );
   }
@@ -302,15 +302,15 @@ class BattingTab extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(20),
               decoration: const BoxDecoration(color: Color(0xFFECEEF1), shape: BoxShape.circle),
-              child: const Icon(Icons.sports_cricket, size: 48, color: Color(0xFF575D78)),
+              child: const Icon(Icons.sports_cricket, size: 48, color: AppColors.lightTextSecondary),
             ),
             const SizedBox(height: 16),
-            Text('No Batting Data', style: GoogleFonts.plusJakartaSans(fontSize: 18, fontWeight: FontWeight.w700, color: const Color(0xFF191C1E))),
+            Text('No Batting Data', style: GoogleFonts.plusJakartaSans(fontSize: 18, fontWeight: FontWeight.w700, color: AppColors.lightTextPrimary)),
             const SizedBox(height: 8),
             Text(
               'Your batting statistics will appear here once you start scoring matches.',
               textAlign: TextAlign.center,
-              style: GoogleFonts.inter(fontSize: 13, color: const Color(0xFF575D78)),
+              style: GoogleFonts.inter(fontSize: 13, color: AppColors.lightTextSecondary),
             ),
           ],
         ),
@@ -374,7 +374,7 @@ class _HeroStatCard extends StatelessWidget {
             style: GoogleFonts.inter(
               fontSize: 10,
               fontWeight: FontWeight.w700,
-              color: isLarge ? Colors.white.withValues(alpha: 0.85) : const Color(0xFF575D78),
+              color: isLarge ? Colors.white.withValues(alpha: 0.85) : AppColors.lightTextSecondary,
               letterSpacing: 0.8,
             ),
           ),
@@ -418,7 +418,7 @@ class _SecondaryStatTile extends StatelessWidget {
             style: GoogleFonts.plusJakartaSans(
               fontSize: 18,
               fontWeight: FontWeight.w800,
-              color: const Color(0xFF191C1E),
+              color: AppColors.lightTextPrimary,
             ),
           ),
           const SizedBox(height: 2),
@@ -427,7 +427,7 @@ class _SecondaryStatTile extends StatelessWidget {
             style: GoogleFonts.inter(
               fontSize: 9,
               fontWeight: FontWeight.w600,
-              color: const Color(0xFF575D78),
+              color: AppColors.lightTextSecondary,
               letterSpacing: 0.5,
             ),
           ),
@@ -461,11 +461,11 @@ class _MilestoneCard extends StatelessWidget {
           const SizedBox(height: 8),
           Text(
             value,
-            style: GoogleFonts.plusJakartaSans(fontSize: 22, fontWeight: FontWeight.w800, color: const Color(0xFF191C1E)),
+            style: GoogleFonts.plusJakartaSans(fontSize: 22, fontWeight: FontWeight.w800, color: AppColors.lightTextPrimary),
           ),
           Text(
             label,
-            style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w600, color: const Color(0xFF575D78)),
+            style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w600, color: AppColors.lightTextSecondary),
           ),
         ],
       ),
@@ -485,10 +485,10 @@ class _MetricRow extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(label, style: GoogleFonts.inter(fontSize: 13, color: const Color(0xFF575D78))),
+        Text(label, style: GoogleFonts.inter(fontSize: 13, color: AppColors.lightTextSecondary)),
         Text(
           value,
-          style: GoogleFonts.plusJakartaSans(fontSize: 15, fontWeight: FontWeight.w700, color: const Color(0xFF191C1E)),
+          style: GoogleFonts.plusJakartaSans(fontSize: 15, fontWeight: FontWeight.w700, color: AppColors.lightTextPrimary),
         ),
       ],
     );
@@ -527,7 +527,7 @@ class _LineChartPainter extends CustomPainter {
       ..style = PaintingStyle.fill;
 
     final paintAvg = Paint()
-      ..color = const Color(0xFF575D78).withValues(alpha: 0.4)
+      ..color = AppColors.lightTextSecondary.withValues(alpha: 0.4)
       ..strokeWidth = 1
       ..style = PaintingStyle.stroke;
 
@@ -615,8 +615,8 @@ class _DonutChartCard extends StatelessWidget {
                   children: [
                     Container(width: 10, height: 10, decoration: BoxDecoration(color: s.color, shape: BoxShape.circle)),
                     const SizedBox(width: 8),
-                    Expanded(child: Text(s.label, style: GoogleFonts.inter(fontSize: 12, color: const Color(0xFF575D78)))),
-                    Text('${s.value.toInt()}%', style: GoogleFonts.plusJakartaSans(fontSize: 12, fontWeight: FontWeight.w700, color: const Color(0xFF191C1E))),
+                    Expanded(child: Text(s.label, style: GoogleFonts.inter(fontSize: 12, color: AppColors.lightTextSecondary))),
+                    Text('${s.value.toInt()}%', style: GoogleFonts.plusJakartaSans(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.lightTextPrimary)),
                   ],
                 ),
               )).toList(),

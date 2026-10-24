@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:scorely/core/theme/colors.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -12,20 +13,22 @@ import '../../models/live_match_data.dart';
 import '../../providers/profile_provider.dart';
 import './providers/live_match_insforge_provider.dart';
 import '../match/helpers/live_match_promo.dart';
-import 'package:share_plus/share_plus.dart';
+import 'widgets/home_drawer.dart';
+import 'widgets/quick_match_cards.dart';
+import 'widgets/home_stats_section.dart';
 
 // --- Colors from DESIGN_home.md ---
 class HomeColors {
-  static const Color surface = Color(0xFFF7F9FC);
-  static const Color onSurface = Color(0xFF191C1E);
-  static const Color primary = Color(0xFFBA0013);
+  static const Color surface = AppColors.lightBg;
+  static const Color onSurface = AppColors.lightTextPrimary;
+  static const Color primary = AppColors.primary;
   static const Color onPrimary = Color(0xFFFFFFFF);
-  static const Color secondary = Color(0xFF575D78);
+  static const Color secondary = AppColors.lightTextSecondary;
   static const Color secondaryContainer = Color(0xFFD8DEFE);
-  static const Color tertiary = Color(0xFF006B1B);
-  static const Color appbarBg = Color(0xFF191C1E);
+  static const Color tertiary = AppColors.successDark;
+  static const Color appbarBg = AppColors.lightTextPrimary;
   static const Color cardBg = Color(0xFFFFFFFF);
-  static const Color activeGreen = Color(0xFF006B1B);
+  static const Color activeGreen = AppColors.successDark;
 }
 
 // --- Typography from DESIGN_home.md ---
@@ -81,7 +84,7 @@ class HomeScreen extends ConsumerWidget {
     return Scaffold(
       backgroundColor: HomeColors.surface,
       appBar: _buildAppBar(context, pendingMatches.isNotEmpty),
-      drawer: _buildDrawer(context, ref),
+      drawer: const HomeDrawer(),
       body: SingleChildScrollView(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 17.0, vertical: 20.0),
@@ -90,9 +93,10 @@ class HomeScreen extends ConsumerWidget {
             children: [
               _buildGreeting(),
               const SizedBox(height: 20),
-              _buildQuickMatchCard(context),
-              const SizedBox(height: 14),
-              _buildScheduleMatchCard(context),
+              QuickMatchActionCards(
+                onQuickMatchTap: () => _handleQuickMatchTap(context),
+                onScheduleMatchTap: () => _handleScheduleMatchTap(context),
+              ),
               if (pendingMatches.isNotEmpty) ...[
                 const SizedBox(height: 27),
                 _buildPendingMatchSection(context, ref, pendingMatches),
@@ -100,7 +104,7 @@ class HomeScreen extends ConsumerWidget {
               const SizedBox(height: 27),
               _buildLiveMatchSection(context, ref, liveInsforgeAsync),
               const SizedBox(height: 27),
-              _buildMyStatsSection(ref, recentAsync),
+              HomeStatsSection(),
               const SizedBox(height: 27),
               _buildRecentMatchesSection(context, ref, recentAsync),
             ],
@@ -110,177 +114,32 @@ class HomeScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildDrawer(BuildContext context, WidgetRef ref) {
-    final profile = ref.watch(profileProvider);
-    final isLoggedIn = profile.isLoggedIn;
-    final userName = isLoggedIn && profile.name.isNotEmpty
-        ? profile.name
-        : 'Guest User';
-    final userEmail = isLoggedIn ? profile.email : 'Sign in to sync your data';
-
-    return Drawer(
-      backgroundColor: HomeColors.surface,
-      child: ListView(
-        padding: EdgeInsets.zero,
-        children: [
-          DrawerHeader(
-            decoration: const BoxDecoration(color: HomeColors.appbarBg),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                CircleAvatar(
-                  radius: 30,
-                  backgroundColor: HomeColors.primary,
-                  child: Text(
-                    userName.isNotEmpty ? userName[0].toUpperCase() : 'G',
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  userName,
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.white,
-                  ),
-                ),
-                GestureDetector(
-                  onTap: () {
-                    if (!isLoggedIn) {
-                      Navigator.pop(context);
-                      context.push('/login');
-                    }
-                  },
-                  child: Text(
-                    userEmail,
-                    style: GoogleFonts.inter(
-                      fontSize: 14,
-                      color: isLoggedIn ? Colors.white70 : Colors.blue[300],
-                      decoration: isLoggedIn
-                          ? TextDecoration.none
-                          : TextDecoration.underline,
-                    ),
-                  ),
-                ),
-              ],
+  void _handleScheduleMatchTap(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: HomeColors.surface,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        title: Text('Coming Soon 🚀', style: HomeTypography.headlineSm),
+        content: Text(
+          'Scheduled Matches with Live Sync and Team Management will be available in the next major update.\n\nFor now, enjoy Quick Matches!',
+          style: HomeTypography.bodyMd,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text(
+              'Got it',
+              style: TextStyle(
+                color: HomeColors.primary,
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ),
-          _buildDrawerItem(
-            icon: Icons.person_outline,
-            title: 'Profile',
-            onTap: () {
-              Navigator.pop(context);
-              context.push('/profile');
-            },
-          ),
-          _buildDrawerItem(
-            icon: Icons.analytics_outlined,
-            title: 'My performance',
-            onTap: () {
-              Navigator.pop(context);
-              context.push('/performance');
-            },
-          ),
-          const Divider(),
-          _buildDrawerItem(
-            icon: Icons.star_outline,
-            title: 'Rate us',
-            onTap: () {
-              Navigator.pop(context);
-            },
-          ),
-          _buildDrawerItem(
-            icon: Icons.info_outline,
-            title: 'About us',
-            onTap: () {
-              Navigator.pop(context);
-              context.push('/info', extra: 0);
-            },
-          ),
-          _buildDrawerItem(
-            icon: Icons.help_outline,
-            title: 'Help/FAQs',
-            onTap: () {
-              Navigator.pop(context);
-              context.push('/info', extra: 1);
-            },
-          ),
-          _buildDrawerItem(
-            icon: Icons.privacy_tip_outlined,
-            title: 'Privacy Policy',
-            onTap: () {
-              Navigator.pop(context);
-              context.push('/info', extra: 2);
-            },
-          ),
-          _buildDrawerItem(
-            icon: Icons.description_outlined,
-            title: 'Terms of Service',
-            onTap: () {
-              Navigator.pop(context);
-              context.push('/info', extra: 3);
-            },
-          ),
-          _buildDrawerItem(
-            icon: Icons.settings_outlined,
-            title: 'Settings',
-            onTap: () {
-              Navigator.pop(context);
-              context.push('/settings');
-            },
-          ),
-          _buildDrawerItem(
-            icon: Icons.share_outlined,
-            title: 'Share app',
-            onTap: () {
-              Navigator.pop(context);
-              SharePlus.instance.share(
-                ShareParams(
-                  text:
-                      'Check out Scorely! The ultimate cricket scoring app for live match updates and team management. Download it now: https://scorely.app',
-                  subject: 'Scorely Cricket App',
-                ),
-              );
-            },
-          ),
-          if (isLoggedIn) ...[
-            const Divider(),
-            _buildDrawerItem(
-              icon: Icons.logout_outlined,
-              title: 'Sign out',
-              onTap: () async {
-                Navigator.pop(context);
-                await ref.read(profileProvider.notifier).signOut();
-              },
-            ),
-          ],
         ],
       ),
-    );
-  }
-
-  Widget _buildDrawerItem({
-    required IconData icon,
-    required String title,
-    required VoidCallback onTap,
-  }) {
-    return ListTile(
-      leading: Icon(icon, color: HomeColors.secondary),
-      title: Text(
-        title,
-        style: GoogleFonts.inter(
-          fontSize: 16,
-          fontWeight: FontWeight.w500,
-          color: HomeColors.onSurface,
-        ),
-      ),
-      onTap: onTap,
     );
   }
 
@@ -349,7 +208,7 @@ class HomeScreen extends ConsumerWidget {
                   width: 8,
                   height: 8,
                   decoration: const BoxDecoration(
-                    color: Color(0xFFBA0013),
+                    color: AppColors.primary,
                     shape: BoxShape.circle,
                   ),
                 ),
@@ -427,7 +286,7 @@ class HomeScreen extends ConsumerWidget {
               decoration: const BoxDecoration(
                 color: Colors.white,
                 border: Border(
-                  top: BorderSide(color: Color(0xFFBA0013), width: 6),
+                  top: BorderSide(color: AppColors.primary, width: 6),
                 ),
               ),
               child: Padding(
@@ -446,7 +305,7 @@ class HomeScreen extends ConsumerWidget {
                       ),
                       child: const Icon(
                         Icons.info,
-                        color: Color(0xFFBA0013),
+                        color: AppColors.primary,
                         size: 32,
                       ),
                     ),
@@ -456,7 +315,7 @@ class HomeScreen extends ConsumerWidget {
                       style: GoogleFonts.plusJakartaSans(
                         fontSize: 20,
                         fontWeight: FontWeight.w700,
-                        color: const Color(0xFF1A2138), // Dark navy from image
+                        color: AppColors.darkSurface, // Dark navy from image
                       ),
                     ),
                     const SizedBox(height: 12),
@@ -480,14 +339,14 @@ class HomeScreen extends ConsumerWidget {
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(12),
                               ),
-                              side: const BorderSide(color: Color(0xFF1A2138)),
+                              side: const BorderSide(color: AppColors.darkSurface),
                             ),
                             child: Text(
                               'CANCEL',
                               style: GoogleFonts.plusJakartaSans(
                                 fontSize: 14,
                                 fontWeight: FontWeight.w700,
-                                color: const Color(0xFF1A2138),
+                                color: AppColors.darkSurface,
                               ),
                             ),
                           ),
@@ -497,7 +356,7 @@ class HomeScreen extends ConsumerWidget {
                           child: ElevatedButton(
                             onPressed: () => Navigator.pop(context, true),
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFFBA0013),
+                              backgroundColor: AppColors.primary,
                               padding: const EdgeInsets.symmetric(vertical: 16),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(12),
@@ -535,135 +394,6 @@ class HomeScreen extends ConsumerWidget {
     }
   }
 
-  Widget _buildQuickMatchCard(BuildContext context) {
-    return GestureDetector(
-      onTap: () => _handleQuickMatchTap(context),
-      child: Container(
-        width: double.infinity,
-        height: 102,
-        decoration: BoxDecoration(
-          color: HomeColors.primary,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: HomeColors.primary.withValues(alpha: 0.3),
-              blurRadius: 16,
-              offset: const Offset(0, 8),
-            ),
-          ],
-        ),
-        child: Stack(
-          children: [
-            Positioned(
-              right: -8,
-              top: -8,
-              bottom: -8,
-              child: Icon(
-                Icons.bolt,
-                size: 119,
-                color: Colors.white.withValues(alpha: 0.15),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(20.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    'QUICK MATCH',
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w800,
-                      color: HomeColors.onPrimary,
-                      letterSpacing: -0.4,
-                    ),
-                  ),
-                  const SizedBox(height: 3),
-                  Text(
-                    'Start scoring within 30 seconds - Go Offline',
-                    style: HomeTypography.bodyMd.copyWith(
-                      color: HomeColors.onPrimary.withValues(alpha: 0.9),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildScheduleMatchCard(BuildContext context) {
-    return GestureDetector(
-      onTap: () {
-        // MVP: Schedule Match is coming soon — Quick Match is available now.
-        // context.push('/match-setup');
-        showDialog(
-          context: context,
-          builder: (context) => AlertDialog(
-            backgroundColor: HomeColors.surface,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-            ),
-            title: Text('Coming Soon 🚀', style: HomeTypography.headlineSm),
-            content: Text(
-              'Scheduled Matches with Live Sync and Team Management will be available in the next major update.\n\nFor now, enjoy Quick Matches!',
-              style: HomeTypography.bodyMd,
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: Text(
-                  'Got it',
-                  style: TextStyle(
-                    color: HomeColors.primary,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        );
-      },
-      child: Container(
-        width: double.infinity,
-        decoration: BoxDecoration(
-          color: HomeColors.secondaryContainer,
-          borderRadius: BorderRadius.circular(16),
-        ),
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 17),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Schedule Match', style: HomeTypography.headlineSm),
-                const SizedBox(height: 3),
-                Text(
-                  'Plan Future Match - Go Live Scoring',
-                  style: HomeTypography.bodyMd.copyWith(
-                    color: HomeColors.secondary,
-                  ),
-                ),
-              ],
-            ),
-            Container(
-              padding: const EdgeInsets.all(7),
-              child: const Icon(
-                Icons.calendar_today_outlined,
-                color: HomeColors.primary,
-                size: 24,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   // ======================== PENDING MATCHES ========================
 
   Widget _buildPendingMatchSection(
@@ -680,7 +410,7 @@ class HomeScreen extends ConsumerWidget {
               width: 7,
               height: 7,
               decoration: const BoxDecoration(
-                color: Color(0xFFBA0013),
+                color: AppColors.primary,
                 shape: BoxShape.circle,
               ),
             ),
@@ -751,103 +481,6 @@ class HomeScreen extends ConsumerWidget {
           ],
         );
       },
-    );
-  }
-
-  // ======================== MY STATS ========================
-
-  Widget _buildMyStatsSection(
-    WidgetRef ref,
-    AsyncValue<List<CricketMatch>> recentAsync,
-  ) {
-    // Aggregate stats from the local completed matches
-
-    int turfMatches = 0;
-    int turfRuns = 0;
-    int turfWickets = 0;
-
-    int otherMatches = 0;
-    int otherRuns = 0;
-    int otherWickets = 0;
-
-    recentAsync.whenData((matches) {
-      for (final m in matches) {
-        final runs = m.teamARuns + m.teamBRuns;
-        final wickets = m.teamAWickets + m.teamBWickets;
-
-        if (m.matchType == 'Box/Turf') {
-          turfMatches++;
-          turfRuns += runs;
-          turfWickets += wickets;
-        } else {
-          otherMatches++;
-          otherRuns += runs;
-          otherWickets += wickets;
-        }
-      }
-    });
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text('TURF/BOX', style: HomeTypography.labelBold),
-        const SizedBox(height: 10),
-        Row(
-          children: [
-            Expanded(child: _buildStatCard('MATCHES', '$turfMatches')),
-            const SizedBox(width: 10),
-            Expanded(child: _buildStatCard('RUNS', '$turfRuns')),
-            const SizedBox(width: 10),
-            Expanded(child: _buildStatCard('WICKETS', '$turfWickets')),
-          ],
-        ),
-        const SizedBox(height: 20),
-        Text('Ground Matches', style: HomeTypography.labelBold),
-        const SizedBox(height: 10),
-        Row(
-          children: [
-            Expanded(child: _buildStatCard('MATCHES', '$otherMatches')),
-            const SizedBox(width: 10),
-            Expanded(child: _buildStatCard('RUNS', '$otherRuns')),
-            const SizedBox(width: 10),
-            Expanded(child: _buildStatCard('WICKETS', '$otherWickets')),
-          ],
-        ),
-      ],
-    );
-  }
-
-  Widget _buildStatCard(String label, String value) {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 17),
-      decoration: BoxDecoration(
-        color: HomeColors.cardBg,
-        borderRadius: BorderRadius.circular(12),
-        border: const Border(
-          bottom: BorderSide(color: HomeColors.primary, width: 2),
-        ),
-        boxShadow: const [
-          BoxShadow(
-            color: Color.fromRGBO(26, 33, 56, 0.05),
-            blurRadius: 10,
-            offset: Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          Text(label, style: HomeTypography.labelBold),
-          const SizedBox(height: 7),
-          Text(
-            value,
-            style: GoogleFonts.plusJakartaSans(
-              fontSize: 19,
-              fontWeight: FontWeight.w600,
-              color: HomeColors.onSurface,
-            ),
-          ),
-        ],
-      ),
     );
   }
 

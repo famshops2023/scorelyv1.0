@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:scorely/core/theme/colors.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class InfoScreen extends StatefulWidget {
@@ -35,9 +36,9 @@ class _InfoScreenState extends State<InfoScreen> with SingleTickerProviderStateM
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF7F9FC),
+      backgroundColor: AppColors.lightBg,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF191C1E),
+        backgroundColor: AppColors.lightTextPrimary,
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.white),
@@ -53,7 +54,7 @@ class _InfoScreenState extends State<InfoScreen> with SingleTickerProviderStateM
         bottom: TabBar(
           controller: _tabController,
           isScrollable: true,
-          indicatorColor: const Color(0xFFBA0013),
+          indicatorColor: AppColors.primary,
           indicatorWeight: 3,
           labelColor: Colors.white,
           unselectedLabelColor: Colors.white54,
@@ -90,14 +91,14 @@ class _InfoScreenState extends State<InfoScreen> with SingleTickerProviderStateM
             height: 80,
             decoration: BoxDecoration(
               gradient: const LinearGradient(
-                colors: [Color(0xFFBA0013), Color(0xFF7B000D)],
+                colors: [AppColors.primary, Color(0xFF7B000D)],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
               borderRadius: BorderRadius.circular(20),
               boxShadow: [
                 BoxShadow(
-                  color: const Color(0xFFBA0013).withValues(alpha: 0.3),
+                  color: AppColors.primary.withValues(alpha: 0.3),
                   blurRadius: 12,
                   offset: const Offset(0, 4),
                 ),
@@ -111,14 +112,14 @@ class _InfoScreenState extends State<InfoScreen> with SingleTickerProviderStateM
             style: GoogleFonts.plusJakartaSans(
               fontSize: 28,
               fontWeight: FontWeight.bold,
-              color: const Color(0xFF191C1E),
+              color: AppColors.lightTextPrimary,
             ),
           ),
           Text(
             'Version 1.0.0',
             style: GoogleFonts.inter(
               fontSize: 14,
-              color: const Color(0xFF575D78),
+              color: AppColors.lightTextSecondary,
             ),
           ),
           const SizedBox(height: 32),
@@ -127,7 +128,7 @@ class _InfoScreenState extends State<InfoScreen> with SingleTickerProviderStateM
             style: GoogleFonts.inter(
               fontSize: 16,
               fontWeight: FontWeight.w600,
-              color: const Color(0xFF191C1E),
+              color: AppColors.lightTextPrimary,
             ),
           ),
           const SizedBox(height: 16),
@@ -137,7 +138,7 @@ class _InfoScreenState extends State<InfoScreen> with SingleTickerProviderStateM
             style: GoogleFonts.inter(
               fontSize: 15,
               height: 1.6,
-              color: const Color(0xFF575D78),
+              color: AppColors.lightTextSecondary,
             ),
           ),
           const SizedBox(height: 32),
@@ -153,14 +154,14 @@ class _InfoScreenState extends State<InfoScreen> with SingleTickerProviderStateM
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Icon(icon, color: const Color(0xFFBA0013), size: 20),
+        Icon(icon, color: AppColors.primary, size: 20),
         const SizedBox(width: 8),
         Text(
           text,
           style: GoogleFonts.inter(
             fontSize: 15,
             fontWeight: FontWeight.w500,
-            color: const Color(0xFF191C1E),
+            color: AppColors.lightTextPrimary,
           ),
         ),
       ],
@@ -198,7 +199,7 @@ class _InfoScreenState extends State<InfoScreen> with SingleTickerProviderStateM
             borderRadius: BorderRadius.circular(12),
             boxShadow: [
               BoxShadow(
-                color: const Color(0xFF1A2138).withValues(alpha: 0.04),
+                color: AppColors.darkSurface.withValues(alpha: 0.04),
                 blurRadius: 8,
                 offset: const Offset(0, 2),
               ),
@@ -207,14 +208,14 @@ class _InfoScreenState extends State<InfoScreen> with SingleTickerProviderStateM
           child: Theme(
             data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
             child: ExpansionTile(
-              iconColor: const Color(0xFFBA0013),
-              collapsedIconColor: const Color(0xFF575D78),
+              iconColor: AppColors.primary,
+              collapsedIconColor: AppColors.lightTextSecondary,
               title: Text(
                 faqs[index]['q']!,
                 style: GoogleFonts.inter(
                   fontWeight: FontWeight.w600,
                   fontSize: 15,
-                  color: const Color(0xFF191C1E),
+                  color: AppColors.lightTextPrimary,
                 ),
               ),
               childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
@@ -224,7 +225,7 @@ class _InfoScreenState extends State<InfoScreen> with SingleTickerProviderStateM
                   style: GoogleFonts.inter(
                     fontSize: 14,
                     height: 1.5,
-                    color: const Color(0xFF575D78),
+                    color: AppColors.lightTextSecondary,
                   ),
                 ),
               ],
@@ -246,7 +247,7 @@ class _InfoScreenState extends State<InfoScreen> with SingleTickerProviderStateM
             style: GoogleFonts.plusJakartaSans(
               fontSize: 22,
               fontWeight: FontWeight.bold,
-              color: const Color(0xFF191C1E),
+              color: AppColors.lightTextPrimary,
             ),
           ),
           const SizedBox(height: 16),
@@ -255,7 +256,7 @@ class _InfoScreenState extends State<InfoScreen> with SingleTickerProviderStateM
             style: GoogleFonts.inter(
               fontSize: 14,
               height: 1.6,
-              color: const Color(0xFF575D78),
+              color: AppColors.lightTextSecondary,
             ),
           ),
         ],

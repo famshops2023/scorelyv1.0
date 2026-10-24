@@ -106,14 +106,14 @@ class FieldingTab extends StatelessWidget {
                 children: [
                   Text(
                     'Total Extras',
-                    style: GoogleFonts.inter(fontSize: 13, color: const Color(0xFF575D78), fontWeight: FontWeight.w500),
+                    style: GoogleFonts.inter(fontSize: 13, color: AppColors.lightTextSecondary, fontWeight: FontWeight.w500),
                   ),
                   Text(
                     '$totalExtras',
                     style: GoogleFonts.plusJakartaSans(
                       fontSize: 40,
                       fontWeight: FontWeight.w800,
-                      color: const Color(0xFF191C1E),
+                      color: AppColors.lightTextPrimary,
                       height: 1.1,
                     ),
                   ),
@@ -149,24 +149,24 @@ class FieldingTab extends StatelessWidget {
               children: [
                 Container(width: 10, height: 10, decoration: const BoxDecoration(color: AppColors.primary, shape: BoxShape.circle)),
                 const SizedBox(width: 6),
-                Text('Wides (${stats.wides})', style: GoogleFonts.inter(fontSize: 12, color: const Color(0xFF575D78))),
+                Text('Wides (${stats.wides})', style: GoogleFonts.inter(fontSize: 12, color: AppColors.lightTextSecondary)),
                 const Spacer(),
                 Container(width: 10, height: 10, decoration: const BoxDecoration(color: Color(0xFF1565C0), shape: BoxShape.circle)),
                 const SizedBox(width: 6),
-                Text('No-Balls (${stats.noBalls})', style: GoogleFonts.inter(fontSize: 12, color: const Color(0xFF575D78))),
+                Text('No-Balls (${stats.noBalls})', style: GoogleFonts.inter(fontSize: 12, color: AppColors.lightTextSecondary)),
               ],
             ),
           ] else
             Container(
               padding: const EdgeInsets.symmetric(vertical: 12),
               decoration: BoxDecoration(
-                color: const Color(0xFF006B1B).withValues(alpha: 0.08),
+                color: AppColors.successDark.withValues(alpha: 0.08),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Center(
                 child: Text(
                   '✓ No extras conceded — excellent discipline!',
-                  style: GoogleFonts.inter(fontSize: 12, color: const Color(0xFF006B1B), fontWeight: FontWeight.w600),
+                  style: GoogleFonts.inter(fontSize: 12, color: AppColors.successDark, fontWeight: FontWeight.w600),
                 ),
               ),
             ),
@@ -174,17 +174,17 @@ class FieldingTab extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: const Color(0xFFF7F9FC),
+              color: AppColors.lightBg,
               borderRadius: BorderRadius.circular(10),
             ),
             child: Row(
               children: [
-                const Icon(Icons.info_outline, size: 14, color: Color(0xFF575D78)),
+                const Icon(Icons.info_outline, size: 14, color: AppColors.lightTextSecondary),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
                     'Aim to reduce total extras to below 5 per match for optimal performance rating.',
-                    style: GoogleFonts.inter(fontSize: 11, color: const Color(0xFF575D78), height: 1.4),
+                    style: GoogleFonts.inter(fontSize: 11, color: AppColors.lightTextSecondary, height: 1.4),
                   ),
                 ),
               ],
@@ -204,11 +204,11 @@ class FieldingTab extends StatelessWidget {
         child: Center(
           child: Column(
             children: [
-              const Icon(Icons.back_hand_outlined, size: 40, color: Color(0xFF575D78)),
+              const Icon(Icons.back_hand_outlined, size: 40, color: AppColors.lightTextSecondary),
               const SizedBox(height: 10),
               Text(
                 'No fielding data yet',
-                style: GoogleFonts.inter(fontSize: 13, color: const Color(0xFF575D78)),
+                style: GoogleFonts.inter(fontSize: 13, color: AppColors.lightTextSecondary),
               ),
             ],
           ),
@@ -248,8 +248,8 @@ class FieldingTab extends StatelessWidget {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text('Total Dismissals', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600, color: const Color(0xFF575D78))),
-                    Text('${total.toInt()}', style: GoogleFonts.plusJakartaSans(fontSize: 16, fontWeight: FontWeight.w800, color: const Color(0xFF191C1E))),
+                    Text('Total Dismissals', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.lightTextSecondary)),
+                    Text('${total.toInt()}', style: GoogleFonts.plusJakartaSans(fontSize: 16, fontWeight: FontWeight.w800, color: AppColors.lightTextPrimary)),
                   ],
                 ),
               ],
@@ -294,7 +294,7 @@ class _FieldingRow extends StatelessWidget {
         Expanded(
           child: Text(
             label,
-            style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w500, color: const Color(0xFF191C1E)),
+            style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w500, color: AppColors.lightTextPrimary),
           ),
         ),
         Text(
@@ -302,7 +302,7 @@ class _FieldingRow extends StatelessWidget {
           style: GoogleFonts.plusJakartaSans(
             fontSize: 22,
             fontWeight: FontWeight.w800,
-            color: value > 0 ? color : const Color(0xFF575D78),
+            color: value > 0 ? color : AppColors.lightTextSecondary,
           ),
         ),
       ],
@@ -322,8 +322,8 @@ class _ImpactLegend extends StatelessWidget {
       children: [
         Container(width: 10, height: 10, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
         const SizedBox(width: 8),
-        Expanded(child: Text(label, style: GoogleFonts.inter(fontSize: 12, color: const Color(0xFF575D78)))),
-        Text('$value', style: GoogleFonts.plusJakartaSans(fontSize: 13, fontWeight: FontWeight.w700, color: const Color(0xFF191C1E))),
+        Expanded(child: Text(label, style: GoogleFonts.inter(fontSize: 12, color: AppColors.lightTextSecondary))),
+        Text('$value', style: GoogleFonts.plusJakartaSans(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.lightTextPrimary)),
       ],
     );
   }

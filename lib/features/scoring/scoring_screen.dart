@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:scorely/core/theme/colors.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -6,7 +7,6 @@ import '../match/match_setup_screen.dart';
 import '../match/opening_lineup_screen.dart';
 import '../../models/player_setup.dart';
 import '../../models/match_result_data.dart';
-import '../../models/match_stats.dart';
 import '../../services/database.dart';
 import '../../services/sync_manager.dart';
 import '../../services/live_scoring_service.dart';
@@ -16,103 +16,14 @@ import '../../services/sound_service.dart';
 import '../../services/wakelock_service.dart';
 import '../../services/notification_service.dart';
 import '../../services/ongoing_match_service.dart';
+import 'models/scoring_models.dart';
+import 'widgets/live_score_card.dart';
+import 'widgets/active_players_card.dart';
+import 'widgets/over_summary_timeline.dart';
+import 'widgets/quick_tap_action_board.dart';
+import 'widgets/wicket_sub_panel.dart';
 
-class LocalBallEvent {
-  final int runs;
-  final bool isWicket;
-  final String? wicketType;
-  final bool isExtra;
-  final String? extraType;
-  final String batterName;
-  final String bowlerName;
-
-  LocalBallEvent({
-    required this.runs,
-    required this.isWicket,
-    this.wicketType,
-    required this.isExtra,
-    this.extraType,
-    required this.batterName,
-    required this.bowlerName,
-  });
-
-  Map<String, dynamic> toJson() => {
-        'runs': runs,
-        'isWicket': isWicket,
-        'wicketType': wicketType,
-        'isExtra': isExtra,
-        'extraType': extraType,
-        'batterName': batterName,
-        'bowlerName': bowlerName,
-      };
-
-  factory LocalBallEvent.fromJson(Map<String, dynamic> json) => LocalBallEvent(
-        runs: json['runs'] as int? ?? 0,
-        isWicket: json['isWicket'] as bool? ?? false,
-        wicketType: json['wicketType'] as String?,
-        isExtra: json['isExtra'] as bool? ?? false,
-        extraType: json['extraType'] as String?,
-        batterName: json['batterName'] as String? ?? '',
-        bowlerName: json['bowlerName'] as String? ?? '',
-      );
-}
-
-// --- Local Data Models for Stats & Undo Stack ---
-
-
-
-class MatchState {
-  final int runs;
-  final int wickets;
-  final int ballsBowled;
-  final int extraRuns;
-  final List<String> thisOver;
-  final String striker;
-  final String nonStriker;
-  final String currentBowler;
-  final Map<String, BatterStats> batterStats;
-  final Map<String, BowlerStats> bowlerStats;
-  final List<String> wicketsHistory;
-  final List<String> batterOrder;
-  final int nextBatterIndex;
-  final List<LocalBallEvent> localBalls;
-
-  MatchState({
-    required this.runs,
-    required this.wickets,
-    required this.ballsBowled,
-    required this.extraRuns,
-    required this.thisOver,
-    required this.striker,
-    required this.nonStriker,
-    required this.currentBowler,
-    required this.batterStats,
-    required this.bowlerStats,
-    required this.wicketsHistory,
-    required this.batterOrder,
-    required this.nextBatterIndex,
-    required this.localBalls,
-  });
-
-  MatchState clone() {
-    return MatchState(
-      runs: runs,
-      wickets: wickets,
-      ballsBowled: ballsBowled,
-      extraRuns: extraRuns,
-      thisOver: List.from(thisOver),
-      striker: striker,
-      nonStriker: nonStriker,
-      currentBowler: currentBowler,
-      batterStats: batterStats.map((k, v) => MapEntry(k, v.clone())),
-      bowlerStats: bowlerStats.map((k, v) => MapEntry(k, v.clone())),
-      wicketsHistory: List.from(wicketsHistory),
-      batterOrder: List.from(batterOrder),
-      nextBatterIndex: nextBatterIndex,
-      localBalls: List.from(localBalls),
-    );
-  }
-}
+export 'models/scoring_models.dart';
 
 // --- Main Widget Screen ---
 
@@ -1289,7 +1200,7 @@ class _ScoringScreenState extends ConsumerState<ScoringScreen> {
       barrierDismissible: false,
       builder: (context) {
         return AlertDialog(
-          backgroundColor: const Color(0xFF1E293B),
+          backgroundColor: AppColors.darkCard,
           shape:
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
           title: Text(
@@ -1310,7 +1221,7 @@ class _ScoringScreenState extends ConsumerState<ScoringScreen> {
                 'Score: $_runs/$_wickets in ${(_ballsBowled ~/ 6)}.${(_ballsBowled % 6)} overs.',
                 style: GoogleFonts.plusJakartaSans(
                     fontSize: 20,
-                    color: const Color(0xFF00E676),
+                    color: AppColors.success,
                     fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 12),
@@ -1324,7 +1235,7 @@ class _ScoringScreenState extends ConsumerState<ScoringScreen> {
           actions: [
             ElevatedButton(
               style: ElevatedButton.styleFrom(
-                backgroundColor: Color(0xFFBA0013),
+                backgroundColor: AppColors.primary,
                 shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12)),
               ),
@@ -1405,7 +1316,7 @@ class _ScoringScreenState extends ConsumerState<ScoringScreen> {
         return StatefulBuilder(
           builder: (ctx, setDlg) {
             return AlertDialog(
-              backgroundColor: const Color(0xFF1E293B),
+              backgroundColor: AppColors.darkCard,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
               title: Text('2nd INNINGS LINEUP', style: GoogleFonts.inter(fontWeight: FontWeight.bold, color: Colors.white)),
               content: SingleChildScrollView(
@@ -1461,7 +1372,7 @@ class _ScoringScreenState extends ConsumerState<ScoringScreen> {
               actions: [
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFBA0013),
+                    backgroundColor: AppColors.primary,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   ),
                   onPressed: (opener1 == null || opener2 == null || openBowler == null || opener1 == opener2)
@@ -1745,7 +1656,7 @@ class _ScoringScreenState extends ConsumerState<ScoringScreen> {
         return StatefulBuilder(
           builder: (context, setDialogState) {
             return Dialog(
-              backgroundColor: const Color(0xFF1E293B),
+              backgroundColor: AppColors.darkCard,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
               child: Padding(
                 padding: const EdgeInsets.all(20),
@@ -1777,7 +1688,7 @@ class _ScoringScreenState extends ConsumerState<ScoringScreen> {
                             ),
                           ),
                           selected: isSel,
-                          selectedColor: const Color(0xFFBA0013),
+                          selectedColor: AppColors.primary,
                           backgroundColor: const Color(0xFF0F172A),
                           onSelected: (val) {
                             setDialogState(() {
@@ -1807,7 +1718,7 @@ class _ScoringScreenState extends ConsumerState<ScoringScreen> {
                         const SizedBox(width: 8),
                         ElevatedButton(
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF202A46),
+                            backgroundColor: AppColors.darkCard2,
                             shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(12)),
                           ),
@@ -1834,738 +1745,14 @@ class _ScoringScreenState extends ConsumerState<ScoringScreen> {
     );
   }
 
-  Widget _buildWicketSubPanel() {
-    final wicketTypes = ['Bowled', 'Caught', 'Run Out', 'LBW', 'Stumped', 'Hit Wicket'];
-    final batters = [_striker, _nonStriker].whereType<String>().toList();
-
-    return Container(
-      margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: const Color(0xFF1E293B),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'WICKET DETAILS',
-            style: GoogleFonts.inter(
-              fontSize: 10,
-              fontWeight: FontWeight.bold,
-              color: Colors.grey[400],
-            ),
-          ),
-          const SizedBox(height: 12),
-          // Wicket Type Dropdown
-          Text(
-            'Type',
-            style: GoogleFonts.inter(fontSize: 11, color: Colors.grey[500]),
-          ),
-          const SizedBox(height: 6),
-          DropdownButtonFormField<String>(
-            dropdownColor: const Color(0xFF0F172A),
-            decoration: InputDecoration(
-              filled: true,
-              fillColor: const Color(0xFF0F172A),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-                borderSide: BorderSide.none,
-              ),
-            ),
-            initialValue: (_selectedWicketType?.isNotEmpty ?? false) ? _selectedWicketType : null,
-            items: wicketTypes
-                .map((w) => DropdownMenuItem(
-                      value: w,
-                      child: Text(w, style: GoogleFonts.inter(color: Colors.white)),
-                    ))
-                .toList(),
-            onChanged: (val) {
-              setState(() {
-                _selectedWicketType = val ?? '';
-              });
-            },
-          ),
-          const SizedBox(height: 12),
-          // Dismissed Batter Dropdown (only striker/non‑striker)
-          Text(
-            'Dismissed Batter',
-            style: GoogleFonts.inter(fontSize: 11, color: Colors.grey[500]),
-          ),
-          const SizedBox(height: 6),
-          DropdownButtonFormField<String>(
-            dropdownColor: const Color(0xFF0F172A),
-            decoration: InputDecoration(
-              filled: true,
-              fillColor: const Color(0xFF0F172A),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-                borderSide: BorderSide.none,
-              ),
-            ),
-            initialValue: (_selectedWicketBatter?.isNotEmpty ?? false) ? _selectedWicketBatter : null,
-            items: batters
-                .map((b) => DropdownMenuItem(
-                      value: b == _striker ? 'Striker' : 'Non-Striker',
-                      child: Text(b == _striker ? 'Striker ($b)' : 'Non-Striker ($b)', style: GoogleFonts.inter(color: Colors.white)),
-                    ))
-                .toList(),
-            onChanged: (val) {
-              setState(() {
-                _selectedWicketBatter = val ?? '';
-              });
-            },
-          ),
-          const SizedBox(height: 12),
-          // Conditional fielder selector for Caught / Run Out / Stumped
-          if (_selectedWicketType == 'Caught' || _selectedWicketType == 'Run Out' || _selectedWicketType == 'Stumped') ...[
-            Text(
-              _selectedWicketType == 'Caught' ? 'Catcher' : 'Assisting Fielder',
-              style: GoogleFonts.inter(fontSize: 11, color: Colors.grey[500]),
-            ),
-            const SizedBox(height: 6),
-            DropdownButtonFormField<String>(
-              dropdownColor: const Color(0xFF0F172A),
-              decoration: InputDecoration(
-                filled: true,
-                fillColor: const Color(0xFF0F172A),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  borderSide: BorderSide.none,
-                ),
-              ),
-              initialValue: _selectedWicketFielder,
-              items: _fieldingPlayers
-                  .map((f) => DropdownMenuItem(value: f.name, child: Text(f.name, style: GoogleFonts.inter(color: Colors.white))))
-                  .toList(),
-              onChanged: (val) {
-                setState(() {
-                  _selectedWicketFielder = val;
-                });
-              },
-            ),
-          ],
-          const SizedBox(height: 12),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF202A46),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            ),
-            onPressed: () async {
-              // Clear selection FIRST so panel closes and W button deselects
-              setState(() {
-                _selectedAction = null;
-                _selectedExtraRuns = 0;
-                _selectedWicketType = _selectedWicketType; // keep for processing below
-                _selectedWicketBatter = _selectedWicketBatter;
-                _selectedWicketFielder = _selectedWicketFielder;
-              });
-              // Process wicket asynchronously (may show batter/bowler selection sheets)
-              await _processWicketConfirm();
-              // Check innings status ONCE after all dialogs are complete
-              _checkInningsStatus();
-              // Now clear wicket fields
-              if (mounted) {
-                setState(() {
-                  _selectedWicketType = null;
-                  _selectedWicketBatter = null;
-                  _selectedWicketFielder = null;
-                });
-              }
-            },
-            child: Text('Confirm Wicket',
-                style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.bold)),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // --- Rendering UI Blocks ---
-
-  Widget _buildScoreCard() {
-    double crr = _ballsBowled == 0 ? 0.0 : (_runs / (_ballsBowled / 6));
-
-    String rrrText = '---';
-    String targetText = '---';
-    String needsText = '';
-    if (_isSecondInnings && _target != null) {
-      targetText = '$_target';
-      int remainingRuns = _target! - _runs;
-      int remainingBalls = (_setup.overs * 6) - _ballsBowled;
-      
-      if (remainingRuns <= 0) {
-        needsText = '$_battingTeam Won';
-      } else if (remainingBalls <= 0) {
-        needsText = '$_battingTeam Lost by $remainingRuns runs';
-      } else {
-        needsText = 'Need $remainingRuns runs in $remainingBalls balls';
-      }
-
-      if (remainingBalls > 0) {
-        double rrr = (remainingRuns / (remainingBalls / 6));
-        rrrText = rrr.toStringAsFixed(2);
-      } else {
-        rrrText = '0.00';
-      }
-    }
-
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 16),
-      decoration: const BoxDecoration(
-        color: Color(0xFF131824),
-        border: Border(
-          bottom: BorderSide(color: Color(0xFFBA0013), width: 2),
-        ),
-      ),
-      child: Column(
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                '${_setup.teamAName.toUpperCase()} VS ${_setup.teamBName.toUpperCase()}',
-                style: GoogleFonts.inter(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.grey[400],
-                ),
-              ),
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: Color(0xFFBA0013),
-                  borderRadius: BorderRadius.circular(12),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Color(0xFFBA0013).withValues(alpha: 0.5),
-                      blurRadius: 8,
-                      spreadRadius: 1,
-                    )
-                  ],
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(Icons.circle, color: Colors.white, size: 8),
-                    const SizedBox(width: 4),
-                    Text(
-                      'LIVE',
-                      style: GoogleFonts.inter(
-                        fontSize: 10,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 4),
-          Text(
-            _isSecondInnings
-                ? '2nd INNINGS (1st Inn: $_firstInningsRuns/$_firstInningsWickets)'
-                : '1st INNINGS',
-            style: GoogleFonts.inter(
-              fontSize: 11,
-              fontWeight: FontWeight.bold,
-              color: Color(0xFFBA0013),
-            ),
-          ),
-          const SizedBox(height: 2),
-          Text(
-            _battingTeam.toUpperCase(),
-            style: GoogleFonts.inter(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            '$_runs/$_wickets',
-            style: GoogleFonts.plusJakartaSans(
-              fontSize: 48,
-              fontWeight: FontWeight.w800,
-              color: Colors.white,
-              height: 1.0,
-            ),
-          ),
-          Text(
-            '(${(_ballsBowled ~/ 6)}.${(_ballsBowled % 6)} / ${_setup.overs} Overs)',
-            style: GoogleFonts.plusJakartaSans(
-              fontSize: 16,
-              color: Colors.grey[400],
-            ),
-          ),
-          if (_isSecondInnings && needsText.isNotEmpty) ...[
-            const SizedBox(height: 6),
-            Text(
-              needsText,
-              style: GoogleFonts.inter(
-                fontSize: 14,
-                fontWeight: FontWeight.bold,
-                color: const Color(0xFF00E676),
-              ),
-            ),
-          ],
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              _buildScoreGridItem('CRR', crr.toStringAsFixed(2)),
-              _buildDivider(),
-              _buildScoreGridItem('RRR', rrrText),
-              _buildDivider(),
-              _buildScoreGridItem('TARGET', targetText),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildDivider() {
-    return Container(
-      width: 1,
-      height: 30,
-      color: Colors.white10,
-    );
-  }
-
-  Widget _buildScoreGridItem(String label, String value) {
-    return Expanded(
-      child: Column(
-        children: [
-          Text(
-            label,
-            style: GoogleFonts.inter(
-              fontSize: 10,
-              fontWeight: FontWeight.bold,
-              color: Colors.grey[500],
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            value,
-            style: GoogleFonts.plusJakartaSans(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildActivePlayersCard() {
-    final strikerStats =
-        _batterStats[_striker] ?? BatterStats(name: _striker ?? 'Striker');
-    final nonStrikerStats = _batterStats[_nonStriker] ??
-        BatterStats(name: _nonStriker ?? 'Non-Striker');
-    final bowlerStats = _bowlerStats[_currentBowler] ??
-        BowlerStats(name: _currentBowler ?? 'Bowler');
-
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: const Color(0xFF202A46),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
-      ),
-      child: Column(
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Expanded(
-                child: Row(
-                  children: [
-                    Container(
-                      width: 6,
-                      height: 35,
-                      decoration: const BoxDecoration(
-                        color: Color(0xFF00E676),
-                        borderRadius: BorderRadius.only(
-                          topLeft: Radius.circular(3),
-                          bottomLeft: Radius.circular(3),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: GestureDetector(
-                        onTap: () => _promptChangeBatter(true),
-                        behavior: HitTestBehavior.opaque,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              '${(_striker ?? 'Striker').toUpperCase()} *',
-                              style: GoogleFonts.inter(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 14,
-                                color: Colors.white,
-                              ),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            Text(
-                              '${strikerStats.runs} (${strikerStats.balls}) • 4s:${strikerStats.fours} 6s:${strikerStats.sixes}',
-                              style: GoogleFonts.plusJakartaSans(
-                                fontSize: 12,
-                                color: Colors.grey[400],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Row(
-                children: [
-                  IconButton(
-                    icon: const Icon(Icons.swap_calls,
-                        color: Color(0xFF00E676), size: 22),
-                    tooltip: 'Swap Strike',
-                    onPressed: _swapStrike,
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.exit_to_app,
-                        color: Color(0xFFBA0013), size: 22),
-                    tooltip: 'Retire Batter',
-                    onPressed: _promptRetireBatter,
-                  ),
-                ],
-              ),
-              Expanded(
-                child: GestureDetector(
-                  onTap: () => _promptChangeBatter(false),
-                  behavior: HitTestBehavior.opaque,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      Text(
-                        (_nonStriker ?? 'Non-Striker').toUpperCase(),
-                        style: GoogleFonts.inter(
-                          fontWeight: FontWeight.w500,
-                          fontSize: 14,
-                          color: Colors.grey[300],
-                        ),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      Text(
-                        '${nonStrikerStats.runs} (${nonStrikerStats.balls}) • 4s:${nonStrikerStats.fours} 6s:${nonStrikerStats.sixes}',
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 12,
-                          color: Colors.grey[400],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: 10),
-            child: Divider(color: Colors.white10),
-          ),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'BOWLER',
-                      style: GoogleFonts.inter(
-                          fontSize: 10,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.grey[400]),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      (_currentBowler ?? 'Bowler').toUpperCase(),
-                      style: GoogleFonts.inter(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 14,
-                          color: Colors.white),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
-                ),
-              ),
-              Text(
-                '${bowlerStats.oversDisplay} - M:${bowlerStats.maidens} - R:${bowlerStats.runsConceded} - W:${bowlerStats.wickets}',
-                style: GoogleFonts.plusJakartaSans(
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white),
-              ),
-              const SizedBox(width: 8),
-              TextButton(
-                onPressed: _promptChangeBowler,
-                style: TextButton.styleFrom(
-                  backgroundColor: Colors.white.withValues(alpha: 0.05),
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
-                child: Text(
-                  'Change',
-                  style: GoogleFonts.inter(
-                      fontSize: 11,
-                      fontWeight: FontWeight.bold,
-                      color: const Color(0xFF00E676)),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildOverSummaryTimeline() {
-    int overRuns = 0;
-    for (var ball in _thisOver) {
-      if (ball.contains('Wd')) {
-        final runs = int.tryParse(ball.replaceAll('Wd', '')) ?? 0;
-        overRuns += 1 + runs;
-      } else if (ball.contains('Nb')) {
-        final runs = int.tryParse(ball.replaceAll('Nb', '')) ?? 0;
-        overRuns += 1 + runs;
-      } else if (ball.contains('B')) {
-        final runs = int.tryParse(ball.replaceAll('B', '')) ?? 0;
-        overRuns += runs;
-      } else if (ball.contains('LB')) {
-        final runs = int.tryParse(ball.replaceAll('LB', '')) ?? 0;
-        overRuns += runs;
-      } else if (ball == 'W') {
-        overRuns += 0;
-      } else if (ball == '.') {
-        overRuns += 0;
-      } else {
-        final runs = int.tryParse(ball) ?? 0;
-        overRuns += runs;
-      }
-    }
-
-    int currentOverIndex = _ballsBowled ~/ 6;
-    int ballsInCurrentOver = _ballsBowled % 6;
-    String overDisplay = '$currentOverIndex.$ballsInCurrentOver';
-
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(
-        color: const Color(0xFF1E293B),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'THIS OVER: $overDisplay',
-                style: GoogleFonts.inter(
-                  fontSize: 10,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.grey[400],
-                ),
-              ),
-              Text(
-                'Runs: $overRuns',
-                style: GoogleFonts.plusJakartaSans(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: const Color(0xFF00E676),
-                ),
-              ),
-            ],
-          ),
-          Expanded(
-            child: SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                children: _thisOver.map((ball) {
-                  Color bg = const Color(0xFF0F172A);
-                  Color fg = Colors.white;
-
-                  if (ball == 'W') {
-                    bg = Color(0xFFBA0013);
-                    fg = Colors.white;
-                  } else if (ball == '4' || ball == '6') {
-                    bg = const Color(0xFF00E676);
-                    fg = Colors.black;
-                  } else if (ball == '.') {
-                    bg = const Color(0xFF334155);
-                    fg = Colors.grey;
-                  } else if (ball.contains('Wd') || ball.contains('Nb')) {
-                    bg = const Color(0xFFCA8A04);
-                    fg = Colors.white;
-                  }
-
-                  return Container(
-                    margin: const EdgeInsets.symmetric(horizontal: 4),
-                    width: 36,
-                    height: 36,
-                    decoration: BoxDecoration(
-                      color: bg,
-                      shape: BoxShape.circle,
-                    ),
-                    alignment: Alignment.center,
-                    child: Text(
-                      ball,
-                      style: GoogleFonts.plusJakartaSans(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 13,
-                        color: fg,
-                      ),
-                    ),
-                  );
-                }).toList(),
-              ),
-            ),
-          ),
-          Row(
-            children: [
-              IconButton(
-                icon: const Icon(Icons.undo, size: 20),
-                color: _historyIndex > 0 ? Colors.white : Colors.grey[700],
-                onPressed: _historyIndex > 0 ? _undo : null,
-              ),
-              IconButton(
-                icon: const Icon(Icons.redo, size: 20),
-                color: _historyIndex < _history.length - 1
-                    ? Colors.white
-                    : Colors.grey[700],
-                onPressed: _historyIndex < _history.length - 1 ? _redo : null,
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildActionButton(String action) {
-    final isSelected = _selectedAction == action;
-    Color buttonBg = isSelected ? const Color(0xFF00E676) : const Color(0xFF202A46);
-    Color textColor = isSelected ? Colors.black : Colors.white;
-
-    if (action == 'W' && !isSelected) {
-      buttonBg = Color(0xFFBA0013).withValues(alpha: 0.15);
-      textColor = Color(0xFFBA0013);
-    } else if ((action == '4' || action == '6') && !isSelected) {
-      buttonBg = const Color(0xFF00E676).withValues(alpha: 0.15);
-      textColor = const Color(0xFF00E676);
-    }
-
-    return Expanded(
-      child: GestureDetector(
-        onTap: () {
-          setState(() {
-            _selectedAction = action;
-            _selectedExtraRuns = 0;
-            _selectedWicketType = 'Bowled';
-            _selectedWicketBatter = 'Striker';
-            _selectedWicketFielder = null;
-          });
-
-          if (action == 'WD' || action == 'NB' || action == 'B' || action == 'LB') {
-            _showExtrasPopup(action);
-          }
-        },
-        child: Container(
-          margin: const EdgeInsets.all(6),
-          height: 60,
-          decoration: BoxDecoration(
-            color: buttonBg,
-            borderRadius: BorderRadius.circular(30),
-            border: Border.all(
-              color: isSelected ? Colors.white : Colors.white.withValues(alpha: 0.05),
-              width: 1.5,
-            ),
-            boxShadow: isSelected
-                ? [
-                    BoxShadow(
-                      color: const Color(0xFF00E676).withValues(alpha: 0.3),
-                      blurRadius: 8,
-                      spreadRadius: 2,
-                    )
-                  ]
-                : null,
-          ),
-          alignment: Alignment.center,
-          child: Text(
-            action,
-            style: GoogleFonts.plusJakartaSans(
-              fontSize: 22,
-              fontWeight: FontWeight.bold,
-              color: textColor,
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildQuickTapActionBoard() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 10.0),
-      child: Column(
-        children: [
-          Row(
-            children: [
-              _buildActionButton('W'),
-              _buildActionButton('WD'),
-              _buildActionButton('NB'),
-              _buildActionButton('B'),
-              _buildActionButton('LB'),
-            ],
-          ),
-          Row(
-            children: [
-              _buildActionButton('0'),
-              _buildActionButton('1'),
-              _buildActionButton('2'),
-              _buildActionButton('3'),
-            ],
-          ),
-          Row(
-            children: [
-              _buildActionButton('4'),
-              _buildActionButton('5'),
-              _buildActionButton('6'),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final showWicketPanel = _selectedAction == 'W';
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0B0F19),
+      backgroundColor: AppColors.darkBg,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF131824),
+        backgroundColor: AppColors.darkNavBg,
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios, color: Colors.white, size: 20),
@@ -2588,15 +1775,95 @@ class _ScoringScreenState extends ConsumerState<ScoringScreen> {
             child: SingleChildScrollView(
               child: Column(
                 children: [
-                  _buildScoreCard(),
+                  LiveScoreCard(
+                    teamAName: _setup.teamAName,
+                    teamBName: _setup.teamBName,
+                    battingTeam: _battingTeam,
+                    runs: _runs,
+                    wickets: _wickets,
+                    ballsBowled: _ballsBowled,
+                    totalOvers: _setup.overs,
+                    isSecondInnings: _isSecondInnings,
+                    firstInningsRuns: _firstInningsRuns,
+                    firstInningsWickets: _firstInningsWickets,
+                    target: _target,
+                  ),
                   const SizedBox(height: 16),
-                  _buildActivePlayersCard(),
+                  ActivePlayersCard(
+                    strikerName: _striker,
+                    strikerStats: _batterStats[_striker] ??
+                        BatterStats(name: _striker ?? 'Striker'),
+                    nonStrikerName: _nonStriker,
+                    nonStrikerStats: _batterStats[_nonStriker] ??
+                        BatterStats(name: _nonStriker ?? 'Non-Striker'),
+                    currentBowler: _currentBowler,
+                    bowlerStats: _bowlerStats[_currentBowler] ??
+                        BowlerStats(name: _currentBowler ?? 'Bowler'),
+                    onSwapStrike: _swapStrike,
+                    onRetireBatter: _promptRetireBatter,
+                    onChangeBatter: _promptChangeBatter,
+                    onChangeBowler: _promptChangeBowler,
+                  ),
                   const SizedBox(height: 8),
-                  _buildOverSummaryTimeline(),
+                  OverSummaryTimeline(
+                    thisOver: _thisOver,
+                    ballsBowled: _ballsBowled,
+                    historyIndex: _historyIndex,
+                    historyLength: _history.length,
+                    onUndo: _undo,
+                    onRedo: _redo,
+                  ),
                   const SizedBox(height: 12),
-                  _buildQuickTapActionBoard(),
+                  QuickTapActionBoard(
+                    selectedAction: _selectedAction,
+                    onActionTap: (action) {
+                      setState(() {
+                        _selectedAction = action;
+                        _selectedExtraRuns = 0;
+                        _selectedWicketType = 'Bowled';
+                        _selectedWicketBatter = 'Striker';
+                        _selectedWicketFielder = null;
+                      });
+
+                      if (action == 'WD' ||
+                          action == 'NB' ||
+                          action == 'B' ||
+                          action == 'LB') {
+                        _showExtrasPopup(action);
+                      }
+                    },
+                  ),
                   const SizedBox(height: 12),
-                  if (showWicketPanel) _buildWicketSubPanel(),
+                  if (showWicketPanel)
+                    WicketSubPanel(
+                      selectedWicketType: _selectedWicketType,
+                      onWicketTypeChanged: (val) =>
+                          setState(() => _selectedWicketType = val),
+                      selectedWicketBatter: _selectedWicketBatter,
+                      onWicketBatterChanged: (val) =>
+                          setState(() => _selectedWicketBatter = val),
+                      selectedWicketFielder: _selectedWicketFielder,
+                      onWicketFielderChanged: (val) =>
+                          setState(() => _selectedWicketFielder = val),
+                      striker: _striker,
+                      nonStriker: _nonStriker,
+                      fieldingPlayers: _fieldingPlayers,
+                      onConfirmWicket: () async {
+                        setState(() {
+                          _selectedAction = null;
+                          _selectedExtraRuns = 0;
+                        });
+                        await _processWicketConfirm();
+                        _checkInningsStatus();
+                        if (mounted) {
+                          setState(() {
+                            _selectedWicketType = null;
+                            _selectedWicketBatter = null;
+                            _selectedWicketFielder = null;
+                          });
+                        }
+                      },
+                    ),
                 ],
               ),
             ),
@@ -2613,7 +1880,7 @@ class _ScoringScreenState extends ConsumerState<ScoringScreen> {
                 child: ElevatedButton(
                   onPressed: _confirmBallOutcome,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Color(0xFFBA0013),
+                    backgroundColor: AppColors.primary,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(14),
                     ),

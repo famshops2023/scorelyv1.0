@@ -3,7 +3,7 @@ import 'package:printing/printing.dart';
 import 'package:pdf/pdf.dart';
 import 'pdf_generator.dart';
 import '../../services/database.dart';
-import '../../core/theme/colors.dart';
+import 'package:scorely/core/theme/colors.dart';
 import '../../core/theme/typography.dart';
 
 class ExportScreen extends StatelessWidget {

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:scorely/core/theme/colors.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -32,7 +33,7 @@ class _TeamQRScannerScreenState extends State<TeamQRScannerScreen> {
             fontSize: 18,
           ),
         ),
-        backgroundColor: const Color(0xFF191C1E),
+        backgroundColor: AppColors.lightTextPrimary,
         iconTheme: const IconThemeData(color: Colors.white),
         actions: [
           IconButton(

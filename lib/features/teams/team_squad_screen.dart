@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:scorely/core/theme/colors.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -79,16 +80,16 @@ class _TeamSquadScreenState extends ConsumerState<TeamSquadScreen> {
 
     if (isLoading && team.id.isEmpty) {
       return const Scaffold(
-        backgroundColor: Color(0xFFF7F9FC),
-        body: Center(child: CircularProgressIndicator(color: Color(0xFFBA0013))),
+        backgroundColor: AppColors.lightBg,
+        body: Center(child: CircularProgressIndicator(color: AppColors.primary)),
       );
     }
 
     if (team.id.isEmpty) {
       return Scaffold(
-        backgroundColor: const Color(0xFFF7F9FC),
+        backgroundColor: AppColors.lightBg,
         appBar: AppBar(
-          backgroundColor: const Color(0xFF191C1E),
+          backgroundColor: AppColors.lightTextPrimary,
           leading: IconButton(
             icon: const Icon(Icons.arrow_back, color: Colors.white),
             onPressed: () => context.pop(),
@@ -106,14 +107,14 @@ class _TeamSquadScreenState extends ConsumerState<TeamSquadScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(Icons.group_off, size: 64, color: Color(0xFFDDE0E8)),
+              const Icon(Icons.group_off, size: 64, color: AppColors.lightBorder),
               const SizedBox(height: 16),
               Text(
                 'Team not found',
                 style: GoogleFonts.plusJakartaSans(
                   fontSize: 18,
                   fontWeight: FontWeight.w700,
-                  color: const Color(0xFF191C1E),
+                  color: AppColors.lightTextPrimary,
                 ),
               ),
               const SizedBox(height: 8),
@@ -121,7 +122,7 @@ class _TeamSquadScreenState extends ConsumerState<TeamSquadScreen> {
                 'This team may have been removed.',
                 style: GoogleFonts.inter(
                   fontSize: 14,
-                  color: const Color(0xFF575D78),
+                  color: AppColors.lightTextSecondary,
                 ),
               ),
             ],
@@ -154,9 +155,9 @@ class _TeamSquadScreenState extends ConsumerState<TeamSquadScreen> {
     }
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF7F9FC),
+      backgroundColor: AppColors.lightBg,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF191C1E),
+        backgroundColor: AppColors.lightTextPrimary,
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.white),
@@ -192,7 +193,7 @@ class _TeamSquadScreenState extends ConsumerState<TeamSquadScreen> {
                     width: double.infinity,
                     height: 140,
                     decoration: BoxDecoration(
-                      color: const Color(0xFF191C1E),
+                      color: AppColors.lightTextPrimary,
                       borderRadius: BorderRadius.circular(12),
                       boxShadow: const [
                         BoxShadow(
@@ -228,7 +229,7 @@ class _TeamSquadScreenState extends ConsumerState<TeamSquadScreen> {
                               width: 60,
                               height: 60,
                               decoration: BoxDecoration(
-                                color: const Color(0xFFBA0013),
+                                color: AppColors.primary,
                                 shape: BoxShape.circle,
                                 image: team.logoUrl != null
                                     ? DecorationImage(
@@ -287,7 +288,7 @@ class _TeamSquadScreenState extends ConsumerState<TeamSquadScreen> {
                           children: [
                             Checkbox(
                               value: _selectAll,
-                              activeColor: const Color(0xFFBA0013),
+                              activeColor: AppColors.primary,
                               onChanged: (val) {
                                 setState(() {
                                   _selectAll = val ?? false;
@@ -302,7 +303,7 @@ class _TeamSquadScreenState extends ConsumerState<TeamSquadScreen> {
                             Text(
                               'Select All Players',
                               style: GoogleFonts.inter(
-                                color: const Color(0xFF191C1E),
+                                color: AppColors.lightTextPrimary,
                                 fontWeight: FontWeight.w600,
                                 fontSize: 14,
                               ),
@@ -312,7 +313,7 @@ class _TeamSquadScreenState extends ConsumerState<TeamSquadScreen> {
                         Text(
                           '$selectedCount Selected', // Dynamic count
                           style: GoogleFonts.inter(
-                            color: const Color(0xFF575D78),
+                            color: AppColors.lightTextSecondary,
                             fontSize: 10,
                           ),
                         ),
@@ -326,13 +327,13 @@ class _TeamSquadScreenState extends ConsumerState<TeamSquadScreen> {
                       margin: const EdgeInsets.only(bottom: 16),
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFFDE8E8),
+                        color: AppColors.lightAccentBg,
                         borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: const Color(0xFFBA0013)),
+                        border: Border.all(color: AppColors.primary),
                       ),
                       child: Row(
                         children: [
-                          const Icon(Icons.warning_amber_rounded, color: Color(0xFFBA0013)),
+                          const Icon(Icons.warning_amber_rounded, color: AppColors.primary),
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(
@@ -340,7 +341,7 @@ class _TeamSquadScreenState extends ConsumerState<TeamSquadScreen> {
                               style: GoogleFonts.inter(
                                 fontSize: 13,
                                 fontWeight: FontWeight.w600,
-                                color: const Color(0xFFBA0013),
+                                color: AppColors.primary,
                               ),
                             ),
                           ),
@@ -369,7 +370,7 @@ class _TeamSquadScreenState extends ConsumerState<TeamSquadScreen> {
                             color: Colors.white,
                             borderRadius: BorderRadius.circular(8),
                             border: const Border(
-                              left: BorderSide(color: Color(0xFFBA0013), width: 4),
+                              left: BorderSide(color: AppColors.primary, width: 4),
                             ),
                             boxShadow: const [
                               BoxShadow(
@@ -384,7 +385,7 @@ class _TeamSquadScreenState extends ConsumerState<TeamSquadScreen> {
                               if (isAdmin) ...[
                                 Checkbox(
                                   value: isSelected,
-                                  activeColor: const Color(0xFFBA0013),
+                                  activeColor: AppColors.primary,
                                   onChanged: (val) {
                                     setState(() {
                                       if (val == true) {
@@ -406,7 +407,7 @@ class _TeamSquadScreenState extends ConsumerState<TeamSquadScreen> {
                                 children: [
                                   CircleAvatar(
                                     radius: 20,
-                                    backgroundColor: const Color(0xFF191C1E),
+                                    backgroundColor: AppColors.lightTextPrimary,
                                     child: Text(
                                       member.name[0].toUpperCase(),
                                       style: GoogleFonts.plusJakartaSans(
@@ -423,7 +424,7 @@ class _TeamSquadScreenState extends ConsumerState<TeamSquadScreen> {
                                         width: 14,
                                         height: 14,
                                         decoration: const BoxDecoration(
-                                          color: Color(0xFF006B1B),
+                                          color: AppColors.successDark,
                                           shape: BoxShape.circle,
                                         ),
                                       ),
@@ -437,7 +438,7 @@ class _TeamSquadScreenState extends ConsumerState<TeamSquadScreen> {
                                     Text(
                                       member.name.toUpperCase(),
                                       style: GoogleFonts.plusJakartaSans(
-                                        color: const Color(0xFF191C1E),
+                                        color: AppColors.lightTextPrimary,
                                         fontWeight: FontWeight.w600,
                                         fontSize: 14,
                                       ),
@@ -447,7 +448,7 @@ class _TeamSquadScreenState extends ConsumerState<TeamSquadScreen> {
                                       Container(
                                         padding: const EdgeInsets.all(4),
                                         decoration: const BoxDecoration(
-                                          color: Color(0xFFBA0013),
+                                          color: AppColors.primary,
                                           shape: BoxShape.circle,
                                         ),
                                         child: Text(
@@ -466,7 +467,7 @@ class _TeamSquadScreenState extends ConsumerState<TeamSquadScreen> {
                                       Text(
                                         member.roles.first,
                                         style: GoogleFonts.inter(
-                                          color: const Color(0xFF575D78),
+                                          color: AppColors.lightTextSecondary,
                                           fontSize: 10,
                                         ),
                                       ),
@@ -475,7 +476,7 @@ class _TeamSquadScreenState extends ConsumerState<TeamSquadScreen> {
                               ),
                               if (!widget.singleSelectionMode)
                                 IconButton(
-                                  icon: const Icon(Icons.remove_red_eye_outlined, color: Color(0xFF575D78), size: 18),
+                                  icon: const Icon(Icons.remove_red_eye_outlined, color: AppColors.lightTextSecondary, size: 18),
                                   onPressed: () {},
                                 ),
                             ],
@@ -578,7 +579,7 @@ class _TeamSquadScreenState extends ConsumerState<TeamSquadScreen> {
                     ),
                   ),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFBA0013),
+                    backgroundColor: AppColors.primary,
                     foregroundColor: Colors.white,
                     disabledBackgroundColor: const Color(0xFFE7BDB8),
                     shape: RoundedRectangleBorder(
@@ -606,7 +607,7 @@ class _TeamSquadScreenState extends ConsumerState<TeamSquadScreen> {
                 child: ElevatedButton(
                   onPressed: () => context.go('/'),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF575D78),
+                    backgroundColor: AppColors.lightTextSecondary,
                     foregroundColor: Colors.white,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                     padding: const EdgeInsets.symmetric(vertical: 14),

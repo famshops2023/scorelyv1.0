@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:scorely/core/theme/colors.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -58,7 +59,7 @@ class _InningsBreakScreenState extends ConsumerState<InningsBreakScreen> {
             style: GoogleFonts.plusJakartaSans(
               fontWeight: FontWeight.bold,
               fontSize: 16,
-              color: const Color(0xFF191C1E),
+              color: AppColors.lightTextPrimary,
             ),
           ),
           content: SingleChildScrollView(
@@ -67,11 +68,11 @@ class _InningsBreakScreenState extends ConsumerState<InningsBreakScreen> {
               children: [
                 Row(
                   children: [
-                    Expanded(flex: 3, child: Text('BOWLER', style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.bold, color: const Color(0xFF575D78)))),
-                    Expanded(child: Text('O', textAlign: TextAlign.center, style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.bold, color: const Color(0xFF575D78)))),
-                    Expanded(child: Text('M', textAlign: TextAlign.center, style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.bold, color: const Color(0xFF575D78)))),
-                    Expanded(child: Text('R', textAlign: TextAlign.center, style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.bold, color: const Color(0xFF575D78)))),
-                    Expanded(child: Text('W', textAlign: TextAlign.right, style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.bold, color: const Color(0xFF575D78)))),
+                    Expanded(flex: 3, child: Text('BOWLER', style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.lightTextSecondary))),
+                    Expanded(child: Text('O', textAlign: TextAlign.center, style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.lightTextSecondary))),
+                    Expanded(child: Text('M', textAlign: TextAlign.center, style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.lightTextSecondary))),
+                    Expanded(child: Text('R', textAlign: TextAlign.center, style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.lightTextSecondary))),
+                    Expanded(child: Text('W', textAlign: TextAlign.right, style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.lightTextSecondary))),
                   ],
                 ),
                 const Divider(height: 16),
@@ -79,11 +80,11 @@ class _InningsBreakScreenState extends ConsumerState<InningsBreakScreen> {
                   padding: const EdgeInsets.symmetric(vertical: 8),
                   child: Row(
                     children: [
-                      Expanded(flex: 3, child: Text(b.name, style: GoogleFonts.inter(fontWeight: FontWeight.bold, color: const Color(0xFF1A2138), fontSize: 13))),
-                      Expanded(child: Text(b.oversDisplay, textAlign: TextAlign.center, style: GoogleFonts.inter(color: const Color(0xFF575D78), fontSize: 13))),
-                      Expanded(child: Text('${b.maidens}', textAlign: TextAlign.center, style: GoogleFonts.inter(color: const Color(0xFF575D78), fontSize: 13))),
-                      Expanded(child: Text('${b.runsConceded}', textAlign: TextAlign.center, style: GoogleFonts.inter(color: const Color(0xFF575D78), fontSize: 13))),
-                      Expanded(child: Text('${b.wickets}', textAlign: TextAlign.right, style: GoogleFonts.inter(fontWeight: FontWeight.bold, color: const Color(0xFFBA0013), fontSize: 13))),
+                      Expanded(flex: 3, child: Text(b.name, style: GoogleFonts.inter(fontWeight: FontWeight.bold, color: AppColors.darkSurface, fontSize: 13))),
+                      Expanded(child: Text(b.oversDisplay, textAlign: TextAlign.center, style: GoogleFonts.inter(color: AppColors.lightTextSecondary, fontSize: 13))),
+                      Expanded(child: Text('${b.maidens}', textAlign: TextAlign.center, style: GoogleFonts.inter(color: AppColors.lightTextSecondary, fontSize: 13))),
+                      Expanded(child: Text('${b.runsConceded}', textAlign: TextAlign.center, style: GoogleFonts.inter(color: AppColors.lightTextSecondary, fontSize: 13))),
+                      Expanded(child: Text('${b.wickets}', textAlign: TextAlign.right, style: GoogleFonts.inter(fontWeight: FontWeight.bold, color: AppColors.primary, fontSize: 13))),
                     ],
                   ),
                 )),
@@ -93,7 +94,7 @@ class _InningsBreakScreenState extends ConsumerState<InningsBreakScreen> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: Text('CLOSE', style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.bold, color: const Color(0xFFBA0013))),
+              child: Text('CLOSE', style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.bold, color: AppColors.primary)),
             ),
           ],
         );
@@ -168,9 +169,9 @@ class _InningsBreakScreenState extends ConsumerState<InningsBreakScreen> {
     final runRate = widget.data.ballsBowled > 0 ? (widget.data.runs / (widget.data.ballsBowled / 6)).toStringAsFixed(2) : '0.00';
     
     return Scaffold(
-      backgroundColor: const Color(0xFFF7F9FC),
+      backgroundColor: AppColors.lightBg,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF1A2138),
+        backgroundColor: AppColors.darkSurface,
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.white),
@@ -207,7 +208,7 @@ class _InningsBreakScreenState extends ConsumerState<InningsBreakScreen> {
                           width: 4,
                           height: 120,
                           decoration: const BoxDecoration(
-                            color: Color(0xFFBA0013),
+                            color: AppColors.primary,
                             borderRadius: BorderRadius.only(topLeft: Radius.circular(16), bottomLeft: Radius.circular(16)),
                           ),
                         ),
@@ -220,11 +221,11 @@ class _InningsBreakScreenState extends ConsumerState<InningsBreakScreen> {
                                 Row(
                                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                   children: [
-                                    Text('${widget.data.battingTeam.toUpperCase()} - 1ST INNINGS', style: GoogleFonts.plusJakartaSans(color: const Color(0xFFBA0013), fontWeight: FontWeight.bold, fontSize: 11)),
+                                    Text('${widget.data.battingTeam.toUpperCase()} - 1ST INNINGS', style: GoogleFonts.plusJakartaSans(color: AppColors.primary, fontWeight: FontWeight.bold, fontSize: 11)),
                                     Container(
                                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                                       decoration: BoxDecoration(color: const Color(0xFFE8F5E9), borderRadius: BorderRadius.circular(4)),
-                                      child: Text('COMPLETED', style: GoogleFonts.inter(color: const Color(0xFF006B1B), fontWeight: FontWeight.bold, fontSize: 9)),
+                                      child: Text('COMPLETED', style: GoogleFonts.inter(color: AppColors.successDark, fontWeight: FontWeight.bold, fontSize: 9)),
                                     )
                                   ],
                                 ),
@@ -233,9 +234,9 @@ class _InningsBreakScreenState extends ConsumerState<InningsBreakScreen> {
                                   crossAxisAlignment: CrossAxisAlignment.baseline,
                                   textBaseline: TextBaseline.alphabetic,
                                   children: [
-                                    Text('${widget.data.runs}/${widget.data.wickets}', style: GoogleFonts.plusJakartaSans(fontSize: 32, fontWeight: FontWeight.bold, color: const Color(0xFF191C1E))),
+                                    Text('${widget.data.runs}/${widget.data.wickets}', style: GoogleFonts.plusJakartaSans(fontSize: 32, fontWeight: FontWeight.bold, color: AppColors.lightTextPrimary)),
                                     const SizedBox(width: 6),
-                                    Text('($oversText overs)', style: GoogleFonts.inter(fontSize: 14, color: const Color(0xFF575D78))),
+                                    Text('($oversText overs)', style: GoogleFonts.inter(fontSize: 14, color: AppColors.lightTextSecondary)),
                                   ],
                                 ),
                                 const SizedBox(height: 16),
@@ -245,15 +246,15 @@ class _InningsBreakScreenState extends ConsumerState<InningsBreakScreen> {
                                     Column(
                                       crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
-                                        Text('RUN RATE', style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.bold, color: const Color(0xFF575D78))),
-                                        Text(runRate, style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.bold, color: const Color(0xFF191C1E))),
+                                        Text('RUN RATE', style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.lightTextSecondary)),
+                                        Text(runRate, style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.lightTextPrimary)),
                                       ],
                                     ),
                                     Column(
                                       crossAxisAlignment: CrossAxisAlignment.end,
                                       children: [
-                                        Text('EXTRAS', style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.bold, color: const Color(0xFF575D78))),
-                                        Text('${widget.data.extraRuns}', style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.bold, color: const Color(0xFF191C1E))),
+                                        Text('EXTRAS', style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.lightTextSecondary)),
+                                        Text('${widget.data.extraRuns}', style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.lightTextPrimary)),
                                       ],
                                     ),
                                   ],
@@ -271,18 +272,18 @@ class _InningsBreakScreenState extends ConsumerState<InningsBreakScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text('2nd Innings Scorer:', style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.bold, color: const Color(0xFF191C1E))),
+                      Text('2nd Innings Scorer:', style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.bold, color: AppColors.lightTextPrimary)),
                       TextButton.icon(
                         onPressed: _assignNewScorer,
-                        icon: const Icon(Icons.person_add, size: 16, color: Color(0xFFBA0013)),
-                        label: Text(_newScorerName ?? 'Assign Scorer', style: GoogleFonts.plusJakartaSans(color: const Color(0xFFBA0013), fontWeight: FontWeight.bold)),
+                        icon: const Icon(Icons.person_add, size: 16, color: AppColors.primary),
+                        label: Text(_newScorerName ?? 'Assign Scorer', style: GoogleFonts.plusJakartaSans(color: AppColors.primary, fontWeight: FontWeight.bold)),
                       )
                     ],
                   ),
                   const SizedBox(height: 16),
 
                   // Batting Performance
-                  Text('Batting Performance', style: GoogleFonts.plusJakartaSans(fontSize: 16, fontWeight: FontWeight.bold, color: const Color(0xFF191C1E))),
+                  Text('Batting Performance', style: GoogleFonts.plusJakartaSans(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.lightTextPrimary)),
                   const SizedBox(height: 8),
                   Container(
                     decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12), border: Border.all(color: const Color(0xFFECEEF1))),
@@ -292,12 +293,12 @@ class _InningsBreakScreenState extends ConsumerState<InningsBreakScreen> {
                           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                           child: Row(
                             children: [
-                              Expanded(flex: 3, child: Text('BATTER', style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.bold, color: const Color(0xFF575D78)))),
-                              Expanded(child: Text('R', textAlign: TextAlign.center, style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.bold, color: const Color(0xFF575D78)))),
-                              Expanded(child: Text('B', textAlign: TextAlign.center, style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.bold, color: const Color(0xFF575D78)))),
-                              Expanded(child: Text('4S', textAlign: TextAlign.center, style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.bold, color: const Color(0xFF575D78)))),
-                              Expanded(child: Text('6S', textAlign: TextAlign.center, style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.bold, color: const Color(0xFF575D78)))),
-                              Expanded(flex: 1, child: Text('SR', textAlign: TextAlign.right, style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.bold, color: const Color(0xFF575D78)))),
+                              Expanded(flex: 3, child: Text('BATTER', style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.lightTextSecondary))),
+                              Expanded(child: Text('R', textAlign: TextAlign.center, style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.lightTextSecondary))),
+                              Expanded(child: Text('B', textAlign: TextAlign.center, style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.lightTextSecondary))),
+                              Expanded(child: Text('4S', textAlign: TextAlign.center, style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.lightTextSecondary))),
+                              Expanded(child: Text('6S', textAlign: TextAlign.center, style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.lightTextSecondary))),
+                              Expanded(flex: 1, child: Text('SR', textAlign: TextAlign.right, style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.lightTextSecondary))),
                             ],
                           ),
                         ),
@@ -306,12 +307,12 @@ class _InningsBreakScreenState extends ConsumerState<InningsBreakScreen> {
                           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                           child: Row(
                             children: [
-                              Expanded(flex: 3, child: Text(b.name + (b.isOut ? '' : '*'), style: GoogleFonts.inter(fontWeight: FontWeight.bold, color: b.isOut ? const Color(0xFF191C1E) : const Color(0xFFBA0013), fontSize: 13))),
-                              Expanded(child: Text('${b.runs}', textAlign: TextAlign.center, style: GoogleFonts.inter(fontWeight: FontWeight.bold, color: b.isOut ? const Color(0xFF191C1E) : const Color(0xFFBA0013), fontSize: 13))),
-                              Expanded(child: Text('${b.balls}', textAlign: TextAlign.center, style: GoogleFonts.inter(color: const Color(0xFF575D78), fontSize: 13))),
-                              Expanded(child: Text('${b.fours}', textAlign: TextAlign.center, style: GoogleFonts.inter(color: const Color(0xFF575D78), fontSize: 13))),
-                              Expanded(child: Text('${b.sixes}', textAlign: TextAlign.center, style: GoogleFonts.inter(color: const Color(0xFF575D78), fontSize: 13))),
-                              Expanded(flex: 1, child: Text(b.strikeRate.toStringAsFixed(1), textAlign: TextAlign.right, style: GoogleFonts.inter(color: const Color(0xFF575D78), fontSize: 13))),
+                              Expanded(flex: 3, child: Text(b.name + (b.isOut ? '' : '*'), style: GoogleFonts.inter(fontWeight: FontWeight.bold, color: b.isOut ? AppColors.lightTextPrimary : AppColors.primary, fontSize: 13))),
+                              Expanded(child: Text('${b.runs}', textAlign: TextAlign.center, style: GoogleFonts.inter(fontWeight: FontWeight.bold, color: b.isOut ? AppColors.lightTextPrimary : AppColors.primary, fontSize: 13))),
+                              Expanded(child: Text('${b.balls}', textAlign: TextAlign.center, style: GoogleFonts.inter(color: AppColors.lightTextSecondary, fontSize: 13))),
+                              Expanded(child: Text('${b.fours}', textAlign: TextAlign.center, style: GoogleFonts.inter(color: AppColors.lightTextSecondary, fontSize: 13))),
+                              Expanded(child: Text('${b.sixes}', textAlign: TextAlign.center, style: GoogleFonts.inter(color: AppColors.lightTextSecondary, fontSize: 13))),
+                              Expanded(flex: 1, child: Text(b.strikeRate.toStringAsFixed(1), textAlign: TextAlign.right, style: GoogleFonts.inter(color: AppColors.lightTextSecondary, fontSize: 13))),
                             ],
                           ),
                         )),
@@ -321,7 +322,7 @@ class _InningsBreakScreenState extends ConsumerState<InningsBreakScreen> {
                   const SizedBox(height: 24),
 
                   // Match Statistics
-                  Text('Match Statistics', style: GoogleFonts.plusJakartaSans(fontSize: 16, fontWeight: FontWeight.bold, color: const Color(0xFF191C1E))),
+                  Text('Match Statistics', style: GoogleFonts.plusJakartaSans(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.lightTextPrimary)),
                   const SizedBox(height: 8),
                   Container(
                     padding: const EdgeInsets.symmetric(vertical: 16),
@@ -343,10 +344,10 @@ class _InningsBreakScreenState extends ConsumerState<InningsBreakScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text('Top Bowlers (${widget.data.fieldingTeam})', style: GoogleFonts.plusJakartaSans(fontSize: 16, fontWeight: FontWeight.bold, color: const Color(0xFF191C1E))),
+                      Text('Top Bowlers (${widget.data.fieldingTeam})', style: GoogleFonts.plusJakartaSans(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.lightTextPrimary)),
                       GestureDetector(
                         onTap: _showAllBowlersDialog,
-                        child: Text('VIEW ALL', style: GoogleFonts.plusJakartaSans(fontSize: 11, fontWeight: FontWeight.bold, color: const Color(0xFFBA0013))),
+                        child: Text('VIEW ALL', style: GoogleFonts.plusJakartaSans(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.primary)),
                       ),
                     ],
                   ),
@@ -359,11 +360,11 @@ class _InningsBreakScreenState extends ConsumerState<InningsBreakScreen> {
                           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                           child: Row(
                             children: [
-                              Expanded(flex: 3, child: Text('BOWLER', style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.bold, color: const Color(0xFF575D78)))),
-                              Expanded(child: Text('O', textAlign: TextAlign.center, style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.bold, color: const Color(0xFF575D78)))),
-                              Expanded(child: Text('M', textAlign: TextAlign.center, style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.bold, color: const Color(0xFF575D78)))),
-                              Expanded(child: Text('R', textAlign: TextAlign.center, style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.bold, color: const Color(0xFF575D78)))),
-                              Expanded(child: Text('W', textAlign: TextAlign.right, style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.bold, color: const Color(0xFF575D78)))),
+                              Expanded(flex: 3, child: Text('BOWLER', style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.lightTextSecondary))),
+                              Expanded(child: Text('O', textAlign: TextAlign.center, style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.lightTextSecondary))),
+                              Expanded(child: Text('M', textAlign: TextAlign.center, style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.lightTextSecondary))),
+                              Expanded(child: Text('R', textAlign: TextAlign.center, style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.lightTextSecondary))),
+                              Expanded(child: Text('W', textAlign: TextAlign.right, style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.lightTextSecondary))),
                             ],
                           ),
                         ),
@@ -372,11 +373,11 @@ class _InningsBreakScreenState extends ConsumerState<InningsBreakScreen> {
                           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                           child: Row(
                             children: [
-                              Expanded(flex: 3, child: Text(b.name, style: GoogleFonts.inter(fontWeight: FontWeight.bold, color: const Color(0xFF1A2138), fontSize: 13))),
-                              Expanded(child: Text(b.oversDisplay, textAlign: TextAlign.center, style: GoogleFonts.inter(color: const Color(0xFF575D78), fontSize: 13))),
-                              Expanded(child: Text('${b.maidens}', textAlign: TextAlign.center, style: GoogleFonts.inter(color: const Color(0xFF575D78), fontSize: 13))),
-                              Expanded(child: Text('${b.runsConceded}', textAlign: TextAlign.center, style: GoogleFonts.inter(color: const Color(0xFF575D78), fontSize: 13))),
-                              Expanded(child: Text('${b.wickets}', textAlign: TextAlign.right, style: GoogleFonts.inter(fontWeight: FontWeight.bold, color: const Color(0xFFBA0013), fontSize: 13))),
+                              Expanded(flex: 3, child: Text(b.name, style: GoogleFonts.inter(fontWeight: FontWeight.bold, color: AppColors.darkSurface, fontSize: 13))),
+                              Expanded(child: Text(b.oversDisplay, textAlign: TextAlign.center, style: GoogleFonts.inter(color: AppColors.lightTextSecondary, fontSize: 13))),
+                              Expanded(child: Text('${b.maidens}', textAlign: TextAlign.center, style: GoogleFonts.inter(color: AppColors.lightTextSecondary, fontSize: 13))),
+                              Expanded(child: Text('${b.runsConceded}', textAlign: TextAlign.center, style: GoogleFonts.inter(color: AppColors.lightTextSecondary, fontSize: 13))),
+                              Expanded(child: Text('${b.wickets}', textAlign: TextAlign.right, style: GoogleFonts.inter(fontWeight: FontWeight.bold, color: AppColors.primary, fontSize: 13))),
                             ],
                           ),
                         )),
@@ -408,7 +409,7 @@ class _InningsBreakScreenState extends ConsumerState<InningsBreakScreen> {
                 height: 52,
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFBA0013),
+                    backgroundColor: AppColors.primary,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     elevation: 4,
                   ),
@@ -447,9 +448,9 @@ class _InningsBreakScreenState extends ConsumerState<InningsBreakScreen> {
   Widget _buildStatCol(String label, String value) {
     return Column(
       children: [
-        Text(label, style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.bold, color: const Color(0xFF575D78))),
+        Text(label, style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.lightTextSecondary)),
         const SizedBox(height: 4),
-        Text(value, style: GoogleFonts.plusJakartaSans(fontSize: 20, fontWeight: FontWeight.bold, color: const Color(0xFF191C1E))),
+        Text(value, style: GoogleFonts.plusJakartaSans(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.lightTextPrimary)),
       ],
     );
   }

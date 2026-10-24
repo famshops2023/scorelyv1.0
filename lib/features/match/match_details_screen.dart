@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:scorely/core/theme/colors.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -28,7 +29,7 @@ class MatchDetailsScreen extends ConsumerWidget {
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: [Color(0xFF1A2138), Color(0xFF191C1E)],
+          colors: [AppColors.darkSurface, AppColors.lightTextPrimary],
         ),
       ),
       child: Scaffold(
@@ -94,7 +95,7 @@ class MatchDetailsScreen extends ConsumerWidget {
                                         borderRadius: BorderRadius.circular(12),
                                         border: const Border(
                                           left: BorderSide(
-                                            color: Color(0xFFBA0013),
+                                            color: AppColors.primary,
                                             width: 4,
                                           ),
                                         ),
@@ -110,7 +111,7 @@ class MatchDetailsScreen extends ConsumerWidget {
                                         aspectRatio: 1,
                                         child: Container(
                                           decoration: BoxDecoration(
-                                            color: const Color(0xFF191C1E),
+                                            color: AppColors.lightTextPrimary,
                                             borderRadius: BorderRadius.circular(
                                               8,
                                             ),
@@ -162,7 +163,7 @@ class MatchDetailsScreen extends ConsumerWidget {
                                         borderRadius: BorderRadius.circular(12),
                                         border: const Border(
                                           left: BorderSide(
-                                            color: Color(0xFF575D78),
+                                            color: AppColors.lightTextSecondary,
                                             width: 4,
                                           ),
                                         ),
@@ -178,7 +179,7 @@ class MatchDetailsScreen extends ConsumerWidget {
                                         aspectRatio: 1,
                                         child: Container(
                                           decoration: BoxDecoration(
-                                            color: const Color(0xFF191C1E),
+                                            color: AppColors.lightTextPrimary,
                                             borderRadius: BorderRadius.circular(
                                               8,
                                             ),
@@ -227,7 +228,7 @@ class MatchDetailsScreen extends ConsumerWidget {
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
                               gradient: const LinearGradient(
-                                colors: [Color(0xFFBA0013), Color(0xFFE31E24)],
+                                colors: [AppColors.primary, Color(0xFFE31E24)],
                                 begin: Alignment.topLeft,
                                 end: Alignment.bottomRight,
                               ),
@@ -292,7 +293,7 @@ class MatchDetailsScreen extends ConsumerWidget {
                                 alignment: Alignment.center,
                                 child: const Icon(
                                   Icons.stadium_outlined,
-                                  color: Color(0xFFBA0013),
+                                  color: AppColors.primary,
                                   size: 24,
                                 ),
                               ),
@@ -315,7 +316,7 @@ class MatchDetailsScreen extends ConsumerWidget {
                                       style: GoogleFonts.plusJakartaSans(
                                         fontSize: 20,
                                         fontWeight: FontWeight.w600,
-                                        color: const Color(0xFF191C1E),
+                                        color: AppColors.lightTextPrimary,
                                         height: 1.2,
                                       ),
                                     ),
@@ -354,7 +355,7 @@ class MatchDetailsScreen extends ConsumerWidget {
                                         const Icon(
                                           Icons.calendar_today,
                                           size: 16,
-                                          color: Color(0xFF575D78),
+                                          color: AppColors.lightTextSecondary,
                                         ),
                                         const SizedBox(width: 4),
                                         Text(
@@ -362,7 +363,7 @@ class MatchDetailsScreen extends ConsumerWidget {
                                           style: GoogleFonts.inter(
                                             fontSize: 14,
                                             fontWeight: FontWeight.bold,
-                                            color: const Color(0xFF191C1E),
+                                            color: AppColors.lightTextPrimary,
                                           ),
                                         ),
                                       ],
@@ -389,7 +390,7 @@ class MatchDetailsScreen extends ConsumerWidget {
                                         const Icon(
                                           Icons.sports_cricket,
                                           size: 16,
-                                          color: Color(0xFF575D78),
+                                          color: AppColors.lightTextSecondary,
                                         ),
                                         const SizedBox(width: 4),
                                         Text(
@@ -397,7 +398,7 @@ class MatchDetailsScreen extends ConsumerWidget {
                                           style: GoogleFonts.inter(
                                             fontSize: 14,
                                             fontWeight: FontWeight.bold,
-                                            color: const Color(0xFF191C1E),
+                                            color: AppColors.lightTextPrimary,
                                           ),
                                         ),
                                       ],
@@ -430,7 +431,7 @@ class MatchDetailsScreen extends ConsumerWidget {
                                           width: 8,
                                           height: 8,
                                           decoration: const BoxDecoration(
-                                            color: Color(0xFFBA0013),
+                                            color: AppColors.primary,
                                             shape: BoxShape.circle,
                                           ),
                                         ),
@@ -440,7 +441,7 @@ class MatchDetailsScreen extends ConsumerWidget {
                                           style: GoogleFonts.inter(
                                             fontSize: 14,
                                             fontWeight: FontWeight.bold,
-                                            color: const Color(0xFF191C1E),
+                                            color: AppColors.lightTextPrimary,
                                           ),
                                         ),
                                       ],
@@ -467,7 +468,7 @@ class MatchDetailsScreen extends ConsumerWidget {
                                         const Icon(
                                           Icons.timer_outlined,
                                           size: 16,
-                                          color: Color(0xFF575D78),
+                                          color: AppColors.lightTextSecondary,
                                         ),
                                         const SizedBox(width: 4),
                                         Text(
@@ -475,7 +476,7 @@ class MatchDetailsScreen extends ConsumerWidget {
                                           style: GoogleFonts.inter(
                                             fontSize: 14,
                                             fontWeight: FontWeight.bold,
-                                            color: const Color(0xFF191C1E),
+                                            color: AppColors.lightTextPrimary,
                                           ),
                                         ),
                                       ],
@@ -499,7 +500,7 @@ class MatchDetailsScreen extends ConsumerWidget {
                             width: double.infinity,
                             height: 128,
                             decoration: BoxDecoration(
-                              color: const Color(0xFF191C1E),
+                              color: AppColors.lightTextPrimary,
                               borderRadius: BorderRadius.circular(12),
                             ),
                             child: Stack(
@@ -728,7 +729,7 @@ class MatchDetailsScreen extends ConsumerWidget {
                       }
                     },
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFBA0013),
+                      backgroundColor: AppColors.primary,
                       elevation: 8,
                       shadowColor: const Color(
                         0xFFBA0013,

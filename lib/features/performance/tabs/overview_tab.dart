@@ -49,7 +49,7 @@ class OverviewTab extends StatelessWidget {
               label: 'TOTAL RUNS',
               value: '${stats.totalRuns}',
               icon: Icons.trending_up,
-              color: const Color(0xFF006B1B),
+              color: AppColors.successDark,
             ),
             _OverviewStatCard(
               label: 'WICKETS',
@@ -133,7 +133,7 @@ class OverviewTab extends StatelessWidget {
             'Last ${form.length} match${form.length == 1 ? '' : 'es'}',
             style: GoogleFonts.inter(
               fontSize: 12,
-              color: const Color(0xFF575D78),
+              color: AppColors.lightTextSecondary,
             ),
           ),
         ],
@@ -184,7 +184,7 @@ class OverviewTab extends StatelessWidget {
       child: Center(
         child: Text(
           message,
-          style: GoogleFonts.inter(fontSize: 13, color: const Color(0xFF575D78)),
+          style: GoogleFonts.inter(fontSize: 13, color: AppColors.lightTextSecondary),
         ),
       ),
     );
@@ -202,7 +202,7 @@ class OverviewTab extends StatelessWidget {
                 color: Color(0xFFECEEF1),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(Icons.sports_cricket, size: 48, color: Color(0xFF575D78)),
+              child: const Icon(Icons.sports_cricket, size: 48, color: AppColors.lightTextSecondary),
             ),
             const SizedBox(height: 16),
             Text(
@@ -210,14 +210,14 @@ class OverviewTab extends StatelessWidget {
               style: GoogleFonts.plusJakartaSans(
                 fontSize: 18,
                 fontWeight: FontWeight.w700,
-                color: const Color(0xFF191C1E),
+                color: AppColors.lightTextPrimary,
               ),
             ),
             const SizedBox(height: 8),
             Text(
               'Play some matches to see your career statistics here.',
               textAlign: TextAlign.center,
-              style: GoogleFonts.inter(fontSize: 13, color: const Color(0xFF575D78)),
+              style: GoogleFonts.inter(fontSize: 13, color: AppColors.lightTextSecondary),
             ),
           ],
         ),
@@ -292,7 +292,7 @@ class _OverviewStatCard extends StatelessWidget {
                 style: GoogleFonts.plusJakartaSans(
                   fontSize: 24,
                   fontWeight: FontWeight.w800,
-                  color: const Color(0xFF191C1E),
+                  color: AppColors.lightTextPrimary,
                   height: 1.1,
                 ),
               ),
@@ -301,7 +301,7 @@ class _OverviewStatCard extends StatelessWidget {
                 style: GoogleFonts.inter(
                   fontSize: 10,
                   fontWeight: FontWeight.w600,
-                  color: const Color(0xFF575D78),
+                  color: AppColors.lightTextSecondary,
                   letterSpacing: 0.5,
                 ),
               ),
@@ -323,7 +323,7 @@ class _FormDot extends StatelessWidget {
     Color text;
     switch (result) {
       case 'W':
-        bg = const Color(0xFF006B1B);
+        bg = AppColors.successDark;
         text = Colors.white;
         break;
       case 'L':
@@ -331,12 +331,12 @@ class _FormDot extends StatelessWidget {
         text = Colors.white;
         break;
       case 'D':
-        bg = const Color(0xFF575D78);
+        bg = AppColors.lightTextSecondary;
         text = Colors.white;
         break;
       default:
         bg = const Color(0xFFECEEF1);
-        text = const Color(0xFF575D78);
+        text = AppColors.lightTextSecondary;
     }
     return Container(
       margin: const EdgeInsets.only(right: 10),
@@ -381,7 +381,7 @@ class _SnapshotItem extends StatelessWidget {
           style: GoogleFonts.plusJakartaSans(
             fontSize: 20,
             fontWeight: FontWeight.w800,
-            color: const Color(0xFF191C1E),
+            color: AppColors.lightTextPrimary,
           ),
         ),
         const SizedBox(height: 2),
@@ -389,7 +389,7 @@ class _SnapshotItem extends StatelessWidget {
           label,
           style: GoogleFonts.inter(
             fontSize: 11,
-            color: const Color(0xFF575D78),
+            color: AppColors.lightTextSecondary,
             fontWeight: FontWeight.w500,
           ),
         ),

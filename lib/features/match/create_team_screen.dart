@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:scorely/core/theme/colors.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -97,7 +98,7 @@ class _CreateTeamScreenState extends ConsumerState<CreateTeamScreen> {
             style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.bold),
           ),
           content: TextField(
-            cursorColor: const Color(0xFFBA0013),
+            cursorColor: AppColors.primary,
             controller: dialogController,
             autofocus: true,
             decoration: const InputDecoration(
@@ -125,7 +126,7 @@ class _CreateTeamScreenState extends ConsumerState<CreateTeamScreen> {
                 }
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF006B1B),
+                backgroundColor: AppColors.successDark,
                 foregroundColor: Colors.white,
               ),
               child: const Text('ADD'),
@@ -219,7 +220,7 @@ class _CreateTeamScreenState extends ConsumerState<CreateTeamScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Please add players to both teams.'),
-          backgroundColor: Color(0xFFBA0013),
+          backgroundColor: AppColors.primary,
         ),
       );
       return;
@@ -229,7 +230,7 @@ class _CreateTeamScreenState extends ConsumerState<CreateTeamScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Please select a captain for both teams.'),
-          backgroundColor: Color(0xFFBA0013),
+          backgroundColor: AppColors.primary,
         ),
       );
       return;
@@ -316,7 +317,7 @@ class _CreateTeamScreenState extends ConsumerState<CreateTeamScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('No previous match setup found to clone.'),
-          backgroundColor: Color(0xFFBA0013),
+          backgroundColor: AppColors.primary,
         ),
       );
       return;
@@ -336,9 +337,9 @@ class _CreateTeamScreenState extends ConsumerState<CreateTeamScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF7F9FC), // Premium light background
+      backgroundColor: AppColors.lightBg, // Premium light background
       appBar: AppBar(
-        backgroundColor: const Color(0xFF1A2138),
+        backgroundColor: AppColors.darkSurface,
         elevation: 0,
         centerTitle: false,
         title: Text(
@@ -389,7 +390,7 @@ class _CreateTeamScreenState extends ConsumerState<CreateTeamScreen> {
                             Container(
                               width: 20,
                               height: 3,
-                              color: const Color(0xFFBA0013),
+                              color: AppColors.primary,
                             ),
                             const SizedBox(width: 7),
                             Text(
@@ -397,7 +398,7 @@ class _CreateTeamScreenState extends ConsumerState<CreateTeamScreen> {
                               style: GoogleFonts.inter(
                                 fontSize: 10,
                                 fontWeight: FontWeight.w700,
-                                color: const Color(0xFFBA0013),
+                                color: AppColors.primary,
                                 letterSpacing: 0.6,
                               ),
                             ),
@@ -409,7 +410,7 @@ class _CreateTeamScreenState extends ConsumerState<CreateTeamScreen> {
                           style: GoogleFonts.plusJakartaSans(
                             fontSize: 24,
                             fontWeight: FontWeight.w700,
-                            color: const Color(0xFF191C1E),
+                            color: AppColors.lightTextPrimary,
                           ),
                         ),
                       ],
@@ -468,14 +469,14 @@ class _CreateTeamScreenState extends ConsumerState<CreateTeamScreen> {
         controller: controller,
         onChanged: (val) => setState(() {}),
         style: GoogleFonts.inter(
-          color: const Color(0xFF191C1E),
+          color: AppColors.lightTextPrimary,
           fontSize: 14,
           fontWeight: FontWeight.w400,
         ),
         decoration: InputDecoration(
           labelText: label,
           labelStyle: GoogleFonts.inter(
-            color: const Color(0xFF575D78),
+            color: AppColors.lightTextSecondary,
             fontSize: 10,
             fontWeight: FontWeight.w700,
             letterSpacing: 0.6,
@@ -483,7 +484,7 @@ class _CreateTeamScreenState extends ConsumerState<CreateTeamScreen> {
           floatingLabelBehavior: FloatingLabelBehavior.always,
           hintText: hint,
           hintStyle: GoogleFonts.inter(
-            color: const Color(0xFF8E95A5),
+            color: AppColors.lightTextMuted,
             fontSize: 14,
             fontWeight: FontWeight.w400,
           ),
@@ -499,7 +500,7 @@ class _CreateTeamScreenState extends ConsumerState<CreateTeamScreen> {
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(14),
-            borderSide: const BorderSide(color: Color(0xFFBA0013), width: 2.0),
+            borderSide: const BorderSide(color: AppColors.primary, width: 2.0),
           ),
         ),
       ),
@@ -533,8 +534,8 @@ class _CreateTeamScreenState extends ConsumerState<CreateTeamScreen> {
                       '$teamAName (${_teamAPlayers.length})',
                       style: GoogleFonts.inter(
                         color: isTeamA
-                            ? const Color(0xFFBA0013)
-                            : const Color(0xFF575D78),
+                            ? AppColors.primary
+                            : AppColors.lightTextSecondary,
                         fontWeight: FontWeight.w700,
                         fontSize: 10,
                         letterSpacing: 0.6,
@@ -544,7 +545,7 @@ class _CreateTeamScreenState extends ConsumerState<CreateTeamScreen> {
                   Container(
                     height: 3,
                     color: isTeamA
-                        ? const Color(0xFFBA0013)
+                        ? AppColors.primary
                         : Colors.transparent,
                   ),
                 ],
@@ -562,8 +563,8 @@ class _CreateTeamScreenState extends ConsumerState<CreateTeamScreen> {
                       '$teamBName (${_teamBPlayers.length})',
                       style: GoogleFonts.inter(
                         color: !isTeamA
-                            ? const Color(0xFFBA0013)
-                            : const Color(0xFF575D78),
+                            ? AppColors.primary
+                            : AppColors.lightTextSecondary,
                         fontWeight: FontWeight.w700,
                         fontSize: 10,
                         letterSpacing: 0.6,
@@ -573,7 +574,7 @@ class _CreateTeamScreenState extends ConsumerState<CreateTeamScreen> {
                   Container(
                     height: 3,
                     color: !isTeamA
-                        ? const Color(0xFFBA0013)
+                        ? AppColors.primary
                         : Colors.transparent,
                   ),
                 ],
@@ -593,14 +594,14 @@ class _CreateTeamScreenState extends ConsumerState<CreateTeamScreen> {
         children: [
           Row(
             children: [
-              const Icon(Icons.people_alt, color: Color(0xFFBA0013), size: 20),
+              const Icon(Icons.people_alt, color: AppColors.primary, size: 20),
               const SizedBox(width: 7),
               Text(
                 'ROSTER',
                 style: GoogleFonts.plusJakartaSans(
                   fontSize: 17,
                   fontWeight: FontWeight.w600,
-                  color: const Color(0xFF191C1E),
+                  color: AppColors.lightTextPrimary,
                 ),
               ),
             ],
@@ -652,7 +653,7 @@ class _CreateTeamScreenState extends ConsumerState<CreateTeamScreen> {
                     vertical: 8,
                   ),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF006B1B),
+                    color: AppColors.successDark,
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Row(
@@ -690,7 +691,7 @@ class _CreateTeamScreenState extends ConsumerState<CreateTeamScreen> {
         cursorColor: Colors.white,
         controller: _playerInputController,
         style: GoogleFonts.inter(
-          color: const Color(0xFF191C1E),
+          color: AppColors.lightTextPrimary,
           fontSize: 14,
           fontWeight: FontWeight.w400,
         ),
@@ -703,12 +704,12 @@ class _CreateTeamScreenState extends ConsumerState<CreateTeamScreen> {
         decoration: InputDecoration(
           prefixIcon: const Icon(
             Icons.search,
-            color: Color(0xFF575D78),
+            color: AppColors.lightTextSecondary,
             size: 19,
           ),
           hintText: 'Search players...',
           hintStyle: GoogleFonts.inter(
-            color: const Color(0xFF8E95A5),
+            color: AppColors.lightTextMuted,
             fontSize: 14,
             fontWeight: FontWeight.w400,
           ),
@@ -724,7 +725,7 @@ class _CreateTeamScreenState extends ConsumerState<CreateTeamScreen> {
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(14),
-            borderSide: const BorderSide(color: Color(0xFFBA0013), width: 2.0),
+            borderSide: const BorderSide(color: AppColors.primary, width: 2.0),
           ),
         ),
       ),
@@ -747,7 +748,7 @@ class _CreateTeamScreenState extends ConsumerState<CreateTeamScreen> {
               : 'No matching players found.',
           style: GoogleFonts.inter(
             fontSize: 14,
-            color: const Color(0xFF8E95A5),
+            color: AppColors.lightTextMuted,
             fontWeight: FontWeight.w400,
           ),
         ),
@@ -781,7 +782,7 @@ class _CreateTeamScreenState extends ConsumerState<CreateTeamScreen> {
         ),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF1A2138).withValues(alpha: 0.06),
+            color: AppColors.darkSurface.withValues(alpha: 0.06),
             blurRadius: 17,
             offset: const Offset(0, 3),
           ),
@@ -791,7 +792,7 @@ class _CreateTeamScreenState extends ConsumerState<CreateTeamScreen> {
         borderRadius: BorderRadius.circular(14),
         child: Row(
           children: [
-            Container(width: 4, height: 94, color: const Color(0xFFBA0013)),
+            Container(width: 4, height: 94, color: AppColors.primary),
             Expanded(
               child: Padding(
                 padding: const EdgeInsets.symmetric(
@@ -815,7 +816,7 @@ class _CreateTeamScreenState extends ConsumerState<CreateTeamScreen> {
                           child: Text(
                             numberStr,
                             style: GoogleFonts.inter(
-                              color: const Color(0xFFBA0013),
+                              color: AppColors.primary,
                               fontWeight: FontWeight.w700,
                               fontSize: 10,
                               letterSpacing: 0.6,
@@ -827,7 +828,7 @@ class _CreateTeamScreenState extends ConsumerState<CreateTeamScreen> {
                           child: Text(
                             player.name.toUpperCase(),
                             style: GoogleFonts.plusJakartaSans(
-                              color: const Color(0xFF191C1E),
+                              color: AppColors.lightTextPrimary,
                               fontWeight: FontWeight.w600,
                               fontSize: 17,
                             ),
@@ -837,7 +838,7 @@ class _CreateTeamScreenState extends ConsumerState<CreateTeamScreen> {
                         IconButton(
                           icon: const Icon(
                             Icons.delete_outline,
-                            color: Color(0xFF8E95A5),
+                            color: AppColors.lightTextMuted,
                             size: 19,
                           ),
                           onPressed: () => _removePlayer(index),
@@ -917,7 +918,7 @@ class _CreateTeamScreenState extends ConsumerState<CreateTeamScreen> {
                                 style: GoogleFonts.plusJakartaSans(
                                   color: isCaptain
                                       ? const Color(0xFF003000)
-                                      : const Color(0xFF575D78),
+                                      : AppColors.lightTextSecondary,
                                   fontWeight: FontWeight.w900,
                                   fontSize: 14,
                                 ),
@@ -949,13 +950,13 @@ class _CreateTeamScreenState extends ConsumerState<CreateTeamScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
         decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFF006B1B) : Colors.transparent,
+          color: isSelected ? AppColors.successDark : Colors.transparent,
           borderRadius: BorderRadius.circular(5),
         ),
         child: Text(
           label,
           style: GoogleFonts.inter(
-            color: isSelected ? Colors.white : const Color(0xFF575D78),
+            color: isSelected ? Colors.white : AppColors.lightTextSecondary,
             fontWeight: FontWeight.w700,
             fontSize: 10,
             letterSpacing: 0.6,
@@ -970,17 +971,17 @@ class _CreateTeamScreenState extends ConsumerState<CreateTeamScreen> {
       top: false,
       child: Container(
         padding: const EdgeInsets.all(17),
-        color: const Color(0xFFF7F9FC),
+        color: AppColors.lightBg,
         child: SizedBox(
           width: double.infinity,
           height: 51,
           child: ElevatedButton(
             onPressed: _proceedToMatchSetup,
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFBA0013),
+              backgroundColor: AppColors.primary,
               foregroundColor: Colors.white,
               elevation: 3,
-              shadowColor: const Color(0xFFBA0013).withValues(alpha: 0.4),
+              shadowColor: AppColors.primary.withValues(alpha: 0.4),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(14),
               ),

@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:scorely/core/theme/colors.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -27,9 +28,9 @@ class MyProfileScreen extends ConsumerWidget {
     }
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF7F9FC),
+      backgroundColor: AppColors.lightBg,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF1A2138),
+        backgroundColor: AppColors.darkSurface,
         elevation: 0,
         automaticallyImplyLeading: false,
         title: Text(
@@ -77,13 +78,13 @@ class MyProfileScreen extends ConsumerWidget {
                     final confirmed = await showDialog<bool>(
                       context: context,
                       builder: (dialogContext) => AlertDialog(
-                        backgroundColor: const Color(0xFF1A2138),
+                        backgroundColor: AppColors.darkSurface,
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                         title: Text('Sign Out?', style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.bold)),
                         content: Text('You will lose live scoring broadcast until you sign back in.', style: GoogleFonts.inter(color: Colors.white70, fontSize: 13)),
                         actions: [
                           TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: Text('Cancel', style: GoogleFonts.inter(color: Colors.white54))),
-                          TextButton(onPressed: () => Navigator.pop(dialogContext, true), child: Text('Sign Out', style: GoogleFonts.inter(color: const Color(0xFFBA0013), fontWeight: FontWeight.bold))),
+                          TextButton(onPressed: () => Navigator.pop(dialogContext, true), child: Text('Sign Out', style: GoogleFonts.inter(color: AppColors.primary, fontWeight: FontWeight.bold))),
                         ],
                       ),
                     );
@@ -108,7 +109,7 @@ class MyProfileScreen extends ConsumerWidget {
               width: double.infinity,
               padding: const EdgeInsets.only(top: 16, bottom: 24, left: 20, right: 20),
               decoration: const BoxDecoration(
-                color: Color(0xFF1A2138),
+                color: AppColors.darkSurface,
                 borderRadius: BorderRadius.only(
                   bottomLeft: Radius.circular(24),
                   bottomRight: Radius.circular(24),
@@ -124,7 +125,7 @@ class MyProfileScreen extends ConsumerWidget {
                         height: 80,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          border: Border.all(color: const Color(0xFFBA0013), width: 3),
+                          border: Border.all(color: AppColors.primary, width: 3),
                         ),
                         child: ClipOval(
                           child: profile.profileImagePath != null
@@ -140,7 +141,7 @@ class MyProfileScreen extends ConsumerWidget {
                                     style: GoogleFonts.plusJakartaSans(
                                       fontSize: 32,
                                       fontWeight: FontWeight.bold,
-                                      color: const Color(0xFF575D78),
+                                      color: AppColors.lightTextSecondary,
                                     ),
                                   ),
                                 ),
@@ -150,9 +151,9 @@ class MyProfileScreen extends ConsumerWidget {
                         width: 20,
                         height: 20,
                         decoration: BoxDecoration(
-                          color: const Color(0xFF006B1B),
+                          color: AppColors.successDark,
                           shape: BoxShape.circle,
-                          border: Border.all(color: const Color(0xFF1A2138), width: 3),
+                          border: Border.all(color: AppColors.darkSurface, width: 3),
                         ),
                       ),
                     ],
@@ -203,12 +204,12 @@ class MyProfileScreen extends ConsumerWidget {
                       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
                       decoration: BoxDecoration(
                         color: profile.isLoggedIn
-                            ? const Color(0xFF006B1B).withValues(alpha: 0.2)
+                            ? AppColors.successDark.withValues(alpha: 0.2)
                             : const Color(0xFFFFA500).withValues(alpha: 0.15),
                         borderRadius: BorderRadius.circular(20),
                         border: Border.all(
                           color: profile.isLoggedIn
-                              ? const Color(0xFF006B1B).withValues(alpha: 0.5)
+                              ? AppColors.successDark.withValues(alpha: 0.5)
                               : const Color(0xFFFFA500).withValues(alpha: 0.5),
                         ),
                       ),
@@ -277,10 +278,10 @@ class MyProfileScreen extends ConsumerWidget {
                                   color: Color(0xFFDBE1FF),
                                   shape: BoxShape.circle,
                                 ),
-                                child: const Icon(Icons.bar_chart, color: Color(0xFF575D78), size: 24),
+                                child: const Icon(Icons.bar_chart, color: AppColors.lightTextSecondary, size: 24),
                               ),
                               const SizedBox(height: 8),
-                              Text('STATS', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold, color: const Color(0xFF191C1E))),
+                              Text('STATS', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.lightTextPrimary)),
                             ],
                           ),
                         ),
@@ -302,10 +303,10 @@ class MyProfileScreen extends ConsumerWidget {
                                   color: Color(0xFF94F990),
                                   shape: BoxShape.circle,
                                 ),
-                                child: const Icon(Icons.groups, color: Color(0xFF006B1B), size: 24),
+                                child: const Icon(Icons.groups, color: AppColors.successDark, size: 24),
                               ),
                               const SizedBox(height: 8),
-                              Text('TEAMS', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold, color: const Color(0xFF191C1E))),
+                              Text('TEAMS', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.lightTextPrimary)),
                             ],
                           ),
                         ),
@@ -321,13 +322,13 @@ class MyProfileScreen extends ConsumerWidget {
                     children: [
                       Text(
                         'Scorer Performance',
-                        style: GoogleFonts.plusJakartaSans(fontSize: 18, fontWeight: FontWeight.bold, color: const Color(0xFF191C1E)),
+                        style: GoogleFonts.plusJakartaSans(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.lightTextPrimary),
                       ),
                       GestureDetector(
                         onTap: () => context.push('/performance'),
                         child: Text(
                           'View All',
-                          style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold, color: const Color(0xFFBA0013)),
+                          style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.primary),
                         ),
                       ),
                     ],
@@ -342,7 +343,7 @@ class MyProfileScreen extends ConsumerWidget {
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(12),
-                      border: const Border(left: BorderSide(color: Color(0xFFBA0013), width: 4)),
+                      border: const Border(left: BorderSide(color: AppColors.primary, width: 4)),
                       boxShadow: const [BoxShadow(color: Color.fromRGBO(26, 33, 56, 0.05), blurRadius: 10, offset: Offset(0, 4))],
                     ),
                     child: Stack(
@@ -358,19 +359,19 @@ class MyProfileScreen extends ConsumerWidget {
                           children: [
                             Row(
                               children: [
-                                const Icon(Icons.emoji_events_outlined, color: Color(0xFFBA0013), size: 16),
+                                const Icon(Icons.emoji_events_outlined, color: AppColors.primary, size: 16),
                                 const SizedBox(width: 8),
                                 Text('TOTAL SCORED', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold, color: const Color(0xFF5D3F3C))),
                               ],
                             ),
                             const SizedBox(height: 8),
-                            Text('-', style: GoogleFonts.plusJakartaSans(fontSize: 40, fontWeight: FontWeight.bold, color: const Color(0xFF191C1E), height: 1.0)),
+                            Text('-', style: GoogleFonts.plusJakartaSans(fontSize: 40, fontWeight: FontWeight.bold, color: AppColors.lightTextPrimary, height: 1.0)),
                             const SizedBox(height: 8),
                             Row(
                               children: [
-                                const Icon(Icons.trending_up, color: Color(0xFF006B1B), size: 14),
+                                const Icon(Icons.trending_up, color: AppColors.successDark, size: 14),
                                 const SizedBox(width: 4),
-                                Text('N/A this month', style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.bold, color: const Color(0xFF006B1B))),
+                                Text('N/A this month', style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.successDark)),
                               ],
                             ),
                           ],
@@ -388,7 +389,7 @@ class MyProfileScreen extends ConsumerWidget {
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(12),
-                      border: const Border(left: BorderSide(color: Color(0xFFBA0013), width: 4)),
+                      border: const Border(left: BorderSide(color: AppColors.primary, width: 4)),
                       boxShadow: const [BoxShadow(color: Color.fromRGBO(26, 33, 56, 0.05), blurRadius: 10, offset: Offset(0, 4))],
                     ),
                     child: Stack(
@@ -404,19 +405,19 @@ class MyProfileScreen extends ConsumerWidget {
                           children: [
                             Row(
                               children: [
-                                const Icon(Icons.sports_baseball_outlined, color: Color(0xFFBA0013), size: 16),
+                                const Icon(Icons.sports_baseball_outlined, color: AppColors.primary, size: 16),
                                 const SizedBox(width: 8),
                                 Text('TOTAL WICKETS', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold, color: const Color(0xFF5D3F3C))),
                               ],
                             ),
                             const SizedBox(height: 8),
-                            Text('-', style: GoogleFonts.plusJakartaSans(fontSize: 40, fontWeight: FontWeight.bold, color: const Color(0xFF191C1E), height: 1.0)),
+                            Text('-', style: GoogleFonts.plusJakartaSans(fontSize: 40, fontWeight: FontWeight.bold, color: AppColors.lightTextPrimary, height: 1.0)),
                             const SizedBox(height: 8),
                             Row(
                               children: [
-                                const Icon(Icons.trending_up, color: Color(0xFF006B1B), size: 14),
+                                const Icon(Icons.trending_up, color: AppColors.successDark, size: 14),
                                 const SizedBox(width: 4),
-                                Text('N/A this month', style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.bold, color: const Color(0xFF006B1B))),
+                                Text('N/A this month', style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.successDark)),
                               ],
                             ),
                           ],
@@ -436,15 +437,15 @@ class MyProfileScreen extends ConsumerWidget {
                           decoration: BoxDecoration(
                             color: Colors.white,
                             borderRadius: BorderRadius.circular(12),
-                            border: const Border(left: BorderSide(color: Color(0xFF575D78), width: 4)),
+                            border: const Border(left: BorderSide(color: AppColors.lightTextSecondary, width: 4)),
                             boxShadow: const [BoxShadow(color: Color.fromRGBO(26, 33, 56, 0.05), blurRadius: 10, offset: Offset(0, 4))],
                           ),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text('MATCHES\nPLAYED', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold, color: const Color(0xFF575D78))),
+                              Text('MATCHES\nPLAYED', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.lightTextSecondary)),
                               const SizedBox(height: 16),
-                              Text('$totalMatches', style: GoogleFonts.plusJakartaSans(fontSize: 24, fontWeight: FontWeight.bold, color: const Color(0xFF191C1E))),
+                              Text('$totalMatches', style: GoogleFonts.plusJakartaSans(fontSize: 24, fontWeight: FontWeight.bold, color: AppColors.lightTextPrimary)),
                             ],
                           ),
                         ),
@@ -456,21 +457,21 @@ class MyProfileScreen extends ConsumerWidget {
                           decoration: BoxDecoration(
                             color: Colors.white,
                             borderRadius: BorderRadius.circular(12),
-                            border: const Border(left: BorderSide(color: Color(0xFF006B1B), width: 4)),
+                            border: const Border(left: BorderSide(color: AppColors.successDark, width: 4)),
                             boxShadow: const [BoxShadow(color: Color.fromRGBO(26, 33, 56, 0.05), blurRadius: 10, offset: Offset(0, 4))],
                           ),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text('PRO RATING', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold, color: const Color(0xFF006B1B))),
+                              Text('PRO RATING', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.successDark)),
                               const SizedBox(height: 16),
                               Row(
                                 crossAxisAlignment: CrossAxisAlignment.baseline,
                                 textBaseline: TextBaseline.alphabetic,
                                 children: [
-                                  Text('4.9', style: GoogleFonts.plusJakartaSans(fontSize: 24, fontWeight: FontWeight.bold, color: const Color(0xFF006B1B))),
+                                  Text('4.9', style: GoogleFonts.plusJakartaSans(fontSize: 24, fontWeight: FontWeight.bold, color: AppColors.successDark)),
                                   const SizedBox(width: 4),
-                                  const Icon(Icons.star, color: Color(0xFF006B1B), size: 14),
+                                  const Icon(Icons.star, color: AppColors.successDark, size: 14),
                                 ],
                               ),
                               const SizedBox(height: 4),
@@ -485,7 +486,7 @@ class MyProfileScreen extends ConsumerWidget {
                   const SizedBox(height: 32),
                   Text(
                     'RECENT MATCHES',
-                    style: GoogleFonts.plusJakartaSans(fontSize: 18, fontWeight: FontWeight.bold, color: const Color(0xFF191C1E)),
+                    style: GoogleFonts.plusJakartaSans(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.lightTextPrimary),
                   ),
                   const SizedBox(height: 16),
 
@@ -533,7 +534,7 @@ class MyProfileScreen extends ConsumerWidget {
                 Expanded(
                   child: Text(
                     match.matchTitle,
-                    style: GoogleFonts.plusJakartaSans(fontSize: 16, fontWeight: FontWeight.bold, color: const Color(0xFF191C1E)),
+                    style: GoogleFonts.plusJakartaSans(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.lightTextPrimary),
                   ),
                 ),
                 Container(
@@ -544,7 +545,7 @@ class MyProfileScreen extends ConsumerWidget {
                   ),
                   child: Text(
                     'FINAL',
-                    style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.bold, color: const Color(0xFF006B1B)),
+                    style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.successDark),
                   ),
                 ),
               ],
@@ -552,13 +553,13 @@ class MyProfileScreen extends ConsumerWidget {
             const SizedBox(height: 8),
             Text(
               '${match.teamARuns}/${match.teamAWickets} vs ${match.teamBRuns}/${match.teamBWickets}',
-              style: GoogleFonts.inter(fontSize: 14, color: const Color(0xFF575D78)),
+              style: GoogleFonts.inter(fontSize: 14, color: AppColors.lightTextSecondary),
             ),
             const SizedBox(height: 8),
             if (match.winnerTeamName != null)
               Text(
                 '${match.winnerTeamName} won',
-                style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold, color: const Color(0xFF006B1B)),
+                style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.successDark),
               ),
             const Padding(
               padding: EdgeInsets.symmetric(vertical: 12),
@@ -571,9 +572,9 @@ class MyProfileScreen extends ConsumerWidget {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Text('VIEW SCORECARD', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold, color: const Color(0xFFBA0013))),
+                  Text('VIEW SCORECARD', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.primary)),
                   const SizedBox(width: 8),
-                  const Icon(Icons.arrow_forward, color: Color(0xFFBA0013), size: 16),
+                  const Icon(Icons.arrow_forward, color: AppColors.primary, size: 16),
                 ],
               ),
             ),
@@ -610,7 +611,7 @@ class MyProfileScreen extends ConsumerWidget {
             style: GoogleFonts.plusJakartaSans(
               fontSize: 24,
               fontWeight: FontWeight.bold,
-              color: const Color(0xFF191C1E),
+              color: AppColors.lightTextPrimary,
             ),
           ),
           const SizedBox(height: 8),
@@ -618,7 +619,7 @@ class MyProfileScreen extends ConsumerWidget {
             'Let others scan this code to view your profile.',
             style: GoogleFonts.inter(
               fontSize: 14,
-              color: const Color(0xFF575D78),
+              color: AppColors.lightTextSecondary,
             ),
             textAlign: TextAlign.center,
           ),
@@ -637,11 +638,11 @@ class MyProfileScreen extends ConsumerWidget {
               backgroundColor: Colors.white,
               eyeStyle: const QrEyeStyle(
                 eyeShape: QrEyeShape.square,
-                color: Color(0xFF1A2138),
+                color: AppColors.darkSurface,
               ),
               dataModuleStyle: const QrDataModuleStyle(
                 dataModuleShape: QrDataModuleShape.square,
-                color: Color(0xFF1A2138),
+                color: AppColors.darkSurface,
               ),
             ),
           ),
@@ -652,7 +653,7 @@ class MyProfileScreen extends ConsumerWidget {
             child: ElevatedButton(
               onPressed: () => context.pop(),
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFBA0013),
+                backgroundColor: AppColors.primary,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),

@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:scorely/core/theme/colors.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -109,13 +110,13 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
         return Theme(
           data: Theme.of(context).copyWith(
             colorScheme: const ColorScheme.light(
-              primary: Color(0xFFBA0013), // header background color
+              primary: AppColors.primary, // header background color
               onPrimary: Colors.white, // header text color
-              onSurface: Color(0xFF191C1E), // body text color
+              onSurface: AppColors.lightTextPrimary, // body text color
             ),
             textButtonTheme: TextButtonThemeData(
               style: TextButton.styleFrom(
-                foregroundColor: const Color(0xFFBA0013), // button text color
+                foregroundColor: AppColors.primary, // button text color
               ),
             ),
           ),
@@ -156,9 +157,9 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF7F9FC),
+      backgroundColor: AppColors.lightBg,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF1A2138),
+        backgroundColor: AppColors.darkSurface,
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.white, size: 24),
@@ -227,7 +228,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                                         style: GoogleFonts.plusJakartaSans(
                                           fontSize: 40,
                                           fontWeight: FontWeight.bold,
-                                          color: const Color(0xFF575D78),
+                                          color: AppColors.lightTextSecondary,
                                         ),
                                       ),
                                     ),
@@ -236,7 +237,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                           Container(
                             padding: const EdgeInsets.all(6),
                             decoration: BoxDecoration(
-                              color: const Color(0xFFBA0013),
+                              color: AppColors.primary,
                               shape: BoxShape.circle,
                               border: Border.all(color: Colors.white, width: 2),
                             ),
@@ -257,7 +258,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                       style: GoogleFonts.plusJakartaSans(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
-                        color: const Color(0xFF191C1E),
+                        color: AppColors.lightTextPrimary,
                       ),
                     ),
                     const SizedBox(height: 4),
@@ -265,7 +266,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                       'ID: $_profileId',
                       style: GoogleFonts.inter(
                         fontSize: 12,
-                        color: const Color(0xFF575D78),
+                        color: AppColors.lightTextSecondary,
                       ),
                     ),
                   ],
@@ -332,7 +333,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                     _buildFormCard(
                       title: 'PLAYER ATTRIBUTES',
                       icon: Icons.sports_cricket_outlined,
-                      borderColor: const Color(0xFF575D78),
+                      borderColor: AppColors.lightTextSecondary,
                       children: [
                         _buildDropdownField(
                           label: 'PLAYING ROLE',
@@ -410,7 +411,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                       child: ElevatedButton(
                         onPressed: _saveProfile,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFFBA0013),
+                          backgroundColor: AppColors.primary,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
@@ -455,7 +456,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     required String title,
     required IconData icon,
     required List<Widget> children,
-    Color borderColor = const Color(0xFFBA0013),
+    Color borderColor = AppColors.primary,
   }) {
     return Container(
       width: double.infinity,
@@ -528,13 +529,13 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
           keyboardType: keyboardType,
           style: GoogleFonts.inter(
             fontSize: 14,
-            color: const Color(0xFF191C1E),
+            color: AppColors.lightTextPrimary,
           ),
           decoration: InputDecoration(
             hintText: hintText,
             hintStyle: GoogleFonts.inter(
               fontSize: 14,
-              color: const Color(0xFF575D78).withValues(alpha: 0.5),
+              color: AppColors.lightTextSecondary.withValues(alpha: 0.5),
             ),
             filled: true,
             fillColor: const Color(0xFFF2F4F7),
@@ -547,10 +548,10 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
               borderSide: BorderSide.none,
             ),
             prefixIcon: prefixIcon != null
-                ? Icon(prefixIcon, color: const Color(0xFF575D78), size: 20)
+                ? Icon(prefixIcon, color: AppColors.lightTextSecondary, size: 20)
                 : null,
             suffixIcon: suffixIcon != null
-                ? Icon(suffixIcon, color: const Color(0xFF191C1E), size: 20)
+                ? Icon(suffixIcon, color: AppColors.lightTextPrimary, size: 20)
                 : null,
           ),
         ),
@@ -589,11 +590,11 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
               dropdownColor: Colors.white,
               icon: const Icon(
                 Icons.keyboard_arrow_down,
-                color: Color(0xFF575D78),
+                color: AppColors.lightTextSecondary,
               ),
               style: GoogleFonts.inter(
                 fontSize: 14,
-                color: const Color(0xFF191C1E),
+                color: AppColors.lightTextPrimary,
               ),
               onChanged: onChanged,
               items: items.map<DropdownMenuItem<String>>((String item) {
@@ -624,7 +625,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                 shape: BoxShape.circle,
                 border: Border.all(
                   color: _gender == title
-                      ? const Color(0xFFBA0013)
+                      ? AppColors.primary
                       : const Color(0xFFD8DADD),
                   width: 2,
                 ),
@@ -636,7 +637,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                         height: 10,
                         decoration: const BoxDecoration(
                           shape: BoxShape.circle,
-                          color: Color(0xFFBA0013),
+                          color: AppColors.primary,
                         ),
                       ),
                     )
@@ -647,7 +648,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
               title,
               style: GoogleFonts.inter(
                 fontSize: 14,
-                color: const Color(0xFF191C1E),
+                color: AppColors.lightTextPrimary,
               ),
             ),
           ],

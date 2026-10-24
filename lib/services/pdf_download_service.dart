@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:scorely/core/theme/colors.dart';
 import 'package:printing/printing.dart';
 import '../features/export/pdf_generator.dart';
 import '../models/match_stats.dart';
@@ -126,7 +127,7 @@ class PdfDownloadService {
                 Expanded(child: Text('Failed to generate PDF: $e')),
               ],
             ),
-            backgroundColor: const Color(0xFFBA0013),
+            backgroundColor: AppColors.primary,
             duration: const Duration(seconds: 5),
           ),
         );
