@@ -30,11 +30,27 @@ class _TossScreenState extends ConsumerState<TossScreen> {
   late String _tossWonBy;
   String _tossDecision = 'BATTING';
   TeamMember? _officialScorer;
+  bool _isSubmitting = false;
 
   @override
   void initState() {
     super.initState();
     _tossWonBy = widget.setupData.teamAName;
+
+    // Default the official scorer to the creator / current profile
+    // so users can proceed straight to Opening Lineup without redundant dialogs.
+    final profile = ref.read(profileProvider);
+    final scorerName = widget.setupData.teamAScorerName ??
+        (profile.name.isNotEmpty ? profile.name : 'Scorer (Myself)');
+    final scorerId = widget.setupData.teamAScorerId ??
+        (profile.id.isNotEmpty ? profile.id : 'scorer_myself');
+
+    _officialScorer = TeamMember(
+      id: scorerId,
+      profileId: scorerId,
+      name: scorerName,
+      roles: const ['Official Scorer'],
+    );
   }
 
   String get _battingFirstTeam {
@@ -49,88 +65,137 @@ class _TossScreenState extends ConsumerState<TossScreen> {
   }
 
   Future<void> _startScoring() async {
-    // Official scorer is mandatory — block navigation until one is selected.
-    final scorer = _officialScorer;
-    if (scorer == null) {
-      await _showOfficialScorerRequiredDialog();
-      return;
-    }
+    if (_isSubmitting) return;
 
-    final battingFirstTeam = _battingFirstTeam;
     final profile = ref.read(profileProvider);
 
-    final matchId = widget.setupData.id.isNotEmpty
-        ? widget.setupData.id
-        : const Uuid().v4();
+    // Official scorer is mandatory — default to creator if null
+    var scorer = _officialScorer;
+    if (scorer == null) {
+      final scorerName = widget.setupData.teamAScorerName ??
+          (profile.name.isNotEmpty ? profile.name : 'Scorer (Myself)');
+      final scorerId = widget.setupData.teamAScorerId ??
+          (profile.id.isNotEmpty ? profile.id : 'scorer_myself');
 
-    final db = DatabaseService.instance;
+      scorer = TeamMember(
+        id: scorerId,
+        profileId: scorerId,
+        name: scorerName,
+        roles: const ['Official Scorer'],
+      );
+      _officialScorer = scorer;
+    }
 
-    // Reuse existing matchAppId if already assigned during setup, otherwise allocate next
-    String matchAppId = widget.setupData.matchAppId ?? '';
-    if (matchAppId.isEmpty) {
-      try {
-        matchAppId = await db.nextMatchAppId();
-      } catch (e) {
-        debugPrint('TossScreen: nextMatchAppId failed — $e');
-        matchAppId = MatchSetupData.deriveMatchCode(matchId);
+    setState(() => _isSubmitting = true);
+
+    try {
+      final battingFirstTeam = _battingFirstTeam;
+
+      final matchId = widget.setupData.id.isNotEmpty
+          ? widget.setupData.id
+          : const Uuid().v4();
+
+      final db = DatabaseService.instance;
+
+      // Reuse existing matchAppId if already assigned during setup, otherwise allocate next.
+      // Use timeout to prevent hanging on Web/Chrome if IndexedDB blocks.
+      String matchAppId = widget.setupData.matchAppId ?? '';
+      if (matchAppId.isEmpty) {
+        try {
+          matchAppId = await db
+              .nextMatchAppId()
+              .timeout(const Duration(seconds: 2));
+        } catch (e) {
+          debugPrint('TossScreen: nextMatchAppId failed/timed out — $e');
+          matchAppId = MatchSetupData.deriveMatchCode(matchId);
+        }
       }
-    }
 
-    // Sanitize scorer ID: map 'scorer_myself' to actual auth user id or null (never send sentinel to UUID columns)
-    final String? effectiveScorerId = (scorer.profileId != null &&
-            scorer.profileId!.isNotEmpty &&
-            scorer.profileId != 'scorer_myself')
-        ? scorer.profileId
-        : (profile.isLoggedIn && profile.id.isNotEmpty ? profile.id : null);
+      // Sanitize scorer ID: map 'scorer_myself' to actual auth user id or null (never send sentinel to UUID columns)
+      final String? effectiveScorerId = (scorer.profileId != null &&
+              scorer.profileId!.isNotEmpty &&
+              scorer.profileId != 'scorer_myself')
+          ? scorer.profileId
+          : (profile.isLoggedIn && profile.id.isNotEmpty ? profile.id : null);
 
-    // Toss completion NEVER makes a match live. It stays pending until the
-    // official scorer reaches Opening Lineup and clicks "Proceed to Score".
-    final updatedData = widget.setupData.copyWith(
-      id: matchId,
-      status: MatchStatus.pending,
-      setupStage: MatchSetupStage.readyForToss,
-      tossWonBy: _tossWonBy,
-      battingFirstTeam: battingFirstTeam,
-      matchAppId: matchAppId,
-      teamAScorerId: effectiveScorerId,
-      teamAScorerName: scorer.name,
-      activeScorerId: effectiveScorerId,
-      creatorProfileId: profile.id.isNotEmpty
-          ? profile.id
-          : widget.setupData.creatorProfileId,
-      // The scorer may be a squad member who is not in the playing XI. Add
-      // them to the association list so RLS lets them read the pending row
-      // (and so the INSERT check accepts the selected active scorer).
-      playerProfileIds: {
-        ...widget.setupData.playerProfileIds,
-        if (effectiveScorerId != null && effectiveScorerId.isNotEmpty)
-          effectiveScorerId,
-      }.toList(),
-    );
+      // Toss completion NEVER makes a match live. It stays pending until the
+      // official scorer reaches Opening Lineup and clicks "Proceed to Score".
+      final updatedData = widget.setupData.copyWith(
+        id: matchId,
+        status: MatchStatus.pending,
+        setupStage: MatchSetupStage.readyForToss,
+        tossWonBy: _tossWonBy,
+        battingFirstTeam: battingFirstTeam,
+        matchAppId: matchAppId,
+        teamAScorerId: effectiveScorerId,
+        teamAScorerName: scorer.name,
+        activeScorerId: effectiveScorerId,
+        creatorProfileId: profile.id.isNotEmpty
+            ? profile.id
+            : widget.setupData.creatorProfileId,
+        // The scorer may be a squad member who is not in the playing XI. Add
+        // them to the association list so RLS lets them read the pending row
+        // (and so the INSERT check accepts the selected active scorer).
+        playerProfileIds: {
+          ...widget.setupData.playerProfileIds,
+          if (effectiveScorerId != null && effectiveScorerId.isNotEmpty)
+            effectiveScorerId,
+        }.toList(),
+      );
 
-    // Persist the pending match (with toss details) for associated viewers.
-    // For signed-in users (both quick and scheduled), this creates the 'pending' row in InsForge.
-    if (profile.isLoggedIn && profile.id.isNotEmpty) {
-      await ref.read(pendingMatchesProvider.notifier).addOrUpdateMatch(updatedData);
-    }
+      // Persist the pending match (with toss details) for associated viewers.
+      // For signed-in users (both quick and scheduled), this creates the 'pending' row in InsForge.
+      if (profile.isLoggedIn && profile.id.isNotEmpty) {
+        try {
+          await ref
+              .read(pendingMatchesProvider.notifier)
+              .addOrUpdateMatch(updatedData)
+              .timeout(const Duration(seconds: 4));
+        } catch (e) {
+          debugPrint('TossScreen: addOrUpdateMatch failed/timed out — $e');
+        }
+      }
 
-    if (widget.setupData.isQuickMatch) {
-      final storageLimit = ref.read(storageLimitProvider);
-      QuickMatchStorage.saveQuickMatch(updatedData, storageLimit: storageLimit);
-    }
+      if (widget.setupData.isQuickMatch) {
+        try {
+          final storageLimit = ref.read(storageLimitProvider);
+          QuickMatchStorage.saveQuickMatch(updatedData, storageLimit: storageLimit);
+        } catch (e) {
+          debugPrint('TossScreen: QuickMatchStorage.saveQuickMatch failed — $e');
+        }
+      }
 
-    // The signed-in scorer must be the one who opens the lineup and proceeds.
-    // If the creator selected somebody else, send them a handover request.
-    final isSelfScorer = scorer.profileId == 'scorer_myself' ||
-        !profile.isLoggedIn ||
-        scorer.profileId == profile.id;
-    if (!isSelfScorer) {
-      await _requestOpeningLineupHandover(updatedData, scorer);
-      return;
-    }
+      // The signed-in scorer must be the one who opens the lineup and proceeds.
+      // If the creator selected somebody else, send them a handover request.
+      final isSelfScorer = scorer.profileId == 'scorer_myself' ||
+          scorer.id == 'scorer_myself' ||
+          !profile.isLoggedIn ||
+          (profile.id.isNotEmpty &&
+              (scorer.profileId == profile.id || scorer.id == profile.id));
 
-    if (mounted) {
-      context.pushReplacement('/opening-lineup', extra: updatedData);
+      if (!isSelfScorer) {
+        await _requestOpeningLineupHandover(updatedData, scorer);
+        return;
+      }
+
+      if (mounted) {
+        context.pushReplacement('/opening-lineup', extra: updatedData);
+      }
+    } catch (e, stack) {
+      debugPrint('TossScreen: _startScoring error: $e\n$stack');
+      if (mounted) {
+        // Fallback navigation so creator is never blocked
+        final fallbackData = widget.setupData.copyWith(
+          status: MatchStatus.pending,
+          tossWonBy: _tossWonBy,
+          battingFirstTeam: _battingFirstTeam,
+        );
+        context.pushReplacement('/opening-lineup', extra: fallbackData);
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isSubmitting = false);
+      }
     }
   }
 
@@ -374,7 +439,7 @@ class _TossScreenState extends ConsumerState<TossScreen> {
                         width: double.infinity,
                         height: 56,
                         child: ElevatedButton.icon(
-                          onPressed: () => _startScoring(),
+                          onPressed: _isSubmitting ? null : () => _startScoring(),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: AppColors.primary,
                             shape: RoundedRectangleBorder(
@@ -384,13 +449,22 @@ class _TossScreenState extends ConsumerState<TossScreen> {
                             shadowColor:
                                 AppColors.primary.withValues(alpha: 0.4),
                           ),
-                          icon: const Icon(
-                            Icons.sports_cricket,
-                            color: Colors.white,
-                            size: 20,
-                          ),
+                          icon: _isSubmitting
+                              ? const SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: Colors.white,
+                                  ),
+                                )
+                              : const Icon(
+                                  Icons.sports_cricket,
+                                  color: Colors.white,
+                                  size: 20,
+                                ),
                           label: Text(
-                            'NEXT',
+                            _isSubmitting ? 'PREPARING...' : 'NEXT',
                             style: GoogleFonts.plusJakartaSans(
                               fontSize: 16,
                               fontWeight: FontWeight.w700,

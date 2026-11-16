@@ -239,20 +239,24 @@ class PendingMatchesNotifier extends Notifier<List<MatchSetupData>> {
       };
 
       if (existingIndex >= 0) {
-        await http.patch(
-          Uri.parse('$_url?id=eq.$rowId'),
-          headers: _headers,
-          body: jsonEncode(bodyMap),
-        );
+        await http
+            .patch(
+              Uri.parse('$_url?id=eq.$rowId'),
+              headers: _headers,
+              body: jsonEncode(bodyMap),
+            )
+            .timeout(const Duration(seconds: 5));
       } else {
-        await http.post(
-          Uri.parse(_url),
-          headers: {
-            ..._headers,
-            'Prefer': 'resolution=merge-duplicates,return=representation',
-          },
-          body: jsonEncode([bodyMap]),
-        );
+        await http
+            .post(
+              Uri.parse(_url),
+              headers: {
+                ..._headers,
+                'Prefer': 'resolution=merge-duplicates,return=representation',
+              },
+              body: jsonEncode([bodyMap]),
+            )
+            .timeout(const Duration(seconds: 5));
       }
     } catch (e) {
       debugPrint('Failed to sync match to InsForge: $e');

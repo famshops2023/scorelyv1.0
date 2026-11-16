@@ -698,16 +698,23 @@ class _PendingMatchCard extends ConsumerWidget {
                     statusLabel,
                     style: HomeTypography.labelBold.copyWith(
                       color: statusColor,
+                      fontSize: 9.5,
                     ),
                   ),
                 ],
               ),
-              Text(
-                format,
-                style: GoogleFonts.plusJakartaSans(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w700,
-                  color: HomeColors.secondary,
+              const SizedBox(width: 8),
+              Flexible(
+                child: Text(
+                  format.toUpperCase(),
+                  textAlign: TextAlign.end,
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 8,
+                    fontWeight: FontWeight.w600,
+                    color: HomeColors.secondary,
+                    letterSpacing: 0.3,
+                  ),
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
             ],
@@ -716,7 +723,7 @@ class _PendingMatchCard extends ConsumerWidget {
           RichText(
             text: TextSpan(
               style: GoogleFonts.plusJakartaSans(
-                fontSize: 17,
+                fontSize: 13,
                 fontWeight: FontWeight.w600,
                 color: HomeColors.onSurface,
               ),
@@ -725,7 +732,7 @@ class _PendingMatchCard extends ConsumerWidget {
                 TextSpan(
                   text: ' vs ',
                   style: GoogleFonts.plusJakartaSans(
-                    fontSize: 12,
+                    fontSize: 9,
                     fontWeight: FontWeight.w400,
                     color: HomeColors.secondary,
                   ),
@@ -765,7 +772,7 @@ class _PendingMatchCard extends ConsumerWidget {
               child: Text(
                 buttonLabel,
                 style: GoogleFonts.inter(
-                  fontSize: 12,
+                  fontSize: 9.5,
                   fontWeight: FontWeight.w700,
                   color: Colors.white,
                   letterSpacing: 0.85,
@@ -951,31 +958,35 @@ class _LiveInsforgeMatchCard extends ConsumerWidget {
               Row(
                 children: [
                   Container(
-                    width: 7,
-                    height: 7,
+                    width: 6,
+                    height: 6,
                     decoration: const BoxDecoration(
                       color: HomeColors.activeGreen,
                       shape: BoxShape.circle,
                     ),
                   ),
-                  const SizedBox(width: 5),
+                  const SizedBox(width: 4),
                   Text(
                     'LIVE',
                     style: HomeTypography.labelBold.copyWith(
                       color: HomeColors.activeGreen,
+                      fontSize: 9.5,
                     ),
                   ),
                 ],
               ),
+              const SizedBox(width: 8),
               Flexible(
                 child: Text(
                   match.venue.isNotEmpty
                       ? '${match.format.toUpperCase()} • ${match.venue.toUpperCase()}'
                       : match.format.toUpperCase(),
+                  textAlign: TextAlign.end,
                   style: GoogleFonts.plusJakartaSans(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
+                    fontSize: 8,
+                    fontWeight: FontWeight.w600,
                     color: HomeColors.secondary,
+                    letterSpacing: 0.3,
                   ),
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -983,19 +994,19 @@ class _LiveInsforgeMatchCard extends ConsumerWidget {
             ],
           ),
           if (match.scorerName.isNotEmpty) ...[
-            const SizedBox(height: 6),
+            const SizedBox(height: 5),
             Align(
               alignment: Alignment.centerLeft,
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(
                   color: HomeColors.primary.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(6),
+                  borderRadius: BorderRadius.circular(5),
                 ),
                 child: Text(
                   'Scorer: ${match.scorerName}',
                   style: GoogleFonts.inter(
-                    fontSize: 10,
+                    fontSize: 8,
                     fontWeight: FontWeight.w600,
                     color: HomeColors.primary,
                   ),
@@ -1003,7 +1014,7 @@ class _LiveInsforgeMatchCard extends ConsumerWidget {
               ),
             ),
           ],
-          const SizedBox(height: 10),
+          const SizedBox(height: 8),
           // Team A Name & Score
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -1011,7 +1022,7 @@ class _LiveInsforgeMatchCard extends ConsumerWidget {
               Text(
                 match.teamAName,
                 style: GoogleFonts.plusJakartaSans(
-                  fontSize: 16,
+                  fontSize: 12,
                   fontWeight: FontWeight.w700,
                   color: HomeColors.onSurface,
                 ),
@@ -1023,7 +1034,7 @@ class _LiveInsforgeMatchCard extends ConsumerWidget {
                   Text(
                     match.teamAScore,
                     style: GoogleFonts.plusJakartaSans(
-                      fontSize: 16,
+                      fontSize: 12,
                       fontWeight: FontWeight.w700,
                       color: HomeColors.primary,
                     ),
@@ -1033,7 +1044,7 @@ class _LiveInsforgeMatchCard extends ConsumerWidget {
                     Text(
                       '(${match.teamAOvers})',
                       style: GoogleFonts.inter(
-                        fontSize: 11,
+                        fontSize: 8.5,
                         fontWeight: FontWeight.w400,
                         color: HomeColors.secondary,
                       ),
@@ -1043,16 +1054,16 @@ class _LiveInsforgeMatchCard extends ConsumerWidget {
               ),
             ],
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 3),
           Text(
             'vs',
             style: GoogleFonts.plusJakartaSans(
-              fontSize: 12,
+              fontSize: 9,
               fontStyle: FontStyle.italic,
               color: HomeColors.secondary.withValues(alpha: 0.6),
             ),
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 3),
           // Team B Name & Score
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -1060,7 +1071,7 @@ class _LiveInsforgeMatchCard extends ConsumerWidget {
               Text(
                 match.teamBName,
                 style: GoogleFonts.plusJakartaSans(
-                  fontSize: 16,
+                  fontSize: 12,
                   fontWeight: FontWeight.w700,
                   color: HomeColors.onSurface,
                 ),
@@ -1072,9 +1083,9 @@ class _LiveInsforgeMatchCard extends ConsumerWidget {
                   Text(
                     match.teamBScore,
                     style: GoogleFonts.plusJakartaSans(
-                      fontSize: 16,
+                      fontSize: 12,
                       fontWeight: match.teamBScore == 'yet to bat'
-                          ? FontWeight.w400
+                          ? FontWeight.w500
                           : FontWeight.w700,
                       color: match.teamBScore == 'yet to bat'
                           ? HomeColors.secondary
@@ -1089,7 +1100,7 @@ class _LiveInsforgeMatchCard extends ConsumerWidget {
                     Text(
                       '(${match.teamBOvers})',
                       style: GoogleFonts.inter(
-                        fontSize: 11,
+                        fontSize: 8.5,
                         fontWeight: FontWeight.w400,
                         color: HomeColors.secondary,
                       ),
@@ -1099,11 +1110,11 @@ class _LiveInsforgeMatchCard extends ConsumerWidget {
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 14),
           // Button
           SizedBox(
             width: double.infinity,
-            height: 41,
+            height: 38,
             child: ElevatedButton(
               onPressed: () async {
                 if (isScorer) {
@@ -1183,7 +1194,7 @@ class _LiveInsforgeMatchCard extends ConsumerWidget {
               child: Text(
                 isScorer ? 'RESUME SCORING' : 'SHOW STATS',
                 style: GoogleFonts.inter(
-                  fontSize: 12,
+                  fontSize: 9.5,
                   fontWeight: FontWeight.w700,
                   color: Colors.white,
                   letterSpacing: 0.85,

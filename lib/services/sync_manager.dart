@@ -108,6 +108,11 @@ class SyncManager {
       // scorer's device eventually publishes the final row for everybody.
       await MatchLifecycleService.flushPendingCompletions();
       final myId = profile.id;
+      // Also query by SP-XXXX display ID so associated players who were added
+      // using their display ID are included. The display ID is derived
+      // deterministically from the UUID – same function as UserProfile.deriveDisplayId.
+      final myDisplayId = profile.displayId.trim();
+
       // Fetch matches where user is creator/scorer, as well as matches where user participated in squad
       final creatorUri = Uri.parse('${InsforgeConfig.recordsUrl}/matches').replace(queryParameters: {
         'or': '(creator_id.eq.$myId,active_scorer_id.eq.$myId)',
@@ -115,8 +120,10 @@ class SyncManager {
         'order': 'match_date.desc',
         'limit': '15',
       });
+      // Query by both UUID and SP-XXXX display ID so player matches are found
+      // regardless of which ID format was stored when the squad was built.
       final playerUri = Uri.parse('${InsforgeConfig.recordsUrl}/matches').replace(queryParameters: {
-        'player_profile_ids': 'cs.["$myId"]',
+        'or': '(player_profile_ids.cs.["$myId"],player_profile_ids.cs.["$myDisplayId"])',
         'status': 'in.(completed,abandoned)',
         'order': 'match_date.desc',
         'limit': '15',
@@ -128,15 +135,16 @@ class SyncManager {
       // catch up on the next sync.
       final pendingCompletedUri = Uri.parse('${InsforgeConfig.recordsUrl}/pending_matches').replace(queryParameters: {
         'status': 'in.(completed,abandoned)',
-        'or': '(created_by_profile_id.eq.$myId,active_scorer_id.eq.$myId,player_profile_ids.cs.["$myId"])',
+        'or': '(created_by_profile_id.eq.$myId,active_scorer_id.eq.$myId,'
+            'player_profile_ids.cs.["$myId"],player_profile_ids.cs.["$myDisplayId"])',
         'order': 'completed_at.desc',
         'limit': '15',
       });
 
       final responses = await Future.wait([
-        http.get(creatorUri, headers: InsforgeConfig.headers).catchError((_) => http.Response('[]', 200)),
-        http.get(playerUri, headers: InsforgeConfig.headers).catchError((_) => http.Response('[]', 200)),
-        http.get(pendingCompletedUri, headers: InsforgeConfig.headers).catchError((_) => http.Response('[]', 200)),
+        InsforgeConfig.getWithFallback(creatorUri).catchError((_) => http.Response('[]', 200)),
+        InsforgeConfig.getWithFallback(playerUri).catchError((_) => http.Response('[]', 200)),
+        InsforgeConfig.getWithFallback(pendingCompletedUri).catchError((_) => http.Response('[]', 200)),
       ]);
 
       final Map<String, dynamic> combinedMatches = {};

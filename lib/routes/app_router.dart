@@ -148,6 +148,7 @@ final goRouter = GoRouter(
           return MatchStatScreen(
             matchId: data['matchId'] as int?,
             initialIndex: data['initialIndex'] as int?,
+            matchUuid: data['matchUuid'] as String?,
           );
         }
         final matchId = state.extra as int?;

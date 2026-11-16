@@ -634,18 +634,21 @@ class _MatchResultScreenState extends ConsumerState<MatchResultScreen> {
               _buildNavItem(Icons.analytics_outlined, 'Summary', isActive: true, onTap: () {
                 context.go('/match-stats', extra: {
                   'matchId': widget.resultData.matchId,
+                  'matchUuid': widget.resultData.setupData?.id,
                   'initialIndex': 3,
                 });
               }),
               _buildNavItem(Icons.sports_cricket_outlined, 'Scoreboard', onTap: () {
                 context.go('/match-stats', extra: {
                   'matchId': widget.resultData.matchId,
+                  'matchUuid': widget.resultData.setupData?.id,
                   'initialIndex': 1,
                 });
               }),
               _buildNavItem(Icons.groups_outlined, 'Squad', onTap: () {
                 context.go('/match-stats', extra: {
                   'matchId': widget.resultData.matchId,
+                  'matchUuid': widget.resultData.setupData?.id,
                   'initialIndex': 2,
                 });
               }),

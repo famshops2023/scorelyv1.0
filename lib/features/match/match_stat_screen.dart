@@ -3,6 +3,7 @@ import 'package:scorely/core/theme/colors.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'dart:convert';
 import 'dart:math';
 
 import '../../services/database.dart';
@@ -11,13 +12,19 @@ import '../../providers/history_provider.dart';
 import '../../services/match_stats_calculator.dart';
 import '../../services/mvp_calculator.dart';
 import '../../services/pdf_download_service.dart';
+import '../../core/config/insforge_config.dart';
 import '../scoreboard/scoreboard_screen.dart';
+import 'package:drift/drift.dart' as drift;
+import 'package:http/http.dart' as http;
 import 'package:share_plus/share_plus.dart';
 
 class MatchStatScreen extends ConsumerStatefulWidget {
   final int? matchId;
   final int? initialIndex;
-  const MatchStatScreen({super.key, this.matchId, this.initialIndex});
+  /// Optional cloud UUID — used as fallback when the match is not yet in local
+  /// SQLite (e.g. an associated player who has not synced yet).
+  final String? matchUuid;
+  const MatchStatScreen({super.key, this.matchId, this.initialIndex, this.matchUuid});
 
   @override
   ConsumerState<MatchStatScreen> createState() => _MatchStatScreenState();
@@ -67,6 +74,15 @@ class _MatchStatScreenState extends ConsumerState<MatchStatScreen> {
           match = allMatches.first;
         }
       }
+
+      // ── Cloud fallback ────────────────────────────────────────────────────
+      // If the match is not found in local SQLite (e.g. this is an associated
+      // player who hasn't synced yet), try to build a synthetic CricketMatch
+      // from InsForge pending_matches / matches using the cloud UUID.
+      if (match == null) {
+        match = await _loadMatchFromCloud(db, widget.matchUuid);
+      }
+      // ─────────────────────────────────────────────────────────────────────
 
       if (match != null) {
         _teamA = match.teamAId != null
@@ -125,6 +141,227 @@ class _MatchStatScreenState extends ConsumerState<MatchStatScreen> {
         _match = match;
         _isLoading = false;
       });
+    }
+  }
+
+  /// Fetches a completed/abandoned match from InsForge and synthesises a local
+  /// [CricketMatch] row **without** persisting it to SQLite.
+  /// Returns null when the cloud fetch fails or no data is found.
+  Future<CricketMatch?> _loadMatchFromCloud(AppDatabase db, String? uuid) async {
+    if (uuid == null || uuid.isEmpty) return null;
+    try {
+      // 1. Try pending_matches first (covers offline-completed matches)
+      final pendingRes = await InsforgeConfig.getWithFallback(
+        Uri.parse('${InsforgeConfig.recordsUrl}/pending_matches').replace(
+          queryParameters: {'id': 'eq.$uuid', 'select': '*', 'limit': '1'},
+        ),
+      ).timeout(const Duration(seconds: 6)).catchError((_) => http.Response('[]', 200));
+
+      if (pendingRes.statusCode == 200) {
+        final list = jsonDecode(pendingRes.body) as List;
+        if (list.isNotEmpty) {
+          return _buildSyntheticMatch(db, list.first as Map<String, dynamic>);
+        }
+      }
+
+      // 2. Fall back to matches table (fully-synced matches)
+      final matchRes = await InsforgeConfig.getWithFallback(
+        Uri.parse('${InsforgeConfig.recordsUrl}/matches').replace(
+          queryParameters: {'id': 'eq.$uuid', 'select': '*', 'limit': '1'},
+        ),
+      ).timeout(const Duration(seconds: 6)).catchError((_) => http.Response('[]', 200));
+
+      if (matchRes.statusCode == 200) {
+        final list = jsonDecode(matchRes.body) as List;
+        if (list.isNotEmpty) {
+          return _buildSyntheticMatchFromMatchRow(list.first as Map<String, dynamic>);
+        }
+      }
+    } catch (e) {
+      debugPrint('MatchStatScreen._loadMatchFromCloud error: $e');
+    }
+    return null;
+  }
+
+  Map<String, dynamic> _decodeJsonField(dynamic raw) {
+    if (raw is Map) return Map<String, dynamic>.from(raw);
+    if (raw is String && raw.isNotEmpty) {
+      try {
+        final d = jsonDecode(raw);
+        if (d is Map) return Map<String, dynamic>.from(d);
+      } catch (_) {}
+    }
+    return {};
+  }
+
+  /// Build a synthetic in-memory [CricketMatch] from a `pending_matches` row.
+  Future<CricketMatch?> _buildSyntheticMatch(AppDatabase db, Map<String, dynamic> row) async {
+    try {
+      final md = _decodeJsonField(row['match_data']);
+      final live = _decodeJsonField(row['live_score_data']);
+
+      final teamAName = (md['teamAName'] ?? 'Team A').toString();
+      final teamBName = (md['teamBName'] ?? 'Team B').toString();
+      final ground = (live['venue'] ?? md['venue'] ?? 'Local Ground').toString();
+      final matchType = (md['matchType'] ?? 'T20').toString();
+      final totalOvers = (md['overs'] as num?)?.toInt() ?? 20;
+
+      // Parse scores from live_score_data
+      final aScoreStr = (live['team_a_score'] ?? '0/0').toString();
+      final bScoreStr = (live['team_b_score'] ?? '0/0').toString();
+      final aOversStr = (live['team_a_overs'] ?? '0.0').toString();
+      final bOversStr = (live['team_b_overs'] ?? '0.0').toString();
+
+      int _parseRuns(String s) => int.tryParse(s.split('/').first) ?? 0;
+      int _parseWkts(String s) {
+        final p = s.split('/');
+        return p.length > 1 ? (int.tryParse(p[1]) ?? 0) : 0;
+      }
+      int _parseOvers(String s) => int.tryParse(s.split('.').first) ?? 0;
+      int _parseBalls(String s) {
+        final p = s.split('.');
+        return p.length > 1 ? (int.tryParse(p[1]) ?? 0) : 0;
+      }
+
+      final winner = (row['winner'] ?? '').toString().trim();
+      final completedAt = DateTime.tryParse(
+            row['completed_at']?.toString() ?? row['updated_at']?.toString() ?? '',
+          ) ??
+          DateTime.now();
+
+      // Ensure teams exist in local db so player lookups have something to link to
+      int? tAId = await _upsertTeam(db, teamAName);
+      int? tBId = await _upsertTeam(db, teamBName);
+
+      // Check if match already in SQLite by matchAppId
+      final code = (md['matchAppId'] ?? md['matchCode'] ?? '').toString();
+      if (code.isNotEmpty) {
+        final existing = await (db.select(db.matches)
+              ..where((m) => m.matchAppId.equals(code)))
+            .getSingleOrNull();
+        if (existing != null) return existing;
+      }
+
+      // Insert into local SQLite so it shows in Recent Matches and stats
+      final insertedId = await db.insertMatch(MatchesCompanion.insert(
+        matchTitle: '$teamAName vs $teamBName',
+        totalOvers: totalOvers,
+        matchType: drift.Value(matchType),
+        venue: drift.Value(ground),
+        isCompleted: const drift.Value(true),
+        syncPending: const drift.Value(false),
+        createdAt: drift.Value(completedAt),
+        teamAId: drift.Value(tAId),
+        teamBId: drift.Value(tBId),
+        teamARuns: drift.Value(_parseRuns(aScoreStr)),
+        teamAWickets: drift.Value(_parseWkts(aScoreStr)),
+        teamAOvers: drift.Value(_parseOvers(aOversStr)),
+        teamABalls: drift.Value(_parseBalls(aOversStr)),
+        teamBRuns: drift.Value(_parseRuns(bScoreStr)),
+        teamBWickets: drift.Value(_parseWkts(bScoreStr)),
+        teamBOvers: drift.Value(_parseOvers(bOversStr)),
+        teamBBalls: drift.Value(_parseBalls(bOversStr)),
+        winnerTeamName: drift.Value(winner.isNotEmpty ? winner : null),
+        matchAppId: drift.Value(code.isNotEmpty ? code : null),
+      ));
+
+      // Invalidate providers so Recent Matches and Home screen refresh
+      ref.invalidate(recentMatchesProvider);
+
+      return await (db.select(db.matches)..where((m) => m.id.equals(insertedId))).getSingleOrNull();
+    } catch (e) {
+      debugPrint('MatchStatScreen._buildSyntheticMatch error: $e');
+      return null;
+    }
+  }
+
+  /// Build a synthetic [CricketMatch] from a `matches` table row (fully synced).
+  Future<CricketMatch?> _buildSyntheticMatchFromMatchRow(Map<String, dynamic> row) async {
+    try {
+      final db = ref.read(databaseServiceProvider);
+      final venueRaw = (row['venue'] ?? '').toString();
+      final summary = (row['match_result_summary'] ?? '').toString();
+      final totalOvers = (row['total_overs'] as num?)?.toInt() ?? 20;
+      final winner = (row['winner'] ?? row['winner_team_name'] ?? '').toString().trim();
+      final matchDate = DateTime.tryParse(row['match_date']?.toString() ?? '') ?? DateTime.now();
+
+      String matchTitle = venueRaw;
+      String ground = venueRaw;
+      if (venueRaw.contains(' • ')) {
+        final p = venueRaw.split(' • ');
+        matchTitle = p[0].trim();
+        ground = p.length > 1 ? p[1].trim() : venueRaw;
+      }
+
+      // Parse scores from summary: "ARuns/AWkts vs BRuns/BWkts [SM-XXXX]"
+      int tARuns = 0, tAWkts = 0, tBRuns = 0, tBWkts = 0;
+      final raw = summary.replaceAll(RegExp(r'\[.*?\]'), '').trim();
+      if (raw.contains(' vs ')) {
+        final parts = raw.split(' vs ');
+        final aParts = parts[0].trim().split('/');
+        final bParts = parts[1].trim().split('/');
+        tARuns = int.tryParse(aParts[0]) ?? 0;
+        tAWkts = aParts.length > 1 ? (int.tryParse(aParts[1]) ?? 0) : 0;
+        tBRuns = int.tryParse(bParts[0]) ?? 0;
+        tBWkts = bParts.length > 1 ? (int.tryParse(bParts[1]) ?? 0) : 0;
+      }
+
+      // Extract SM- code
+      String code = '';
+      if (summary.contains('[') && summary.contains(']')) {
+        final s = summary.indexOf('[');
+        final e = summary.indexOf(']');
+        if (e > s) code = summary.substring(s + 1, e).trim();
+      }
+      if (code.isEmpty) code = (row['match_app_id'] ?? '').toString();
+
+      // Check if match already in SQLite
+      if (code.isNotEmpty) {
+        final existing = await (db.select(db.matches)
+              ..where((m) => m.matchAppId.equals(code)))
+            .getSingleOrNull();
+        if (existing != null) return existing;
+      }
+
+      int? tAId, tBId;
+      if (matchTitle.contains(' vs ')) {
+        final p = matchTitle.split(' vs ');
+        tAId = await _upsertTeam(db, p[0].trim());
+        tBId = await _upsertTeam(db, p[1].trim());
+      }
+
+      final insertedId = await db.insertMatch(MatchesCompanion.insert(
+        matchTitle: matchTitle,
+        totalOvers: totalOvers,
+        venue: drift.Value(ground),
+        isCompleted: const drift.Value(true),
+        syncPending: const drift.Value(false),
+        createdAt: drift.Value(matchDate),
+        teamAId: drift.Value(tAId),
+        teamBId: drift.Value(tBId),
+        teamARuns: drift.Value(tARuns),
+        teamAWickets: drift.Value(tAWkts),
+        teamBRuns: drift.Value(tBRuns),
+        teamBWickets: drift.Value(tBWkts),
+        winnerTeamName: drift.Value(winner.isNotEmpty ? winner : null),
+        matchAppId: drift.Value(code.isNotEmpty ? code : null),
+      ));
+
+      ref.invalidate(recentMatchesProvider);
+      return await (db.select(db.matches)..where((m) => m.id.equals(insertedId))).getSingleOrNull();
+    } catch (e) {
+      debugPrint('MatchStatScreen._buildSyntheticMatchFromMatchRow error: $e');
+      return null;
+    }
+  }
+
+  Future<int?> _upsertTeam(AppDatabase db, String name) async {
+    if (name.isEmpty) return null;
+    try {
+      final existing = await (db.select(db.teams)..where((t) => t.name.equals(name))).getSingleOrNull();
+      return existing?.id ?? await db.into(db.teams).insert(TeamsCompanion.insert(name: name));
+    } catch (_) {
+      return null;
     }
   }
 
