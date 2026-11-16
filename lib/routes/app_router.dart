@@ -33,7 +33,10 @@ import '../features/discovery/discovery_screen.dart';
 import '../features/teams/team_qr_scanner_screen.dart';
 import '../features/performance/performance_screen.dart';
 
+final rootNavigatorKey = GlobalKey<NavigatorState>();
+
 final goRouter = GoRouter(
+  navigatorKey: rootNavigatorKey,
   initialLocation: '/',
   routes: [
     GoRoute(
@@ -193,6 +196,7 @@ final goRouter = GoRouter(
             isSelectingPlayingXi: data['isSelectingPlayingXi'] as bool? ?? false,
             teamType: data['teamType'] as String?,
             excludedPlayerNames: (data['excludedPlayerNames'] as List<dynamic>?)?.map((e) => e.toString()).toList(),
+            signedUpOnly: data['signedUpOnly'] as bool? ?? false,
           );
         }
         final teamId = state.extra as String;
@@ -219,6 +223,16 @@ final goRouter = GoRouter(
     GoRoute(
       path: '/match-details',
       builder: (context, state) {
+        if (state.extra is Map) {
+          final extra = (state.extra as Map).cast<String, dynamic>();
+          final setup = extra['setupData'];
+          if (setup is MatchSetupData) {
+            return MatchDetailsScreen(
+              setupData: setup,
+              readOnly: extra['readOnly'] as bool? ?? false,
+            );
+          }
+        }
         if (state.extra is! MatchSetupData) {
           return Scaffold(
             appBar: AppBar(title: const Text('Error')),
@@ -255,40 +269,55 @@ final goRouter = GoRouter(
     GoRoute(
       path: '/opening-lineup',
       builder: (context, state) {
-        if (state.extra is Map<String, dynamic>) {
-          final data = state.extra as Map<String, dynamic>;
+        if (state.extra is Map) {
+          final data = (state.extra as Map).cast<String, dynamic>();
           return OpeningLineupScreen(
             setupData: data['setupData'] as MatchSetupData,
             isSecondInnings: data['isSecondInnings'] as bool? ?? false,
+            isHandoverMode: data['isHandoverMode'] as bool? ?? false,
+            firstInningsRuns: data['firstInningsRuns'] as int?,
+            firstInningsWickets: data['firstInningsWickets'] as int?,
+            firstInningsBattingTeam: data['firstInningsBattingTeam'] as String?,
+            firstInningsOvers: data['firstInningsOvers'] as String?,
+            firstInningsBalls: data['firstInningsBalls'] as int?,
+            target: data['target'] as int?,
           );
         }
-        if (state.extra is! MatchSetupData) {
-          return Scaffold(
-            appBar: AppBar(title: const Text('Error')),
-            body: Center(
-              child: Text(
-                'Expected MatchSetupData, got: ${state.extra.runtimeType}',
-                style: const TextStyle(color: Colors.red, fontSize: 18),
-              ),
+        if (state.extra is MatchSetupData) {
+          return OpeningLineupScreen(setupData: state.extra as MatchSetupData);
+        }
+        return Scaffold(
+          appBar: AppBar(title: const Text('Error')),
+          body: Center(
+            child: Text(
+              'Expected MatchSetupData, got: ${state.extra.runtimeType}',
+              style: const TextStyle(color: Colors.red, fontSize: 18),
             ),
-          );
-        }
-        final data = state.extra as MatchSetupData;
-        return OpeningLineupScreen(setupData: data);
+          ),
+        );
       },
     ),
     GoRoute(
       path: '/scoring',
       builder: (context, state) {
-        if (state.extra is Map<String, dynamic>) {
-          final data = state.extra as Map<String, dynamic>;
+        if (state.extra is Map) {
+          final data = (state.extra as Map).cast<String, dynamic>();
           return ScoringScreen(
             setupData: data['setupData'] as MatchSetupData?,
             lineup: data['lineup'] as OpeningLineupResult?,
+            isSecondInnings: data['isSecondInnings'] as bool? ?? false,
+            firstInningsRuns: data['firstInningsRuns'] as int?,
+            firstInningsWickets: data['firstInningsWickets'] as int?,
+            firstInningsBattingTeam: data['firstInningsBattingTeam'] as String?,
+            firstInningsOvers: data['firstInningsOvers'] as String?,
+            firstInningsBalls: data['firstInningsBalls'] as int?,
+            target: data['target'] as int?,
           );
         }
-        final data = state.extra as MatchSetupData?;
-        return ScoringScreen(setupData: data);
+        if (state.extra is MatchSetupData) {
+          return ScoringScreen(setupData: state.extra as MatchSetupData);
+        }
+        return const ScoringScreen();
       },
     ),
     GoRoute(
@@ -349,8 +378,22 @@ final goRouter = GoRouter(
       builder: (context, state) => const TeamQRScannerScreen(),
     ),
     GoRoute(
+      path: '/team-qr-scanner',
+      builder: (context, state) => const TeamQRScannerScreen(),
+    ),
+    GoRoute(
       path: '/performance',
-      builder: (context, state) => const PerformanceScreen(),
+      builder: (context, state) {
+        final extra = state.extra as Map<String, dynamic>?;
+        return PerformanceScreen(
+          isReadOnly: extra?['isReadOnly'] as bool? ?? false,
+          customTitle: extra?['customTitle'] as String?,
+          targetPlayerUserId: extra?['targetPlayerUserId'] as String?,
+          targetPlayerName: extra?['targetPlayerName'] as String?,
+          targetPlayerRole: extra?['targetPlayerRole'] as String?,
+          targetPlayerLocation: extra?['targetPlayerLocation'] as String?,
+        );
+      },
     ),
     GoRoute(
       path: '/login',

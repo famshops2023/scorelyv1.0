@@ -2,6 +2,7 @@ import '../features/match/match_setup_screen.dart';
 
 class MatchResultData {
   final int? matchId;
+  final String? matchCode;
   final String? winningTeam;
   final String matchStatusText;
   final String team1Name;
@@ -22,8 +23,13 @@ class MatchResultData {
   final String ballType;
   final MatchSetupData? setupData;
 
+  String get displayMatchId => (matchCode != null && matchCode!.isNotEmpty)
+      ? matchCode!
+      : (setupData?.displayMatchId ?? (matchId != null ? 'SM-${10000 + matchId!}' : 'SM-10001'));
+
   const MatchResultData({
     this.matchId,
+    this.matchCode,
     required this.winningTeam,
     required this.matchStatusText,
     required this.team1Name,

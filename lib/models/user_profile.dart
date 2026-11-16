@@ -15,7 +15,9 @@ class UserProfile {
   String gender;
   String? profileImagePath;
   bool isLoggedIn;     // true once authenticated via InsForge
-  String? accessToken; // InsForge JWT token (not persisted to prefs)
+  String? accessToken; // InsForge JWT token
+  String? refreshToken; // InsForge 7-day refresh token from cookie
+  String? csrfToken;   // CSRF token required for /api/auth/refresh
 
   UserProfile({
     this.id = '',
@@ -33,17 +35,21 @@ class UserProfile {
     this.profileImagePath,
     this.isLoggedIn = false,
     this.accessToken,
+    this.refreshToken,
+    this.csrfToken,
   });
 
-  /// Returns a short, human-readable ID like SCR-1042.
+  /// Returns a short, human-readable ID like SP-1042 for players.
   /// Derived deterministically from the raw UUID so it is always consistent.
-  String get displayId {
-    if (id.isEmpty) return 'SCR-0000';
-    // Use the last 4 hex chars of the UUID → integer → 4-digit number
-    final hex = id.replaceAll('-', '');
+  String get displayId => deriveDisplayId(id);
+
+  /// Helper to deterministically derive player display ID (SP-xxxx) from any UUID or raw ID
+  static String deriveDisplayId(String rawId) {
+    if (rawId.isEmpty) return 'SP-0000';
+    final hex = rawId.replaceAll('-', '');
     final tail = hex.length >= 4 ? hex.substring(hex.length - 4) : hex.padLeft(4, '0');
     final num = int.tryParse(tail, radix: 16) ?? 0;
-    return 'SCR-${(num % 9000 + 1000)}';
+    return 'SP-${(num % 9000 + 1000)}';
   }
 
   Map<String, dynamic> toMap() {
@@ -62,7 +68,10 @@ class UserProfile {
       'gender': gender,
       'profileImagePath': profileImagePath,
       'isLoggedIn': isLoggedIn,
-      // accessToken is intentionally NOT persisted
+      // Persist tokens so authentication and silent refresh work across app restarts
+      if (accessToken != null && accessToken!.isNotEmpty) 'accessToken': accessToken,
+      if (refreshToken != null && refreshToken!.isNotEmpty) 'refreshToken': refreshToken,
+      if (csrfToken != null && csrfToken!.isNotEmpty) 'csrfToken': csrfToken,
     };
   }
 
@@ -82,6 +91,9 @@ class UserProfile {
       gender: map['gender'] ?? 'Prefer not to say',
       profileImagePath: map['profileImagePath'],
       isLoggedIn: map['isLoggedIn'] == true,
+      accessToken: map['accessToken'] as String?,
+      refreshToken: map['refreshToken'] as String?,
+      csrfToken: map['csrfToken'] as String?,
     );
   }
 
@@ -131,8 +143,12 @@ class UserProfile {
     };
   }
 
-  factory UserProfile.fromInsForgeMap(Map<String, dynamic> map,
-      {String? accessToken}) {
+  factory UserProfile.fromInsForgeMap(
+    Map<String, dynamic> map, {
+    String? accessToken,
+    String? refreshToken,
+    String? csrfToken,
+  }) {
     return UserProfile(
       id: map['id']?.toString() ?? '',
       email: map['email']?.toString() ?? '',
@@ -149,6 +165,8 @@ class UserProfile {
       profileImagePath: map['profile_image_url'] as String?,
       isLoggedIn: true,
       accessToken: accessToken,
+      refreshToken: refreshToken,
+      csrfToken: csrfToken,
     );
   }
 
@@ -173,6 +191,8 @@ class UserProfile {
     String? profileImagePath,
     bool? isLoggedIn,
     String? accessToken,
+    String? refreshToken,
+    String? csrfToken,
   }) {
     return UserProfile(
       id: id ?? this.id,
@@ -190,6 +210,8 @@ class UserProfile {
       profileImagePath: profileImagePath ?? this.profileImagePath,
       isLoggedIn: isLoggedIn ?? this.isLoggedIn,
       accessToken: accessToken ?? this.accessToken,
+      refreshToken: refreshToken ?? this.refreshToken,
+      csrfToken: csrfToken ?? this.csrfToken,
     );
   }
 }

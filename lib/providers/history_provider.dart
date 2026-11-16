@@ -1,11 +1,63 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../services/database.dart';
 import '../models/user_profile.dart';
 import '../providers/profile_provider.dart';
+import '../services/insforge_stats_service.dart';
+
+import '../features/match/providers/quick_match_storage.dart';
 
 final databaseServiceProvider = Provider<AppDatabase>((ref) {
   return DatabaseService.instance;
 });
+
+/// Storage Limit Notifier:
+/// - 5 matches max if guest / not logged in
+/// - settings_storage_limit (default 5, up to 50: 5/10/20/50) if logged in
+class StorageLimitNotifier extends Notifier<int> {
+  @override
+  int build() {
+    final profile = ref.watch(profileProvider);
+    if (!profile.isLoggedIn) {
+      _ensureGuestLimitPruned();
+      return 5;
+    }
+    _loadFromPrefs();
+    return 5;
+  }
+
+  Future<void> _ensureGuestLimitPruned() async {
+    await DatabaseService.instance.pruneMatchesToLimit(5);
+    await QuickMatchStorage.pruneToLimit(5);
+  }
+
+  Future<void> _loadFromPrefs() async {
+    final prefs = await SharedPreferences.getInstance();
+    final limit = prefs.getInt('settings_storage_limit') ?? 5;
+    if (state != limit) {
+      state = limit;
+      await DatabaseService.instance.pruneMatchesToLimit(limit);
+      await QuickMatchStorage.pruneToLimit(limit);
+    }
+  }
+
+  Future<void> updateLimit(int newLimit) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt('settings_storage_limit', newLimit);
+    state = newLimit;
+    await DatabaseService.instance.pruneMatchesToLimit(newLimit);
+    await QuickMatchStorage.pruneToLimit(newLimit);
+    await ref.read(matchHistoryProvider.notifier).loadMatches();
+    ref.invalidate(homePersonalStatsProvider);
+    ref.invalidate(recentMatchesProvider);
+    ref.invalidate(liveMatchProvider);
+    ref.invalidate(pendingSyncCountProvider);
+  }
+}
+
+final storageLimitProvider = NotifierProvider<StorageLimitNotifier, int>(
+  StorageLimitNotifier.new,
+);
 
 final matchHistoryProvider = NotifierProvider<MatchHistoryNotifier, List<CricketMatch>>(
   MatchHistoryNotifier.new,
@@ -22,6 +74,8 @@ class MatchHistoryNotifier extends Notifier<List<CricketMatch>> {
   }
 
   Future<void> loadMatches() async {
+    final limit = ref.read(storageLimitProvider);
+    await _db.pruneMatchesToLimit(limit);
     state = await _db.getAllMatches();
   }
 
@@ -30,6 +84,7 @@ class MatchHistoryNotifier extends Notifier<List<CricketMatch>> {
     await loadMatches();
     ref.invalidate(recentMatchesProvider);
     ref.invalidate(liveMatchProvider);
+    ref.invalidate(homePersonalStatsProvider);
   }
 
   Future<void> clearAllMatches() async {
@@ -38,6 +93,7 @@ class MatchHistoryNotifier extends Notifier<List<CricketMatch>> {
     await loadMatches();
     ref.invalidate(recentMatchesProvider);
     ref.invalidate(liveMatchProvider);
+    ref.invalidate(homePersonalStatsProvider);
   }
 }
 
@@ -138,104 +194,99 @@ bool _isTurfMatch(String matchType, String venue) {
       v.contains('box');
 }
 
-/// Watches the current profile and all ball events to compute personal stats.
-/// Runs are counted only for balls where the user was the batter (batterName).
-/// Wickets are counted only for balls where the user was the bowler (bowlerName).
+/// Sourced from InsForge ONLY for signed in players;
+/// sourced from local DB as total scores of the match for unauthorized players.
 final homePersonalStatsProvider = FutureProvider<HomePersonalStats>((ref) async {
-  final db = ref.watch(databaseServiceProvider);
-  // Re-compute whenever match history changes
-  ref.watch(matchHistoryProvider);
-
   final UserProfile profile = ref.watch(profileProvider);
-  final myName = profile.name.trim().toLowerCase();
 
-  // Empty name guard — no profile set up yet
-  if (myName.isEmpty || myName == 'scorely user') {
-    // Fall back to match-aggregate totals so something is shown
-    final allMatches = await db.getAllMatches();
-    final completed = allMatches.where((m) => m.isCompleted);
-
-    int tM = 0, tR = 0, tW = 0, gM = 0, gR = 0, gW = 0;
-    for (final m in completed) {
-      if (_isTurfMatch(m.matchType, m.venue)) {
-        tM++;
-        tR += m.teamARuns + m.teamBRuns;
-        tW += m.teamAWickets + m.teamBWickets;
-      } else {
-        gM++;
-        gR += m.teamARuns + m.teamBRuns;
-        gW += m.teamAWickets + m.teamBWickets;
-      }
-    }
-    return HomePersonalStats(
-      turfMatches: tM, turfRuns: tR, turfWickets: tW,
-      groundMatches: gM, groundRuns: gR, groundWickets: gW,
-    );
+  if (profile.isLoggedIn && profile.id.isNotEmpty) {
+    // SIGNED IN PLAYER: Details come from InsForge ONLY
+    return await InsforgeStatsService.fetchHomeStats(profile.id, profile.name);
   }
 
-  // Load all completed matches — keyed by id
+  // UNAUTHORIZED PLAYER: Sourced from local DB as "total scores of the Match"
+  final db = ref.watch(databaseServiceProvider);
+  ref.watch(matchHistoryProvider);
+  final limit = ref.watch(storageLimitProvider);
+
   final allMatches = await db.getAllMatches();
-  final completedById = <int, CricketMatch>{
-    for (final m in allMatches.where((m) => m.isCompleted)) m.id: m,
-  };
+  final scopedMatches = allMatches.take(limit).toList();
+  // Exclude abandoned matches from Home Personal Stats
+  final completedMatches = scopedMatches
+      .where((m) =>
+          m.isCompleted &&
+          !(m.winnerTeamName?.toLowerCase().contains('abandon') ?? false))
+      .toList();
 
-  if (completedById.isEmpty) return const HomePersonalStats();
+  if (completedMatches.isEmpty) return const HomePersonalStats();
 
-  // Load all ball events for completed matches
-  final allBalls = await (db.select(db.ballEvents)
-        ..where((b) => b.matchId.isIn(completedById.keys.toList())))
-      .get();
-
-  // Track which matches the user actually participated in (to count match-count)
-  final Set<int> turfMatchIds = {};
-  final Set<int> groundMatchIds = {};
-
-  int turfRuns = 0, turfWickets = 0;
-  int groundRuns = 0, groundWickets = 0;
-
-  for (final ball in allBalls) {
-    final match = completedById[ball.matchId];
-    if (match == null) continue;
-
-    final isT = _isTurfMatch(match.matchType, match.venue);
-    final bName = ball.batterName.trim().toLowerCase();
-    final boName = ball.bowlerName.trim().toLowerCase();
-
-    // Count batting runs (exclude wides — batter didn't hit those)
-    final isWide = (ball.extraType ?? '').toLowerCase() == 'wide';
-    if (bName == myName && !isWide) {
-      final r = ball.runs;
-      if (isT) {
-        turfRuns += r;
-        turfMatchIds.add(ball.matchId);
-      } else {
-        groundRuns += r;
-        groundMatchIds.add(ball.matchId);
-      }
-    }
-
-    // Count bowling wickets (stumpings/run-outs credited to fielder, not bowler)
-    if (boName == myName && ball.isWicket) {
-      final wType = (ball.wicketType ?? '').toLowerCase();
-      final bowlerWicket = wType != 'run out' && wType != 'stumped';
-      if (bowlerWicket) {
-        if (isT) {
-          turfWickets++;
-          turfMatchIds.add(ball.matchId);
-        } else {
-          groundWickets++;
-          groundMatchIds.add(ball.matchId);
-        }
-      }
+  int tM = 0, tR = 0, tW = 0, gM = 0, gR = 0, gW = 0;
+  for (final m in completedMatches) {
+    if (_isTurfMatch(m.matchType, m.venue)) {
+      tM++;
+      tR += m.teamARuns + m.teamBRuns;
+      tW += m.teamAWickets + m.teamBWickets;
+    } else {
+      gM++;
+      gR += m.teamARuns + m.teamBRuns;
+      gW += m.teamAWickets + m.teamBWickets;
     }
   }
 
   return HomePersonalStats(
-    turfMatches: turfMatchIds.length,
-    turfRuns: turfRuns,
-    turfWickets: turfWickets,
-    groundMatches: groundMatchIds.length,
-    groundRuns: groundRuns,
-    groundWickets: groundWickets,
+    turfMatches: tM,
+    turfRuns: tR,
+    turfWickets: tW,
+    groundMatches: gM,
+    groundRuns: gR,
+    groundWickets: gW,
   );
 });
+
+/// Profile Scorer Performance:
+/// Sourced from InsForge ONLY for signed in players;
+/// sourced from local DB as total scores of the match for unauthorized players.
+final profileScorerStatsProvider = FutureProvider<InsforgeScorerStats>((ref) async {
+  final UserProfile profile = ref.watch(profileProvider);
+
+  if (profile.isLoggedIn && profile.id.isNotEmpty) {
+    // SIGNED IN PLAYER: Details come from InsForge ONLY
+    return await InsforgeStatsService.fetchScorerStats(profile.id);
+  }
+
+  // UNAUTHORIZED PLAYER: Sourced from local DB "total scores of the Match"
+  final history = ref.watch(matchHistoryProvider);
+  int totalMatches = 0;
+  int totalRunsScored = 0;
+  int totalWicketsTaken = 0;
+  int thisMonthRuns = 0;
+  int thisMonthWickets = 0;
+
+  final now = DateTime.now();
+  for (var match in history) {
+    // Exclude abandoned matches from Scorer Stats
+    if (match.isCompleted &&
+        !(match.winnerTeamName?.toLowerCase().contains('abandon') ?? false)) {
+      totalMatches++;
+      final matchRuns = match.teamARuns + match.teamBRuns;
+      final matchWkts = match.teamAWickets + match.teamBWickets;
+      totalRunsScored += matchRuns;
+      totalWicketsTaken += matchWkts;
+
+      if (match.createdAt.year == now.year && match.createdAt.month == now.month) {
+        thisMonthRuns += matchRuns;
+        thisMonthWickets += matchWkts;
+      }
+    }
+  }
+
+  return InsforgeScorerStats(
+    totalMatches: totalMatches,
+    totalRunsScored: totalRunsScored,
+    totalWicketsTaken: totalWicketsTaken,
+    thisMonthRuns: thisMonthRuns,
+    thisMonthWickets: thisMonthWickets,
+  );
+});
+
+

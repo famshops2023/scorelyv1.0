@@ -83,5 +83,8 @@
 	<string>Scorely uses the camera to scan team QR codes and capture profile photos.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Scorely requires access to your photo library to select team logos and profile pictures.</string>
+	<!-- Google AdMob Application ID (Test ID for iOS development) -->
+	<key>GADApplicationIdentifier</key>
+	<string>ca-app-pub-3940256099942544~1458695190</string>
 </dict>
 </plist>

@@ -102,6 +102,20 @@ class NotificationService {
     );
   }
 
+  /// Scorer handover request notification
+  Future<void> showScorerRequestNotification({
+    required String requesterName,
+    required String matchTitle,
+    String? requestId,
+  }) async {
+    await _show(
+      id: 301,
+      title: '🏏 Scorer Handover Request',
+      body: '$requesterName requested you to score $matchTitle. Tap to accept!',
+      ignorePreference: true,
+    );
+  }
+
   Future<void> _show({
     required int id,
     required String title,

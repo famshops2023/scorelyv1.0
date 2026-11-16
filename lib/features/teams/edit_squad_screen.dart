@@ -74,7 +74,7 @@ class _EditSquadScreenState extends ConsumerState<EditSquadScreen> {
 
   /// Generates the deep-link invite URL for this team.
   String _buildInviteLink() {
-    final code = _team.teamCode.isNotEmpty ? _team.teamCode : _team.id;
+    final code = _team.displayId.isNotEmpty ? _team.displayId : _team.id;
     final name = _teamNameController.text.trim().isNotEmpty
         ? _teamNameController.text.trim()
         : _team.name;
@@ -515,7 +515,7 @@ class _EditSquadScreenState extends ConsumerState<EditSquadScreen> {
         toAdd.add(
           TeamMember(
             id: item.rawId,
-            profileId: item.rawId,
+            profileId: (item.profileId != null && item.profileId!.isNotEmpty) ? item.profileId : item.rawId,
             name: item.name,
             roles: [playerRole],
           ),
@@ -762,33 +762,32 @@ class _EditSquadScreenState extends ConsumerState<EditSquadScreen> {
                     ),
                     const SizedBox(height: 10),
                     // Team Code badge
-                    if (_team.teamCode.isNotEmpty)
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: const Color(
+                          0xFFBA0013,
+                        ).withValues(alpha: 0.10),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
                           color: const Color(
                             0xFFBA0013,
-                          ).withValues(alpha: 0.10),
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(
-                            color: const Color(
-                              0xFFBA0013,
-                            ).withValues(alpha: 0.3),
-                          ),
-                        ),
-                        child: Text(
-                          _team.teamCode,
-                          style: GoogleFonts.inter(
-                            color: AppColors.primary,
-                            fontSize: 11,
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: 1.2,
-                          ),
+                          ).withValues(alpha: 0.3),
                         ),
                       ),
+                      child: Text(
+                        _team.displayId,
+                        style: GoogleFonts.inter(
+                          color: AppColors.primary,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 1.2,
+                        ),
+                      ),
+                    ),
                     const SizedBox(height: 16),
                     _buildTextField('TEAM NAME*', _teamNameController),
                     const SizedBox(height: 12),

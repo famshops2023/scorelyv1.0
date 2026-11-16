@@ -1,28 +1,28 @@
 import 'package:flutter/material.dart';
 import 'package:scorely/core/theme/colors.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:url_launcher/url_launcher.dart';
+import '../../services/ads/consent_service.dart';
 
 class InfoScreen extends StatefulWidget {
   final int initialIndex;
-  
-  const InfoScreen({
-    super.key,
-    this.initialIndex = 0,
-  });
+
+  const InfoScreen({super.key, this.initialIndex = 0});
 
   @override
   State<InfoScreen> createState() => _InfoScreenState();
 }
 
-class _InfoScreenState extends State<InfoScreen> with SingleTickerProviderStateMixin {
+class _InfoScreenState extends State<InfoScreen>
+    with SingleTickerProviderStateMixin {
   late TabController _tabController;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(
-      length: 4, 
-      vsync: this, 
+      length: 4,
+      vsync: this,
       initialIndex: widget.initialIndex,
     );
   }
@@ -58,7 +58,10 @@ class _InfoScreenState extends State<InfoScreen> with SingleTickerProviderStateM
           indicatorWeight: 3,
           labelColor: Colors.white,
           unselectedLabelColor: Colors.white54,
-          labelStyle: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 14),
+          labelStyle: GoogleFonts.inter(
+            fontWeight: FontWeight.w600,
+            fontSize: 14,
+          ),
           tabs: const [
             Tab(text: 'About Us'),
             Tab(text: 'Help / FAQs'),
@@ -72,7 +75,7 @@ class _InfoScreenState extends State<InfoScreen> with SingleTickerProviderStateM
         children: [
           _buildAboutUsTab(),
           _buildFaqTab(),
-          _buildTextTab('Privacy Policy', _privacyText),
+          _buildPrivacyPolicyTab(),
           _buildTextTab('Terms of Service', _termsText),
         ],
       ),
@@ -87,24 +90,22 @@ class _InfoScreenState extends State<InfoScreen> with SingleTickerProviderStateM
         children: [
           const SizedBox(height: 24),
           Container(
-            width: 80,
-            height: 80,
+            width: 88,
+            height: 88,
             decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [AppColors.primary, Color(0xFF7B000D)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              borderRadius: BorderRadius.circular(20),
+              borderRadius: BorderRadius.circular(22),
               boxShadow: [
                 BoxShadow(
-                  color: AppColors.primary.withValues(alpha: 0.3),
-                  blurRadius: 12,
-                  offset: const Offset(0, 4),
+                  color: Colors.black.withValues(alpha: 0.2),
+                  blurRadius: 16,
+                  offset: const Offset(0, 6),
                 ),
               ],
             ),
-            child: const Icon(Icons.sports_cricket, color: Colors.white, size: 40),
+            child: Image.asset(
+              'assets/images/scorely_logo.png',
+              fit: BoxFit.contain,
+            ),
           ),
           const SizedBox(height: 16),
           Text(
@@ -142,9 +143,9 @@ class _InfoScreenState extends State<InfoScreen> with SingleTickerProviderStateM
             ),
           ),
           const SizedBox(height: 32),
-          _buildInfoRow(Icons.email_outlined, 'support@scorely.app'),
+          _buildInfoRow(Icons.email_outlined, 'innomerce89@gmail.com'),
           const SizedBox(height: 12),
-          _buildInfoRow(Icons.language, 'www.scorely.app'),
+          _buildInfoRow(Icons.language, 'www.innomerce.in'),
         ],
       ),
     );
@@ -172,19 +173,28 @@ class _InfoScreenState extends State<InfoScreen> with SingleTickerProviderStateM
     final faqs = [
       {
         'q': 'How do I create a new match?',
-        'a': 'Go to the Home tab and tap the large red "+" button in the bottom right corner, or select "New Match" from the dashboard.'
+        'a':
+            'Go to the Home tab and tap the large red "Bat & Ball" button in the bottom right corner, or select "New Match" from the dashboard.',
       },
       {
         'q': 'Can I edit a player\'s stats after the match?',
-        'a': 'Currently, match statistics are finalized once the match ends to ensure data integrity. However, you can edit player names and roles from the Teams tab.'
+        'a':
+            'Currently, match statistics are finalized once the match ends to ensure data integrity. However, you can edit player names and roles from the Teams tab.',
       },
       {
         'q': 'How does offline scoring work?',
-        'a': 'Scorely stores all data locally on your device. When you regain internet connection and sign in, your data will automatically sync to the cloud.'
+        'a':
+            'Scorely stores all data locally on your device. When you regain internet connection and sign in, your data will automatically sync to the cloud.',
       },
       {
         'q': 'How do I share my team profile?',
-        'a': 'Navigate to your Team Dashboard, tap on your team, and use the QR code or share icon at the top right to invite other players.'
+        'a':
+            'Navigate to your Team Dashboard, tap on your team, and use the QR code or share icon at the top right to invite other players.',
+      },
+      {
+        'q': 'How do I delete my Scorely account?',
+        'a':
+            'You can permanently delete your account and all associated match data at any time. Go to Settings > Danger Zone > Delete Account, and confirm the deletion. This will permanently remove your cloud profile, match records, and local data.',
       },
     ];
 
@@ -236,6 +246,193 @@ class _InfoScreenState extends State<InfoScreen> with SingleTickerProviderStateM
     );
   }
 
+  Widget _buildPrivacyPolicyTab() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Privacy Policy',
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 22,
+              fontWeight: FontWeight.bold,
+              color: AppColors.lightTextPrimary,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.darkSurface.withValues(alpha: 0.05),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: AppColors.primary.withValues(alpha: 0.1),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.privacy_tip_outlined,
+                        color: AppColors.primary,
+                        size: 24,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Official Privacy Policy',
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.lightTextPrimary,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            'innomerce.in/scorely-privacy-policy',
+                            style: GoogleFonts.inter(
+                              fontSize: 12,
+                              color: AppColors.primary,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'Scorely values your privacy and data security. You can review our full, official Privacy Policy online at any time.',
+                  style: GoogleFonts.inter(
+                    fontSize: 14,
+                    height: 1.5,
+                    color: AppColors.lightTextSecondary,
+                  ),
+                ),
+                const SizedBox(height: 20),
+                SizedBox(
+                  width: double.infinity,
+                  height: 48,
+                  child: ElevatedButton.icon(
+                    onPressed: () async {
+                      final uri = Uri.parse(
+                          'https://innomerce.in/scorely-privacy-policy');
+                      try {
+                        await launchUrl(uri,
+                            mode: LaunchMode.externalApplication);
+                      } catch (e) {
+                        debugPrint('Could not launch Privacy Policy: $e');
+                      }
+                    },
+                    icon: const Icon(Icons.open_in_new, size: 18),
+                    label: Text(
+                      'Open Privacy Policy',
+                      style: GoogleFonts.inter(
+                        fontSize: 15,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      elevation: 0,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 20),
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.black12),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Icon(
+                      Icons.shield_outlined,
+                      color: AppColors.primary,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Ad Choices & Consent (Google UMP)',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 15,
+                        color: AppColors.lightTextPrimary,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Users in the European Economic Area (EEA) and the UK can review or change their advertising consent preferences at any time.',
+                  style: GoogleFonts.inter(
+                    fontSize: 13,
+                    color: AppColors.lightTextSecondary,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                OutlinedButton.icon(
+                  onPressed: () async {
+                    final shown = await ConsentService.instance
+                        .showPrivacyOptionsForm();
+                    if (!shown && mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text(
+                            'Consent form is not required in your region. Standard Google Play compliant ads are served.',
+                          ),
+                        ),
+                      );
+                    }
+                  },
+                  icon: const Icon(Icons.tune, size: 18),
+                  label: const Text('Manage Ad Consent'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppColors.primary,
+                    side: const BorderSide(color: AppColors.primary),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildTextTab(String title, String content) {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24),
@@ -263,25 +460,6 @@ class _InfoScreenState extends State<InfoScreen> with SingleTickerProviderStateM
       ),
     );
   }
-
-  static const _privacyText = '''
-Last Updated: August 2026
-
-1. Information We Collect
-We collect information you provide directly to us when you create an account, build a profile, or use our scoring features. This includes your name, email address, and cricket statistics.
-
-2. How We Use Your Information
-We use the information we collect to provide, maintain, and improve our services, including calculating player statistics and syncing your match data across devices.
-
-3. Data Storage
-Your match data is stored locally on your device for offline capabilities. If you sign in, data is synced securely to our cloud infrastructure.
-
-4. Information Sharing
-We do not share your personal information with third parties except as necessary to provide our services or as required by law.
-
-5. Security
-We take reasonable measures to help protect your personal information from loss, theft, misuse, unauthorized access, disclosure, alteration, and destruction.
-''';
 
   static const _termsText = '''
 Last Updated: August 2026

@@ -1,10 +1,14 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:scorely/core/theme/colors.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:uuid/uuid.dart';
 import '../../models/player_setup.dart';
+import '../../models/user_profile.dart';
 import '../../services/database.dart';
+import '../discovery/discovery_screen.dart';
 import 'match_setup_screen.dart';
 import 'match_result_screen.dart';
 import 'providers/quick_match_storage.dart';
@@ -34,9 +38,14 @@ class _CreateTeamScreenState extends ConsumerState<CreateTeamScreen> {
   final _playerInputController = TextEditingController();
   String _searchQuery = '';
 
+  late final String _creationRequestId;
+  late final String _matchId;
+
   @override
   void initState() {
     super.initState();
+    _creationRequestId = widget.initialData?['creationRequestId'] as String? ?? const Uuid().v4();
+    _matchId = widget.initialData?['id'] as String? ?? widget.initialData?['sessionId'] as String? ?? const Uuid().v4();
     if (widget.initialData != null) {
       if (widget.initialData!['teamAName'] != null) {
         _teamAController.text = widget.initialData!['teamAName'].toString();
@@ -59,6 +68,174 @@ class _CreateTeamScreenState extends ConsumerState<CreateTeamScreen> {
     _teamBController.dispose();
     _playerInputController.dispose();
     super.dispose();
+  }
+
+  Future<void> _openDiscoveryForPlayers() async {
+    final result = await context.push<dynamic>(
+      '/discovery',
+      extra: {
+        'isSelectionMode': true,
+        'initialTab': 'Players',
+        'signedUpOnly': false,
+        'multiSelect': true,
+      },
+    );
+
+    if (result != null && mounted) {
+      final List<DiscoveryItem> selected;
+      if (result is List) {
+        selected = result.whereType<DiscoveryItem>().toList();
+      } else if (result is DiscoveryItem) {
+        selected = [result];
+      } else {
+        return;
+      }
+
+      if (selected.isEmpty) return;
+
+      int addedCount = 0;
+      final activePlayers = _activeTeamIndex == 0 ? _teamAPlayers : _teamBPlayers;
+
+      setState(() {
+        for (final item in selected) {
+          if (activePlayers.any((p) =>
+              p.name.toUpperCase() == item.name.toUpperCase() ||
+              (p.profileId != null && p.profileId == item.rawId))) {
+            continue;
+          }
+
+          PlayerRole role = PlayerRole.batsman;
+          if (item.role != null && item.role!.isNotEmpty) {
+            final r = item.role!.toUpperCase();
+            if (r.contains('BOWL')) {
+              role = PlayerRole.bowler;
+            } else if (r.contains('ALL') || r.contains('AR')) {
+              role = PlayerRole.allRounder;
+            } else if (r.contains('WK') || r.contains('WICKET')) {
+              role = PlayerRole.wicketKeeper;
+            }
+          }
+
+          activePlayers.insert(
+            0,
+            PlayerSetupData(
+              name: item.name,
+              role: role,
+              profileId: (item.profileId != null && item.profileId!.isNotEmpty) ? item.profileId : item.rawId,
+              isSignedIn: true,
+            ),
+          );
+          addedCount++;
+        }
+      });
+
+      if (mounted) {
+        if (addedCount > 0) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              backgroundColor: AppColors.successDark,
+              content: Text(
+                '$addedCount player${addedCount == 1 ? '' : 's'} added to ${_activeTeamIndex == 0 ? "Team A" : "Team B"}!',
+              ),
+            ),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Selected player(s) are already in the squad.')),
+          );
+        }
+      }
+    }
+  }
+
+  Future<void> _scanPlayerQR() async {
+    final scanned = await context.push<dynamic>('/team-qr-scanner');
+    if (scanned == null || !mounted) return;
+
+    final raw = scanned.toString().trim();
+    if (raw.isEmpty) return;
+
+    String playerName = '';
+    String? profileId;
+    PlayerRole role = PlayerRole.batsman;
+
+    // Try parsing as JSON from UserProfile.toJson()
+    try {
+      final decoded = jsonDecode(raw);
+      if (decoded is Map<String, dynamic>) {
+        playerName = (decoded['name'] as String? ?? '').trim();
+        profileId = (decoded['id'] ?? decoded['profileId'] ?? decoded['profile_id']) as String?;
+        final playingRoleStr = (decoded['playingRole'] as String? ?? decoded['role'] as String? ?? '').toUpperCase();
+        if (playingRoleStr.contains('BOWL')) {
+          role = PlayerRole.bowler;
+        } else if (playingRoleStr.contains('ALL') || playingRoleStr.contains('AR')) {
+          role = PlayerRole.allRounder;
+        } else if (playingRoleStr.contains('WK') || playingRoleStr.contains('WICKET')) {
+          role = PlayerRole.wicketKeeper;
+        } else {
+          role = PlayerRole.batsman;
+        }
+      }
+    } catch (_) {
+      // Fallback: raw text could be player name, raw UUID, or SP-XXXX ID
+      final trimmed = raw.trim();
+      final isUuid = RegExp(r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$').hasMatch(trimmed);
+      if (isUuid) {
+        profileId = trimmed;
+        playerName = UserProfile.deriveDisplayId(trimmed);
+      } else if (trimmed.toUpperCase().startsWith('SP')) {
+        profileId = trimmed.replaceAll(' ', '').toUpperCase();
+        playerName = trimmed;
+      } else {
+        playerName = trimmed;
+      }
+    }
+
+    if (playerName.isEmpty && profileId != null && profileId.isNotEmpty) {
+      playerName = UserProfile.deriveDisplayId(profileId);
+    }
+
+    if (playerName.isEmpty) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Invalid player QR code.')),
+        );
+      }
+      return;
+    }
+
+    final activePlayers = _activeTeamIndex == 0 ? _teamAPlayers : _teamBPlayers;
+    if (activePlayers.any((p) =>
+        p.name.toUpperCase() == playerName.toUpperCase() ||
+        (profileId != null && p.profileId == profileId))) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('$playerName is already in the squad.')),
+        );
+      }
+      return;
+    }
+
+    setState(() {
+      activePlayers.insert(
+        0,
+        PlayerSetupData(
+          name: playerName,
+          role: role,
+          profileId: profileId,
+          isSignedIn: true,
+        ),
+      );
+    });
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          backgroundColor: AppColors.successDark,
+          content: Text('$playerName added to ${_activeTeamIndex == 0 ? "Team A" : "Team B"}!'),
+        ),
+      );
+    }
   }
 
   void _addPlayer() {
@@ -238,6 +415,9 @@ class _CreateTeamScreenState extends ConsumerState<CreateTeamScreen> {
 
     final data = {
       if (widget.initialData != null) ...widget.initialData!,
+      'id': _matchId,
+      'sessionId': _matchId,
+      'creationRequestId': _creationRequestId,
       'teamAName': _teamAController.text.trim().isEmpty
           ? 'Team A'
           : _teamAController.text.trim(),
@@ -289,7 +469,10 @@ class _CreateTeamScreenState extends ConsumerState<CreateTeamScreen> {
           if (teamAPlayers.isNotEmpty) teamAPlayers.first = teamAPlayers.first.copyWith(isCaptain: true);
           if (teamBPlayers.isNotEmpty) teamBPlayers.first = teamBPlayers.first.copyWith(isCaptain: true);
 
+          final cloneUuid = const Uuid().v4();
           setup = MatchSetupData(
+            id: cloneUuid,
+            matchCode: MatchSetupData.deriveMatchCode(cloneUuid),
             teamAName: teamAName,
             teamBName: teamBName,
             teamAPlayers: teamAPlayers,
@@ -314,10 +497,77 @@ class _CreateTeamScreenState extends ConsumerState<CreateTeamScreen> {
     if (!mounted) return;
 
     if (setup == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('No previous match setup found to clone.'),
-          backgroundColor: AppColors.primary,
+      showDialog(
+        context: context,
+        builder: (dialogCtx) => Dialog(
+          backgroundColor: Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 56,
+                  height: 56,
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withValues(alpha: 0.10),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.history_rounded,
+                    color: AppColors.primary,
+                    size: 28,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'No Previous Setup',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.lightTextPrimary,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  'There is no previous match setup to clone. Play your first match and your squad config will be available here next time.',
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.inter(
+                    fontSize: 14,
+                    color: AppColors.lightTextSecondary,
+                    height: 1.5,
+                  ),
+                ),
+                const SizedBox(height: 24),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () => Navigator.pop(dialogCtx),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      elevation: 0,
+                    ),
+                    child: Text(
+                      'GOT IT',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
       );
       return;
@@ -356,18 +606,7 @@ class _CreateTeamScreenState extends ConsumerState<CreateTeamScreen> {
             context.pop();
           },
         ),
-        actions: [
-          IconButton(
-            tooltip: 'Clone Previous Setup',
-            icon: const Icon(
-              Icons.copy_all_rounded,
-              color: Colors.white,
-              size: 22,
-            ),
-            onPressed: _showCloneDialog,
-          ),
-          const SizedBox(width: 8),
-        ],
+
       ),
       body: Column(
         children: [
@@ -411,6 +650,36 @@ class _CreateTeamScreenState extends ConsumerState<CreateTeamScreen> {
                             fontSize: 24,
                             fontWeight: FontWeight.w700,
                             color: AppColors.lightTextPrimary,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        SizedBox(
+                          width: double.infinity,
+                          height: 44,
+                          child: OutlinedButton.icon(
+                            onPressed: _showCloneDialog,
+                            icon: const Icon(
+                              Icons.copy_all_rounded,
+                              size: 16,
+                            ),
+                            label: Text(
+                              'CLONE PREVIOUS SETUP',
+                              style: GoogleFonts.inter(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w700,
+                                letterSpacing: 0.6,
+                              ),
+                            ),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: AppColors.primary,
+                              side: const BorderSide(
+                                color: AppColors.primary,
+                                width: 1.5,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
                           ),
                         ),
                       ],
@@ -608,14 +877,49 @@ class _CreateTeamScreenState extends ConsumerState<CreateTeamScreen> {
           ),
           Row(
             children: [
+              // 1. SEARCH Button
               InkWell(
-                onTap: () {
-                  // Standard dialog to join or search
-                },
+                onTap: _openDiscoveryForPlayers,
                 borderRadius: BorderRadius.circular(8),
                 child: Container(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
+                    horizontal: 10,
+                    vertical: 8,
+                  ),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFEDE9FE),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(
+                        Icons.search,
+                        color: Color(0xFF5B21B6),
+                        size: 14,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        'SEARCH',
+                        style: GoogleFonts.inter(
+                          color: const Color(0xFF5B21B6),
+                          fontWeight: FontWeight.w700,
+                          fontSize: 10,
+                          letterSpacing: 0.6,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(width: 6),
+
+              // 2. QR Scanner Button
+              InkWell(
+                onTap: _scanPlayerQR,
+                borderRadius: BorderRadius.circular(8),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
                     vertical: 8,
                   ),
                   decoration: BoxDecoration(
@@ -629,9 +933,9 @@ class _CreateTeamScreenState extends ConsumerState<CreateTeamScreen> {
                         color: Color(0xFF3F465F),
                         size: 14,
                       ),
-                      const SizedBox(width: 5),
+                      const SizedBox(width: 4),
                       Text(
-                        'JOIN',
+                        'QR',
                         style: GoogleFonts.inter(
                           color: const Color(0xFF3F465F),
                           fontWeight: FontWeight.w700,
@@ -643,13 +947,15 @@ class _CreateTeamScreenState extends ConsumerState<CreateTeamScreen> {
                   ),
                 ),
               ),
-              const SizedBox(width: 7),
+              const SizedBox(width: 6),
+
+              // 3. ADD Button
               InkWell(
                 onTap: _addPlayer,
                 borderRadius: BorderRadius.circular(8),
                 child: Container(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
+                    horizontal: 10,
                     vertical: 8,
                   ),
                   decoration: BoxDecoration(
@@ -663,7 +969,7 @@ class _CreateTeamScreenState extends ConsumerState<CreateTeamScreen> {
                         color: Colors.white,
                         size: 14,
                       ),
-                      const SizedBox(width: 5),
+                      const SizedBox(width: 4),
                       Text(
                         'ADD',
                         style: GoogleFonts.inter(
@@ -702,12 +1008,18 @@ class _CreateTeamScreenState extends ConsumerState<CreateTeamScreen> {
         },
         onSubmitted: (_) => _addPlayer(),
         decoration: InputDecoration(
-          prefixIcon: const Icon(
-            Icons.search,
-            color: AppColors.lightTextSecondary,
-            size: 19,
+          prefixIcon: Tooltip(
+            message: 'Search registered players',
+            child: IconButton(
+              icon: const Icon(
+                Icons.search,
+                color: AppColors.primary,
+                size: 20,
+              ),
+              onPressed: _openDiscoveryForPlayers,
+            ),
           ),
-          hintText: 'Search players...',
+          hintText: 'Search or type player name...',
           hintStyle: GoogleFonts.inter(
             color: AppColors.lightTextMuted,
             fontSize: 14,
@@ -825,14 +1137,53 @@ class _CreateTeamScreenState extends ConsumerState<CreateTeamScreen> {
                         ),
                         const SizedBox(width: 10),
                         Expanded(
-                          child: Text(
-                            player.name.toUpperCase(),
-                            style: GoogleFonts.plusJakartaSans(
-                              color: AppColors.lightTextPrimary,
-                              fontWeight: FontWeight.w600,
-                              fontSize: 17,
-                            ),
-                            overflow: TextOverflow.ellipsis,
+                          child: Row(
+                            children: [
+                              Flexible(
+                                child: Text(
+                                  player.name.toUpperCase(),
+                                  style: GoogleFonts.plusJakartaSans(
+                                    color: AppColors.lightTextPrimary,
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 17,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                              if (player.isSignedIn) ...[
+                                const SizedBox(width: 8),
+                                Tooltip(
+                                  message: 'Signed-in player',
+                                  child: Container(
+                                    width: 8,
+                                    height: 8,
+                                    decoration: const BoxDecoration(
+                                      color: Color(0xFF10B981),
+                                      shape: BoxShape.circle,
+                                    ),
+                                  ),
+                                ),
+                                if (player.profileId != null && player.profileId!.isNotEmpty) ...[
+                                  const SizedBox(width: 6),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFF10B981).withValues(alpha: 0.12),
+                                      borderRadius: BorderRadius.circular(4),
+                                    ),
+                                    child: Text(
+                                      UserProfile.deriveDisplayId(player.profileId!),
+                                      style: GoogleFonts.inter(
+                                        color: const Color(0xFF059669),
+                                        fontWeight: FontWeight.w700,
+                                        fontSize: 9.5,
+                                        letterSpacing: 0.5,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ],
+                            ],
                           ),
                         ),
                         IconButton(

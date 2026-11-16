@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:scorely/core/theme/colors.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
-import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class TeamQRScannerScreen extends StatefulWidget {
@@ -66,10 +65,10 @@ class _TeamQRScannerScreenState extends State<TeamQRScannerScreen> {
             final String? rawValue = barcode.rawValue;
             if (rawValue != null) {
               setState(() => _isScanning = false);
-              
-              // Depending on what is in the QR code:
-              // For Scorely teams, we generated QR codes in _buildQRBottomSheet like 'team.id'.
-              context.pop(rawValue);
+
+              // Use Navigator.pop to return value — go_router context.pop()
+              // throws GoException when returning a typed value.
+              Navigator.of(context).pop(rawValue);
             }
           }
         },

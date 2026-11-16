@@ -180,6 +180,17 @@ class $MatchesTable extends Matches
     ),
     defaultValue: const Constant(true),
   );
+  static const VerificationMeta _matchAppIdMeta = const VerificationMeta(
+    'matchAppId',
+  );
+  @override
+  late final GeneratedColumn<String> matchAppId = GeneratedColumn<String>(
+    'match_app_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _teamARunsMeta = const VerificationMeta(
     'teamARuns',
   );
@@ -292,6 +303,7 @@ class $MatchesTable extends Matches
     winnerTeamName,
     currentInnings,
     syncPending,
+    matchAppId,
     teamARuns,
     teamAWickets,
     teamAOvers,
@@ -410,6 +422,15 @@ class $MatchesTable extends Matches
         syncPending.isAcceptableOrUnknown(
           data['sync_pending']!,
           _syncPendingMeta,
+        ),
+      );
+    }
+    if (data.containsKey('match_app_id')) {
+      context.handle(
+        _matchAppIdMeta,
+        matchAppId.isAcceptableOrUnknown(
+          data['match_app_id']!,
+          _matchAppIdMeta,
         ),
       );
     }
@@ -544,6 +565,10 @@ class $MatchesTable extends Matches
         DriftSqlType.bool,
         data['${effectivePrefix}sync_pending'],
       )!,
+      matchAppId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}match_app_id'],
+      ),
       teamARuns: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
         data['${effectivePrefix}team_a_runs'],
@@ -602,6 +627,9 @@ class CricketMatch extends DataClass implements Insertable<CricketMatch> {
 
   /// True when this match has NOT yet been successfully pushed to InsForge.
   final bool syncPending;
+
+  /// InsForge-assigned clean match id (e.g. SM-10001) used to manage matches.
+  final String? matchAppId;
   final int teamARuns;
   final int teamAWickets;
   final int teamAOvers;
@@ -625,6 +653,7 @@ class CricketMatch extends DataClass implements Insertable<CricketMatch> {
     this.winnerTeamName,
     required this.currentInnings,
     required this.syncPending,
+    this.matchAppId,
     required this.teamARuns,
     required this.teamAWickets,
     required this.teamAOvers,
@@ -657,6 +686,9 @@ class CricketMatch extends DataClass implements Insertable<CricketMatch> {
     }
     map['current_innings'] = Variable<int>(currentInnings);
     map['sync_pending'] = Variable<bool>(syncPending);
+    if (!nullToAbsent || matchAppId != null) {
+      map['match_app_id'] = Variable<String>(matchAppId);
+    }
     map['team_a_runs'] = Variable<int>(teamARuns);
     map['team_a_wickets'] = Variable<int>(teamAWickets);
     map['team_a_overs'] = Variable<int>(teamAOvers);
@@ -690,6 +722,9 @@ class CricketMatch extends DataClass implements Insertable<CricketMatch> {
           : Value(winnerTeamName),
       currentInnings: Value(currentInnings),
       syncPending: Value(syncPending),
+      matchAppId: matchAppId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(matchAppId),
       teamARuns: Value(teamARuns),
       teamAWickets: Value(teamAWickets),
       teamAOvers: Value(teamAOvers),
@@ -721,6 +756,7 @@ class CricketMatch extends DataClass implements Insertable<CricketMatch> {
       winnerTeamName: serializer.fromJson<String?>(json['winnerTeamName']),
       currentInnings: serializer.fromJson<int>(json['currentInnings']),
       syncPending: serializer.fromJson<bool>(json['syncPending']),
+      matchAppId: serializer.fromJson<String?>(json['matchAppId']),
       teamARuns: serializer.fromJson<int>(json['teamARuns']),
       teamAWickets: serializer.fromJson<int>(json['teamAWickets']),
       teamAOvers: serializer.fromJson<int>(json['teamAOvers']),
@@ -749,6 +785,7 @@ class CricketMatch extends DataClass implements Insertable<CricketMatch> {
       'winnerTeamName': serializer.toJson<String?>(winnerTeamName),
       'currentInnings': serializer.toJson<int>(currentInnings),
       'syncPending': serializer.toJson<bool>(syncPending),
+      'matchAppId': serializer.toJson<String?>(matchAppId),
       'teamARuns': serializer.toJson<int>(teamARuns),
       'teamAWickets': serializer.toJson<int>(teamAWickets),
       'teamAOvers': serializer.toJson<int>(teamAOvers),
@@ -775,6 +812,7 @@ class CricketMatch extends DataClass implements Insertable<CricketMatch> {
     Value<String?> winnerTeamName = const Value.absent(),
     int? currentInnings,
     bool? syncPending,
+    Value<String?> matchAppId = const Value.absent(),
     int? teamARuns,
     int? teamAWickets,
     int? teamAOvers,
@@ -800,6 +838,7 @@ class CricketMatch extends DataClass implements Insertable<CricketMatch> {
         : this.winnerTeamName,
     currentInnings: currentInnings ?? this.currentInnings,
     syncPending: syncPending ?? this.syncPending,
+    matchAppId: matchAppId.present ? matchAppId.value : this.matchAppId,
     teamARuns: teamARuns ?? this.teamARuns,
     teamAWickets: teamAWickets ?? this.teamAWickets,
     teamAOvers: teamAOvers ?? this.teamAOvers,
@@ -839,6 +878,9 @@ class CricketMatch extends DataClass implements Insertable<CricketMatch> {
       syncPending: data.syncPending.present
           ? data.syncPending.value
           : this.syncPending,
+      matchAppId: data.matchAppId.present
+          ? data.matchAppId.value
+          : this.matchAppId,
       teamARuns: data.teamARuns.present ? data.teamARuns.value : this.teamARuns,
       teamAWickets: data.teamAWickets.present
           ? data.teamAWickets.value
@@ -879,6 +921,7 @@ class CricketMatch extends DataClass implements Insertable<CricketMatch> {
           ..write('winnerTeamName: $winnerTeamName, ')
           ..write('currentInnings: $currentInnings, ')
           ..write('syncPending: $syncPending, ')
+          ..write('matchAppId: $matchAppId, ')
           ..write('teamARuns: $teamARuns, ')
           ..write('teamAWickets: $teamAWickets, ')
           ..write('teamAOvers: $teamAOvers, ')
@@ -907,6 +950,7 @@ class CricketMatch extends DataClass implements Insertable<CricketMatch> {
     winnerTeamName,
     currentInnings,
     syncPending,
+    matchAppId,
     teamARuns,
     teamAWickets,
     teamAOvers,
@@ -934,6 +978,7 @@ class CricketMatch extends DataClass implements Insertable<CricketMatch> {
           other.winnerTeamName == this.winnerTeamName &&
           other.currentInnings == this.currentInnings &&
           other.syncPending == this.syncPending &&
+          other.matchAppId == this.matchAppId &&
           other.teamARuns == this.teamARuns &&
           other.teamAWickets == this.teamAWickets &&
           other.teamAOvers == this.teamAOvers &&
@@ -959,6 +1004,7 @@ class MatchesCompanion extends UpdateCompanion<CricketMatch> {
   final Value<String?> winnerTeamName;
   final Value<int> currentInnings;
   final Value<bool> syncPending;
+  final Value<String?> matchAppId;
   final Value<int> teamARuns;
   final Value<int> teamAWickets;
   final Value<int> teamAOvers;
@@ -982,6 +1028,7 @@ class MatchesCompanion extends UpdateCompanion<CricketMatch> {
     this.winnerTeamName = const Value.absent(),
     this.currentInnings = const Value.absent(),
     this.syncPending = const Value.absent(),
+    this.matchAppId = const Value.absent(),
     this.teamARuns = const Value.absent(),
     this.teamAWickets = const Value.absent(),
     this.teamAOvers = const Value.absent(),
@@ -1006,6 +1053,7 @@ class MatchesCompanion extends UpdateCompanion<CricketMatch> {
     this.winnerTeamName = const Value.absent(),
     this.currentInnings = const Value.absent(),
     this.syncPending = const Value.absent(),
+    this.matchAppId = const Value.absent(),
     this.teamARuns = const Value.absent(),
     this.teamAWickets = const Value.absent(),
     this.teamAOvers = const Value.absent(),
@@ -1031,6 +1079,7 @@ class MatchesCompanion extends UpdateCompanion<CricketMatch> {
     Expression<String>? winnerTeamName,
     Expression<int>? currentInnings,
     Expression<bool>? syncPending,
+    Expression<String>? matchAppId,
     Expression<int>? teamARuns,
     Expression<int>? teamAWickets,
     Expression<int>? teamAOvers,
@@ -1055,6 +1104,7 @@ class MatchesCompanion extends UpdateCompanion<CricketMatch> {
       if (winnerTeamName != null) 'winner_team_name': winnerTeamName,
       if (currentInnings != null) 'current_innings': currentInnings,
       if (syncPending != null) 'sync_pending': syncPending,
+      if (matchAppId != null) 'match_app_id': matchAppId,
       if (teamARuns != null) 'team_a_runs': teamARuns,
       if (teamAWickets != null) 'team_a_wickets': teamAWickets,
       if (teamAOvers != null) 'team_a_overs': teamAOvers,
@@ -1081,6 +1131,7 @@ class MatchesCompanion extends UpdateCompanion<CricketMatch> {
     Value<String?>? winnerTeamName,
     Value<int>? currentInnings,
     Value<bool>? syncPending,
+    Value<String?>? matchAppId,
     Value<int>? teamARuns,
     Value<int>? teamAWickets,
     Value<int>? teamAOvers,
@@ -1105,6 +1156,7 @@ class MatchesCompanion extends UpdateCompanion<CricketMatch> {
       winnerTeamName: winnerTeamName ?? this.winnerTeamName,
       currentInnings: currentInnings ?? this.currentInnings,
       syncPending: syncPending ?? this.syncPending,
+      matchAppId: matchAppId ?? this.matchAppId,
       teamARuns: teamARuns ?? this.teamARuns,
       teamAWickets: teamAWickets ?? this.teamAWickets,
       teamAOvers: teamAOvers ?? this.teamAOvers,
@@ -1161,6 +1213,9 @@ class MatchesCompanion extends UpdateCompanion<CricketMatch> {
     if (syncPending.present) {
       map['sync_pending'] = Variable<bool>(syncPending.value);
     }
+    if (matchAppId.present) {
+      map['match_app_id'] = Variable<String>(matchAppId.value);
+    }
     if (teamARuns.present) {
       map['team_a_runs'] = Variable<int>(teamARuns.value);
     }
@@ -1205,6 +1260,7 @@ class MatchesCompanion extends UpdateCompanion<CricketMatch> {
           ..write('winnerTeamName: $winnerTeamName, ')
           ..write('currentInnings: $currentInnings, ')
           ..write('syncPending: $syncPending, ')
+          ..write('matchAppId: $matchAppId, ')
           ..write('teamARuns: $teamARuns, ')
           ..write('teamAWickets: $teamAWickets, ')
           ..write('teamAOvers: $teamAOvers, ')
@@ -2822,6 +2878,7 @@ typedef $$MatchesTableCreateCompanionBuilder =
       Value<String?> winnerTeamName,
       Value<int> currentInnings,
       Value<bool> syncPending,
+      Value<String?> matchAppId,
       Value<int> teamARuns,
       Value<int> teamAWickets,
       Value<int> teamAOvers,
@@ -2847,6 +2904,7 @@ typedef $$MatchesTableUpdateCompanionBuilder =
       Value<String?> winnerTeamName,
       Value<int> currentInnings,
       Value<bool> syncPending,
+      Value<String?> matchAppId,
       Value<int> teamARuns,
       Value<int> teamAWickets,
       Value<int> teamAOvers,
@@ -2933,6 +2991,11 @@ class $$MatchesTableFilterComposer
 
   ColumnFilters<bool> get syncPending => $composableBuilder(
     column: $table.syncPending,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get matchAppId => $composableBuilder(
+    column: $table.matchAppId,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -3056,6 +3119,11 @@ class $$MatchesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get matchAppId => $composableBuilder(
+    column: $table.matchAppId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<int> get teamARuns => $composableBuilder(
     column: $table.teamARuns,
     builder: (column) => ColumnOrderings(column),
@@ -3162,6 +3230,11 @@ class $$MatchesTableAnnotationComposer
     builder: (column) => column,
   );
 
+  GeneratedColumn<String> get matchAppId => $composableBuilder(
+    column: $table.matchAppId,
+    builder: (column) => column,
+  );
+
   GeneratedColumn<int> get teamARuns =>
       $composableBuilder(column: $table.teamARuns, builder: (column) => column);
 
@@ -3244,6 +3317,7 @@ class $$MatchesTableTableManager
                 Value<String?> winnerTeamName = const Value.absent(),
                 Value<int> currentInnings = const Value.absent(),
                 Value<bool> syncPending = const Value.absent(),
+                Value<String?> matchAppId = const Value.absent(),
                 Value<int> teamARuns = const Value.absent(),
                 Value<int> teamAWickets = const Value.absent(),
                 Value<int> teamAOvers = const Value.absent(),
@@ -3267,6 +3341,7 @@ class $$MatchesTableTableManager
                 winnerTeamName: winnerTeamName,
                 currentInnings: currentInnings,
                 syncPending: syncPending,
+                matchAppId: matchAppId,
                 teamARuns: teamARuns,
                 teamAWickets: teamAWickets,
                 teamAOvers: teamAOvers,
@@ -3292,6 +3367,7 @@ class $$MatchesTableTableManager
                 Value<String?> winnerTeamName = const Value.absent(),
                 Value<int> currentInnings = const Value.absent(),
                 Value<bool> syncPending = const Value.absent(),
+                Value<String?> matchAppId = const Value.absent(),
                 Value<int> teamARuns = const Value.absent(),
                 Value<int> teamAWickets = const Value.absent(),
                 Value<int> teamAOvers = const Value.absent(),
@@ -3315,6 +3391,7 @@ class $$MatchesTableTableManager
                 winnerTeamName: winnerTeamName,
                 currentInnings: currentInnings,
                 syncPending: syncPending,
+                matchAppId: matchAppId,
                 teamARuns: teamARuns,
                 teamAWickets: teamAWickets,
                 teamAOvers: teamAOvers,

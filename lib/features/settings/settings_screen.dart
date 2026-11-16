@@ -10,6 +10,11 @@ import '../../providers/profile_provider.dart';
 import '../../services/sound_service.dart';
 import '../../services/wakelock_service.dart';
 import '../../services/notification_service.dart';
+import '../../services/ads/consent_service.dart';
+import '../../services/ongoing_match_service.dart';
+import '../match/providers/quick_match_storage.dart';
+import '../match/providers/pending_matches_provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
@@ -34,12 +39,19 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
   Future<void> _loadSettings() async {
     final prefs = await SharedPreferences.getInstance();
+    final isLoggedIn = ref.read(profileProvider).isLoggedIn;
+    int limit = prefs.getInt('settings_storage_limit') ?? 5;
+    if (!isLoggedIn && limit > 5) {
+      limit = 5;
+      await prefs.setInt('settings_storage_limit', 5);
+      await ref.read(storageLimitProvider.notifier).updateLimit(5);
+    }
     setState(() {
       _notifications = prefs.getBool('settings_notifications') ?? true;
       _soundEffects = prefs.getBool('settings_sound_effects') ?? true;
       _keepAwake = prefs.getBool('settings_keep_awake') ?? true;
       _defaultOvers = prefs.getInt('settings_default_overs') ?? 20;
-      _storageLimit = prefs.getInt('settings_storage_limit') ?? 5;
+      _storageLimit = limit;
       _isLoading = false;
     });
   }
@@ -69,6 +81,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     setState(() {
       updateState(value);
     });
+    if (key == 'settings_storage_limit') {
+      await ref.read(storageLimitProvider.notifier).updateLimit(value);
+    }
   }
 
   void _showClearHistoryConfirmation(BuildContext context) {
@@ -184,9 +199,287 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   }
 
   void _showDeleteAccountConfirmation(BuildContext context) {
+    bool isDeleting = false;
+
     showDialog(
       context: context,
-      builder: (context) {
+      barrierDismissible: false,
+      builder: (dialogContext) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return Dialog(
+              backgroundColor: AppColors.surface,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(24.0),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 56,
+                      height: 56,
+                      decoration: const BoxDecoration(
+                        color: Color(0x1AFF4444),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(Icons.person_remove_outlined,
+                          color: Color(0xFFFF4444), size: 28),
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Delete Account?',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.onBackground,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      'Are you sure you really want to delete your account? All your profile information, cloud data, and match history will be permanently deleted. This action cannot be undone.',
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.inter(
+                        fontSize: 14,
+                        color: AppColors.secondary,
+                        height: 1.5,
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextButton(
+                            onPressed: isDeleting
+                                ? null
+                                : () => Navigator.pop(dialogContext),
+                            style: TextButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                            child: Text(
+                              'CANCEL',
+                              style: GoogleFonts.inter(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                                color: isDeleting
+                                    ? Colors.grey
+                                    : AppColors.onBackground,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: ElevatedButton(
+                            onPressed: isDeleting
+                                ? null
+                                : () async {
+                                    setDialogState(() => isDeleting = true);
+                                    try {
+                                      // 1. Delete account from InsForge auth & database
+                                      await ref
+                                          .read(profileProvider.notifier)
+                                          .deleteAccount();
+
+                                      // 2. Clear all match history
+                                      await ref
+                                          .read(matchHistoryProvider.notifier)
+                                          .clearAllMatches();
+
+                                      // 3. Clear active ongoing match snapshots
+                                      await OngoingMatchService.instance
+                                          .clearAllSnapshots();
+
+                                      // 4. Clear pending & quick match cache
+                                      await QuickMatchStorage.clearAll();
+                                      await ref
+                                          .read(
+                                              pendingMatchesProvider.notifier)
+                                          .clearAll();
+
+                                      if (dialogContext.mounted) {
+                                        Navigator.pop(dialogContext);
+                                      }
+
+                                      if (context.mounted) {
+                                        context.go('/');
+                                        ScaffoldMessenger.of(context)
+                                            .showSnackBar(
+                                          SnackBar(
+                                            content: Text(
+                                              'Your account and all associated data have been permanently deleted.',
+                                              style: GoogleFonts.inter(
+                                                color: Colors.white,
+                                                fontWeight: FontWeight.w600,
+                                              ),
+                                            ),
+                                            backgroundColor:
+                                                const Color(0xFFFF4444),
+                                            behavior:
+                                                SnackBarBehavior.floating,
+                                            shape: RoundedRectangleBorder(
+                                                borderRadius:
+                                                    BorderRadius.circular(10)),
+                                            duration:
+                                                const Duration(seconds: 4),
+                                          ),
+                                        );
+                                      }
+                                    } catch (e) {
+                                      if (dialogContext.mounted) {
+                                        setDialogState(
+                                            () => isDeleting = false);
+                                        ScaffoldMessenger.of(dialogContext)
+                                            .showSnackBar(
+                                          SnackBar(
+                                            content: Text(
+                                              'Error deleting account: $e',
+                                              style: GoogleFonts.inter(
+                                                  color: Colors.white),
+                                            ),
+                                            backgroundColor: Colors.redAccent,
+                                          ),
+                                        );
+                                      }
+                                    }
+                                  },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFFFF4444),
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              elevation: 0,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                            child: isDeleting
+                                ? const SizedBox(
+                                    width: 20,
+                                    height: 20,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      valueColor:
+                                          AlwaysStoppedAnimation<Color>(
+                                              Colors.white),
+                                    ),
+                                  )
+                                : Text(
+                                    'DELETE',
+                                    style: GoogleFonts.plusJakartaSans(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void _showStorageLimitSelector(BuildContext context) {
+    final isLoggedIn = ref.read(profileProvider).isLoggedIn;
+
+    showDialog(
+      context: context,
+      builder: (dialogCtx) {
+        return SimpleDialog(
+          backgroundColor: AppColors.surface,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: Text(
+            'Keep Match History Limit',
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: AppColors.onBackground,
+            ),
+          ),
+          children: [5, 10, 20, 50].map((limit) {
+            final bool isAllowed = isLoggedIn || limit == 5;
+            final bool isSelected = _storageLimit == limit;
+
+            return SimpleDialogOption(
+              onPressed: () {
+                Navigator.pop(dialogCtx);
+                if (!isAllowed) {
+                  _showSignInRequiredDialog(context, requestedLimit: limit);
+                } else {
+                  _updateIntSetting('settings_storage_limit', limit, (v) => _storageLimit = v);
+                }
+              },
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8.0),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      children: [
+                        Text(
+                          '$limit Matches',
+                          style: AppTypography.bodyMedium.copyWith(
+                            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                            color: isSelected
+                                ? AppColors.primary
+                                : (isAllowed
+                                    ? AppColors.onBackground
+                                    : AppColors.secondary.withValues(alpha: 0.45)),
+                          ),
+                        ),
+                        if (!isAllowed) ...[
+                          const SizedBox(width: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: AppColors.primary.withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(Icons.lock_outline, size: 12, color: AppColors.primary),
+                                const SizedBox(width: 3),
+                                Text(
+                                  'SIGN IN',
+                                  style: GoogleFonts.inter(
+                                    fontSize: 9,
+                                    fontWeight: FontWeight.w700,
+                                    color: AppColors.primary,
+                                    letterSpacing: 0.5,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                    if (isSelected)
+                      const Icon(Icons.check, color: AppColors.primary, size: 20),
+                  ],
+                ),
+              ),
+            );
+          }).toList(),
+        );
+      },
+    );
+  }
+
+  void _showSignInRequiredDialog(BuildContext context, {required int requestedLimit}) {
+    showDialog(
+      context: context,
+      builder: (dialogCtx) {
         return Dialog(
           backgroundColor: AppColors.surface,
           shape: RoundedRectangleBorder(
@@ -200,15 +493,19 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 Container(
                   width: 56,
                   height: 56,
-                  decoration: const BoxDecoration(
-                    color: Color(0x1AFF4444),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withValues(alpha: 0.12),
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(Icons.person_remove_outlined, color: Color(0xFFFF4444), size: 28),
+                  child: const Icon(
+                    Icons.lock_person_outlined,
+                    color: AppColors.primary,
+                    size: 28,
+                  ),
                 ),
                 const SizedBox(height: 16),
                 Text(
-                  'Delete Account?',
+                  'Sign In Required',
                   style: GoogleFonts.plusJakartaSans(
                     fontSize: 20,
                     fontWeight: FontWeight.w700,
@@ -217,7 +514,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  'Are you sure you really want to delete your account? The entire data will get lost permanently and this cannot be undone.',
+                  'Guest users can keep a maximum of 5 matches in offline history.\n\nSign in to Scorely to unlock storing up to $requestedLimit matches and sync them across your devices.',
                   textAlign: TextAlign.center,
                   style: GoogleFonts.inter(
                     fontSize: 14,
@@ -229,19 +526,22 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 Row(
                   children: [
                     Expanded(
-                      child: TextButton(
-                        onPressed: () => Navigator.pop(context),
-                        style: TextButton.styleFrom(
+                      child: OutlinedButton(
+                        onPressed: () => Navigator.pop(dialogCtx),
+                        style: OutlinedButton.styleFrom(
                           padding: const EdgeInsets.symmetric(vertical: 14),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
+                          side: BorderSide(
+                            color: AppColors.onBackground.withValues(alpha: 0.2),
+                          ),
                         ),
                         child: Text(
                           'CANCEL',
-                          style: GoogleFonts.inter(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
                             color: AppColors.onBackground,
                           ),
                         ),
@@ -251,26 +551,34 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     Expanded(
                       child: ElevatedButton(
                         onPressed: () async {
-                          await ref.read(profileProvider.notifier).signOut();
+                          Navigator.pop(dialogCtx);
+                          await context.push('/login');
                           if (context.mounted) {
-                            Navigator.pop(context);
-                            context.go('/');
+                            final profile = ref.read(profileProvider);
+                            if (profile.isLoggedIn) {
+                              await _updateIntSetting(
+                                'settings_storage_limit',
+                                requestedLimit,
+                                (v) => _storageLimit = v,
+                              );
+                            }
                           }
                         },
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFFFF4444),
+                          backgroundColor: AppColors.primary,
                           foregroundColor: Colors.white,
                           padding: const EdgeInsets.symmetric(vertical: 14),
-                          elevation: 0,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
+                          elevation: 0,
                         ),
                         child: Text(
-                          'DELETE',
+                          'SIGN IN',
                           style: GoogleFonts.plusJakartaSans(
-                            fontSize: 14,
+                            fontSize: 12,
                             fontWeight: FontWeight.w700,
+                            color: Colors.white,
                           ),
                         ),
                       ),
@@ -285,53 +593,30 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     );
   }
 
-  void _showStorageLimitSelector(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (context) {
-        return SimpleDialog(
-          backgroundColor: AppColors.surface,
-          title: Text(
-            'Keep Match History Limit',
-            style: GoogleFonts.plusJakartaSans(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: AppColors.onBackground,
-            ),
-          ),
-          children: [5, 10, 25, 50].map((limit) {
-            return SimpleDialogOption(
-              onPressed: () {
-                Navigator.pop(context);
-                _updateIntSetting('settings_storage_limit', limit, (v) => _storageLimit = v);
-              },
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 8.0),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      '$limit Matches',
-                      style: AppTypography.bodyMedium.copyWith(
-                        fontWeight: _storageLimit == limit ? FontWeight.bold : FontWeight.normal,
-                        color: _storageLimit == limit ? AppColors.primary : AppColors.onBackground,
-                      ),
-                    ),
-                    if (_storageLimit == limit)
-                      const Icon(Icons.check, color: AppColors.primary, size: 20),
-                  ],
-                ),
-              ),
-            );
-          }).toList(),
-        );
-      },
-    );
+  Future<void> _handlePrivacyAndAdChoices(BuildContext context) async {
+    // 1. If Google UMP consent form is required (EU/EEA), display it.
+    final shown = await ConsentService.instance.showPrivacyOptionsForm();
+    if (shown) return;
+
+    if (!context.mounted) return;
+
+    // 2. In non-EEA regions, offline, or test environments where UMP form isn't required,
+    // redirect to the Privacy Policy & Ad Choices section in InfoScreen.
+    context.push('/info', extra: 2);
   }
 
   @override
   Widget build(BuildContext context) {
     final matches = ref.watch(matchHistoryProvider);
+    final profile = ref.watch(profileProvider);
+
+    if (!profile.isLoggedIn && _storageLimit > 5) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && _storageLimit > 5) {
+          _updateIntSetting('settings_storage_limit', 5, (v) => _storageLimit = v);
+        }
+      });
+    }
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -489,6 +774,27 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     'Version',
                     '1.0.0 (Elite Pitch Edition)',
                     onTap: () {},
+                  ),
+                  const Divider(height: 1, color: Colors.white12),
+                  _buildActionTile(
+                    Icons.policy_outlined,
+                    'Privacy Policy',
+                    'Review our privacy practices online',
+                    onTap: () async {
+                      try {
+                        final uri = Uri.parse('https://innomerce.in/scorely-privacy-policy');
+                        await launchUrl(uri, mode: LaunchMode.externalApplication);
+                      } catch (e) {
+                        debugPrint('Could not launch Privacy Policy: $e');
+                      }
+                    },
+                  ),
+                  const Divider(height: 1, color: Colors.white12),
+                  _buildActionTile(
+                    Icons.privacy_tip_outlined,
+                    'Privacy & Ad Choices',
+                    'Manage advertising consent and data preferences',
+                    onTap: () => _handlePrivacyAndAdChoices(context),
                   ),
                 ]),
                 const SizedBox(height: 32),

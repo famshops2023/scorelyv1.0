@@ -11,8 +11,28 @@ import 'tabs/batting_tab.dart';
 import 'tabs/bowling_tab.dart';
 import 'tabs/fielding_tab.dart';
 
+import '../../models/user_profile.dart';
+import '../../models/player_pro_rating.dart';
+import '../../services/ratings/player_rating_repository.dart';
+import '../../services/sync_manager.dart';
+
 class PerformanceScreen extends ConsumerStatefulWidget {
-  const PerformanceScreen({super.key});
+  final bool isReadOnly;
+  final String? customTitle;
+  final String? targetPlayerUserId;
+  final String? targetPlayerName;
+  final String? targetPlayerRole;
+  final String? targetPlayerLocation;
+
+  const PerformanceScreen({
+    super.key,
+    this.isReadOnly = false,
+    this.customTitle,
+    this.targetPlayerUserId,
+    this.targetPlayerName,
+    this.targetPlayerRole,
+    this.targetPlayerLocation,
+  });
 
   @override
   ConsumerState<PerformanceScreen> createState() => _PerformanceScreenState();
@@ -27,13 +47,247 @@ class _PerformanceScreenState extends ConsumerState<PerformanceScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: _tabs.length, vsync: this);
+    _tabController = TabController(
+      length: widget.isReadOnly ? 1 : _tabs.length,
+      vsync: this,
+    );
+    if (!widget.isReadOnly) {
+      _tabController.addListener(_handleTabChange);
+    }
+  }
+
+  void _handleTabChange() {
+    if (_tabController.indexIsChanging) return;
+    final isLoggedIn = ref.read(profileProvider).isLoggedIn;
+    if (!isLoggedIn && _tabController.index != 0) {
+      final targetIndex = _tabController.index;
+      _tabController.index = 0;
+      if (mounted) {
+        _showSignInRequiredDialog(context, sectionName: _tabs[targetIndex]);
+      }
+    }
   }
 
   @override
   void dispose() {
+    _tabController.removeListener(_handleTabChange);
     _tabController.dispose();
     super.dispose();
+  }
+
+  List<Widget> _buildTabs(bool isLoggedIn) {
+    return _tabs.asMap().entries.map((entry) {
+      final index = entry.key;
+      final title = entry.value;
+
+      if (isLoggedIn || index == 0) {
+        return Tab(text: title);
+      }
+
+      return Tab(
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              title,
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: AppColors.lightTextMuted,
+              ),
+            ),
+            const SizedBox(width: 4),
+            const Icon(
+              Icons.lock_outline,
+              size: 13,
+              color: AppColors.lightTextMuted,
+            ),
+          ],
+        ),
+      );
+    }).toList();
+  }
+
+  void _showSignInRequiredDialog(BuildContext context, {String sectionName = 'Detailed Performance'}) {
+    showDialog(
+      context: context,
+      builder: (dialogCtx) {
+        return Dialog(
+          backgroundColor: Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 56,
+                  height: 56,
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withValues(alpha: 0.12),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.lock_person_outlined,
+                    color: AppColors.primary,
+                    size: 28,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'Sign In Required',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.lightTextPrimary,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  'Guest users can view career Overview stats.\n\nSign in to Scorely to unlock in-depth $sectionName performance breakdowns, charts, and device sync.',
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.inter(
+                    fontSize: 14,
+                    color: AppColors.lightTextSecondary,
+                    height: 1.5,
+                  ),
+                ),
+                const SizedBox(height: 24),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () => Navigator.pop(dialogCtx),
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          side: const BorderSide(
+                            color: Color(0xFFDDE0E8),
+                          ),
+                        ),
+                        child: Text(
+                          'CANCEL',
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.lightTextPrimary,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () async {
+                          Navigator.pop(dialogCtx);
+                          await context.push('/login');
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primary,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          elevation: 0,
+                        ),
+                        child: Text(
+                          'SIGN IN',
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildLockedTab(BuildContext context, String sectionName) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(24),
+      child: Center(
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 36),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: const Color(0xFFECEEF1)),
+            boxShadow: const [
+              BoxShadow(
+                color: Color.fromRGBO(0, 0, 0, 0.04),
+                blurRadius: 16,
+                offset: Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 64,
+                height: 64,
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.lock_person_outlined,
+                  color: AppColors.primary,
+                  size: 32,
+                ),
+              ),
+              const SizedBox(height: 20),
+              Text(
+                'Unlock $sectionName Analytics',
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.lightTextPrimary,
+                ),
+              ),
+              const SizedBox(height: 10),
+              Text(
+                'Sign in to your Scorely account to view in-depth $sectionName performance breakdowns, averages, wagon wheels, and milestones.',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.inter(
+                  fontSize: 14,
+                  color: AppColors.lightTextSecondary,
+                  height: 1.5,
+                ),
+              ),
+              const SizedBox(height: 24),
+              ElevatedButton.icon(
+                onPressed: () => _showSignInRequiredDialog(context, sectionName: sectionName),
+                icon: const Icon(Icons.login, size: 18),
+                label: const Text('Sign In to Enable'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  elevation: 0,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   void _sharePerformance(CareerStats stats, String name, MatchCategory category) {
@@ -53,14 +307,35 @@ Powered by Scorely''';
 
   @override
   Widget build(BuildContext context) {
-    final profile = ref.watch(profileProvider);
+    final rawProfile = ref.watch(profileProvider);
+    final effectiveProfile = widget.targetPlayerUserId != null
+        ? UserProfile(
+            id: widget.targetPlayerUserId!,
+            name: widget.targetPlayerName ?? 'Scorely Player',
+            role: widget.targetPlayerRole ?? 'Batsman',
+            playingRole: widget.targetPlayerRole ?? 'Batsman',
+            location: widget.targetPlayerLocation ?? '',
+            isLoggedIn: true,
+          )
+        : rawProfile;
+
     final selectedCategory = ref.watch(performanceCategoryProvider);
     final statsAsync = ref.watch(careerStatsProvider);
     final countsAsync = ref.watch(matchCategoryCountsProvider);
 
+    final screenTitle = widget.customTitle ??
+        (widget.isReadOnly ? 'PERFORMANCE DETAILS' : 'MY PERFORMANCE');
+
     return Scaffold(
       backgroundColor: AppColors.lightBg,
-      body: NestedScrollView(
+      body: RefreshIndicator(
+        onRefresh: () async {
+          await ref.read(syncManagerProvider).pullCompletedMatchesFromRemote();
+          ref.invalidate(careerStatsForCategoryProvider);
+          ref.invalidate(careerStatsProvider);
+          ref.invalidate(matchCategoryCountsProvider);
+        },
+        child: NestedScrollView(
         headerSliverBuilder: (context, innerBoxScrolled) => [
           SliverAppBar(
             expandedHeight: 0,
@@ -74,7 +349,7 @@ Powered by Scorely''';
               onPressed: () => context.pop(),
             ),
             title: Text(
-              'MY PERFORMANCE',
+              screenTitle,
               style: GoogleFonts.plusJakartaSans(
                 fontSize: 18,
                 fontWeight: FontWeight.w800,
@@ -83,12 +358,13 @@ Powered by Scorely''';
               ),
             ),
             actions: [
-              statsAsync.whenOrNull(
-                data: (stats) => IconButton(
-                  icon: const Icon(Icons.share_outlined, color: AppColors.primary),
-                  onPressed: () => _sharePerformance(stats, profile.name, selectedCategory),
-                ),
-              ) ?? const SizedBox.shrink(),
+              if (!widget.isReadOnly)
+                statsAsync.whenOrNull(
+                  data: (stats) => IconButton(
+                    icon: const Icon(Icons.share_outlined, color: AppColors.primary),
+                    onPressed: () => _sharePerformance(stats, effectiveProfile.name, selectedCategory),
+                  ),
+                ) ?? const SizedBox.shrink(),
             ],
             bottom: PreferredSize(
               preferredSize: const Size.fromHeight(1),
@@ -96,43 +372,62 @@ Powered by Scorely''';
             ),
           ),
           SliverToBoxAdapter(
-            child: _buildProfileHeader(profile, statsAsync, selectedCategory, countsAsync),
+            child: _buildProfileHeader(effectiveProfile, statsAsync, selectedCategory, countsAsync),
           ),
-          SliverPersistentHeader(
-            pinned: true,
-            delegate: _TabBarDelegate(
-              TabBar(
-                controller: _tabController,
-                tabs: _tabs.map((t) => Tab(text: t)).toList(),
-                labelStyle: GoogleFonts.plusJakartaSans(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w700,
+          if (!widget.isReadOnly)
+            SliverPersistentHeader(
+              pinned: true,
+              delegate: _TabBarDelegate(
+                TabBar(
+                  controller: _tabController,
+                  tabs: _buildTabs(effectiveProfile.isLoggedIn),
+                  onTap: (index) {
+                    if (!effectiveProfile.isLoggedIn && index != 0) {
+                      _tabController.index = 0;
+                      _showSignInRequiredDialog(context, sectionName: _tabs[index]);
+                    }
+                  },
+                  labelStyle: GoogleFonts.plusJakartaSans(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                  ),
+                  unselectedLabelStyle: GoogleFonts.inter(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                  ),
+                  labelColor: AppColors.primary,
+                  unselectedLabelColor: AppColors.lightTextSecondary,
+                  indicatorColor: AppColors.primary,
+                  indicatorWeight: 3,
+                  indicatorSize: TabBarIndicatorSize.label,
+                  dividerColor: const Color(0xFFECEEF1),
+                  isScrollable: true,
+                  tabAlignment: TabAlignment.start,
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
                 ),
-                unselectedLabelStyle: GoogleFonts.inter(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w500,
-                ),
-                labelColor: AppColors.primary,
-                unselectedLabelColor: AppColors.lightTextSecondary,
-                indicatorColor: AppColors.primary,
-                indicatorWeight: 3,
-                indicatorSize: TabBarIndicatorSize.label,
-                dividerColor: const Color(0xFFECEEF1),
-                isScrollable: true,
-                tabAlignment: TabAlignment.start,
-                padding: const EdgeInsets.symmetric(horizontal: 8),
               ),
             ),
-          ),
         ],
-        body: TabBarView(
-          controller: _tabController,
-          children: [
-            OverviewTab(statsAsync: statsAsync, profile: profile),
-            BattingTab(statsAsync: statsAsync),
-            BowlingTab(statsAsync: statsAsync),
-            FieldingTab(statsAsync: statsAsync),
-          ],
+        body: widget.isReadOnly
+            ? OverviewTab(statsAsync: statsAsync, profile: effectiveProfile)
+            : TabBarView(
+                controller: _tabController,
+                physics: effectiveProfile.isLoggedIn
+                    ? const PageScrollPhysics()
+                    : const NeverScrollableScrollPhysics(),
+                children: [
+                  OverviewTab(statsAsync: statsAsync, profile: effectiveProfile),
+                  effectiveProfile.isLoggedIn
+                      ? BattingTab(statsAsync: statsAsync)
+                      : _buildLockedTab(context, 'Batting'),
+                  effectiveProfile.isLoggedIn
+                      ? BowlingTab(statsAsync: statsAsync)
+                      : _buildLockedTab(context, 'Bowling'),
+                  effectiveProfile.isLoggedIn
+                      ? FieldingTab(statsAsync: statsAsync)
+                      : _buildLockedTab(context, 'Fielding'),
+                ],
+              ),
         ),
       ),
     );
@@ -216,28 +511,7 @@ Powered by Scorely''';
                       ),
                     ),
                     const SizedBox(height: 6),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFF0F0F5),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(Icons.workspace_premium, size: 12, color: AppColors.lightTextSecondary),
-                          const SizedBox(width: 4),
-                          Text(
-                            'Career Stats',
-                            style: GoogleFonts.inter(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w600,
-                              color: AppColors.lightTextSecondary,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
+                    _buildProRatingBadge(profile, selectedCategory),
                   ],
                 ),
               ),
@@ -365,6 +639,104 @@ Powered by Scorely''';
       ),
     );
   }
+
+  Widget _buildProRatingBadge(UserProfile profile, MatchCategory selectedCategory) {
+    final matchType = selectedCategory == MatchCategory.turfBox ? 'turf' : 'ground';
+
+    return FutureBuilder<PlayerProRating>(
+      future: PlayerRatingRepository.getPlayerRating(
+        playerUserId: profile.id,
+        matchType: matchType,
+        playerName: profile.name,
+        playerRole: profile.playingRole.isNotEmpty ? profile.playingRole : profile.role,
+      ),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF0F0F5),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const SizedBox(
+                  width: 10,
+                  height: 10,
+                  child: CircularProgressIndicator(strokeWidth: 1.5, color: AppColors.primary),
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  'Loading...',
+                  style: GoogleFonts.inter(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.lightTextSecondary,
+                  ),
+                ),
+              ],
+            ),
+          );
+        }
+
+        final rating = snapshot.data;
+        if (rating == null || !rating.hasRating || rating.matchesPlayed == 0) {
+          return Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF0F0F5),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.star_outline_rounded, size: 12, color: AppColors.lightTextSecondary),
+                const SizedBox(width: 4),
+                Text(
+                  'No ${matchType == 'turf' ? 'Turf' : 'Ground'} rating yet',
+                  style: GoogleFonts.inter(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.lightTextSecondary,
+                  ),
+                ),
+              ],
+            ),
+          );
+        }
+
+        // Format: ★ 742 | ELITE | 💥 Hard Hitter
+        final topBadgeStr = (rating.topBadge != null && rating.topBadge!.isNotEmpty)
+            ? ' | ${rating.topBadge}'
+            : '';
+
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+          decoration: BoxDecoration(
+            color: const Color(0xFFFFF9E6),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: const Color(0xFFFFD54F)),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.star_rounded, size: 14, color: Color(0xFFFFB800)),
+              const SizedBox(width: 4),
+              Text(
+                '${rating.rating} | ${rating.level.toUpperCase()}$topBadgeStr',
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w800,
+                  color: const Color(0xFF795548),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
 }
 
 class _RoleBadge extends StatelessWidget {
@@ -417,5 +789,5 @@ class _TabBarDelegate extends SliverPersistentHeaderDelegate {
   double get minExtent => tabBar.preferredSize.height + 1;
 
   @override
-  bool shouldRebuild(covariant _TabBarDelegate oldDelegate) => false;
+  bool shouldRebuild(covariant _TabBarDelegate oldDelegate) => true;
 }

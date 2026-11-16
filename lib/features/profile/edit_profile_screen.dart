@@ -20,6 +20,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
 
   late TextEditingController _nameController;
   late TextEditingController _locationController;
+  late TextEditingController _stateController;
   late TextEditingController _dobController;
   late TextEditingController _mobileController;
   late TextEditingController _roleController;
@@ -60,7 +61,10 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     final profile = ref.read(profileProvider);
     _profileId = profile.id;
     _nameController = TextEditingController(text: profile.name);
-    _locationController = TextEditingController(text: profile.location);
+    // Parse city and state from location string (stored as "City, State" or "City")
+    final locationParts = profile.location.split(',');
+    _locationController = TextEditingController(text: locationParts.isNotEmpty ? locationParts[0].trim() : '');
+    _stateController = TextEditingController(text: locationParts.length > 1 ? locationParts[1].trim() : '');
     _dobController = TextEditingController(text: profile.dateOfBirth);
     _mobileController = TextEditingController(text: profile.mobile);
     _roleController = TextEditingController(text: profile.role);
@@ -83,6 +87,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   void dispose() {
     _nameController.dispose();
     _locationController.dispose();
+    _stateController.dispose();
     _dobController.dispose();
     _mobileController.dispose();
     _roleController.dispose();
@@ -135,11 +140,15 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   void _saveProfile() {
     if (_formKey.currentState!.validate()) {
       final current = ref.read(profileProvider);
+      // Combine city + state into location string
+      final city = _locationController.text.trim();
+      final state = _stateController.text.trim();
+      final combinedLocation = state.isNotEmpty ? '$city, $state' : city;
       final updatedProfile = current.copyWith(
         id: _profileId.isNotEmpty ? _profileId : current.id,
         name: _nameController.text.trim(),
         role: _roleController.text.trim(),
-        location: _locationController.text.trim(),
+        location: combinedLocation,
         association: _associationController.text.trim(),
         dateOfBirth: _dobController.text.trim(),
         mobile: _mobileController.text.trim(),
@@ -301,10 +310,31 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                         ),
                         const SizedBox(height: 16),
                         _buildInputField(
-                          label: 'LOCATION',
+                          label: 'LOCATION (CITY)',
                           controller: _locationController,
-                          hintText: 'E.g. Mumbai, India',
+                          hintText: 'E.g. Mumbai',
                           prefixIcon: Icons.location_on_outlined,
+                          isRequired: true,
+                          validator: (val) {
+                            if (val == null || val.trim().isEmpty) {
+                              return 'City / Location is required';
+                            }
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: 16),
+                        _buildInputField(
+                          label: 'STATE',
+                          controller: _stateController,
+                          hintText: 'E.g. Maharashtra',
+                          prefixIcon: Icons.map_outlined,
+                          isRequired: true,
+                          validator: (val) {
+                            if (val == null || val.trim().isEmpty) {
+                              return 'State is required';
+                            }
+                            return null;
+                          },
                         ),
                         const SizedBox(height: 16),
                         _buildInputField(
@@ -507,18 +537,34 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     IconData? prefixIcon,
     IconData? suffixIcon,
     bool readOnly = false,
+    bool isRequired = false,
     VoidCallback? onTap,
     TextInputType? keyboardType,
+    String? Function(String?)? validator,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          label,
-          style: GoogleFonts.inter(
-            fontSize: 12,
-            fontWeight: FontWeight.bold,
-            color: const Color(0xFF5D3F3C),
+        RichText(
+          text: TextSpan(
+            text: label,
+            style: GoogleFonts.inter(
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+              color: const Color(0xFF5D3F3C),
+            ),
+            children: isRequired
+                ? [
+                    const TextSpan(
+                      text: ' *',
+                      style: TextStyle(
+                        color: Colors.red,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ]
+                : [],
           ),
         ),
         const SizedBox(height: 8),
@@ -527,6 +573,8 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
           readOnly: readOnly,
           onTap: onTap,
           keyboardType: keyboardType,
+          validator: validator,
+          autovalidateMode: AutovalidateMode.onUserInteraction,
           style: GoogleFonts.inter(
             fontSize: 14,
             color: AppColors.lightTextPrimary,
@@ -546,6 +594,18 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(8),
               borderSide: BorderSide.none,
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: BorderSide.none,
+            ),
+            errorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: const BorderSide(color: Colors.red, width: 1.5),
+            ),
+            focusedErrorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: const BorderSide(color: Colors.red, width: 1.5),
             ),
             prefixIcon: prefixIcon != null
                 ? Icon(prefixIcon, color: AppColors.lightTextSecondary, size: 20)

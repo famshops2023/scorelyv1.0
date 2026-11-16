@@ -11,6 +11,7 @@ import '../../models/match_result_data.dart';
 import '../teams/providers/teams_provider.dart';
 import 'match_setup_screen.dart';
 import 'helpers/live_match_promo.dart';
+import '../../services/ads/interstitial_ad_service.dart';
 
 import 'package:share_plus/share_plus.dart';
 
@@ -90,20 +91,48 @@ class _MatchResultScreenState extends ConsumerState<MatchResultScreen> {
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.white, size: 24),
           onPressed: () {
-            if (context.canPop()) {
-              context.pop();
-            } else {
-              context.go('/home');
-            }
+            InterstitialAdService.instance.showAdIfEligible(
+              onDismissed: () {
+                if (context.mounted) {
+                  if (context.canPop()) {
+                    context.pop();
+                  } else {
+                    context.go('/home');
+                  }
+                }
+              },
+            );
           },
         ),
-        title: Text(
-          '${widget.resultData.team1Name} vs ${widget.resultData.team2Name}',
-          style: GoogleFonts.inter(
-            color: Colors.white,
-            fontSize: 18,
-            fontWeight: FontWeight.w700,
-          ),
+        title: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              '${widget.resultData.team1Name} vs ${widget.resultData.team2Name}',
+              style: GoogleFonts.inter(
+                color: Colors.white,
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(height: 2),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Text(
+                widget.resultData.displayMatchId,
+                style: GoogleFonts.inter(
+                  color: const Color(0xFF68D391),
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.5,
+                ),
+              ),
+            ),
+          ],
         ),
       ),
       body: Stack(
@@ -281,7 +310,7 @@ class _MatchResultScreenState extends ConsumerState<MatchResultScreen> {
                                 },
                               )
                             : Image.asset(
-                                'assets/images/scorely_icon.png',
+                                'assets/images/scorely_logo.png',
                                 fit: BoxFit.cover,
                                 errorBuilder: (context, error, stackTrace) {
                                   return const Icon(Icons.sports_cricket, size: 64, color: Colors.grey);
@@ -965,7 +994,11 @@ class _CloneSetupDialogState extends State<CloneSetupDialog> {
       }
     } else {
       // Both unchecked: go home
-      navContext.go('/home');
+      InterstitialAdService.instance.showAdIfEligible(
+        onDismissed: () {
+          navContext.go('/home');
+        },
+      );
     }
   }
 }

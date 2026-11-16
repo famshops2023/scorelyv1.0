@@ -29,7 +29,26 @@ class OverviewTab extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(16, 20, 16, 40),
       children: [
         // 4-card quick stats grid
-        _buildSectionTitle('CAREER OVERVIEW'),
+        _buildSectionTitle(profile.isLoggedIn ? 'CAREER OVERVIEW' : 'MATCH TOTALS OVERVIEW'),
+        if (!profile.isLoggedIn) ...[
+          const SizedBox(height: 4),
+          Row(
+            children: [
+              const Icon(Icons.info_outline, size: 12, color: AppColors.lightTextMuted),
+              const SizedBox(width: 5),
+              Expanded(
+                child: Text(
+                  'Showing total match scores. Sign in for personal stats.',
+                  style: GoogleFonts.inter(
+                    fontSize: 11,
+                    color: AppColors.lightTextMuted,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
         const SizedBox(height: 12),
         GridView.count(
           crossAxisCount: 2,

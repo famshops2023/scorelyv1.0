@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/user_profile.dart';
 import '../providers/profile_provider.dart';
+import '../services/insforge_stats_service.dart';
 import 'history_provider.dart';
 
 /// Performance match category for filtering career stats
@@ -104,8 +105,6 @@ final performanceCategoryProvider =
   PerformanceCategoryNotifier.new,
 );
 
-
-
 bool _isMatchInCategory(String matchType, String venue, MatchCategory category) {
   final t = matchType.toLowerCase().trim();
   final v = venue.toLowerCase().trim();
@@ -117,244 +116,63 @@ bool _isMatchInCategory(String matchType, String venue, MatchCategory category) 
   return category == MatchCategory.turfBox ? isTurf : !isTurf;
 }
 
-/// Computes personal CareerStats for a given MatchCategory.
-/// All batting stats come from BallEvent rows where batterName == profile.name.
-/// All bowling stats come from BallEvent rows where bowlerName == profile.name.
+/// Sourced from InsForge ONLY for signed in players;
+/// sourced from local DB as total scores of the match for unauthorized players.
 final careerStatsForCategoryProvider =
     FutureProvider.family<CareerStats, MatchCategory>((ref, category) async {
+  final UserProfile profile = ref.watch(profileProvider);
+
+  if (profile.isLoggedIn && profile.id.isNotEmpty) {
+    // SIGNED IN PLAYER: Details come from InsForge ONLY
+    return await InsforgeStatsService.fetchCareerStats(
+      profile.id,
+      profile.name,
+      category,
+    );
+  }
+
+  // UNAUTHORIZED PLAYER: Sourced from local DB as "total scores of the Match"
   final db = ref.watch(databaseServiceProvider);
   ref.watch(matchHistoryProvider);
+  final limit = ref.watch(storageLimitProvider);
 
-  final UserProfile profile = ref.watch(profileProvider);
-  final myName = profile.name.trim().toLowerCase();
-
-  // 1. Get all completed matches filtered by category
+  // 1. Get all completed matches filtered by category and scoped by storage limit
   final allMatches = await db.getAllMatches();
-  final categoryMatches = allMatches
-      .where((m) => m.isCompleted && _isMatchInCategory(m.matchType, m.venue, category))
+  final scopedMatches = allMatches.take(limit).toList();
+  final categoryMatches = scopedMatches
+      .where((m) =>
+          m.isCompleted &&
+          !(m.winnerTeamName?.toLowerCase().contains('abandon') ?? false) &&
+          _isMatchInCategory(m.matchType, m.venue, category))
       .toList();
 
   if (categoryMatches.isEmpty) return const CareerStats();
 
-  final matchIdSet = categoryMatches.map((m) => m.id).toList();
-
-  // 2. Load all ball events for those matches
-  final allBalls = await (db.select(db.ballEvents)
-        ..where((b) => b.matchId.isIn(matchIdSet)))
-      .get();
-
-  // 3. Separate personal batting / bowling balls
-  final myBatBalls = allBalls
-      .where((b) =>
-          b.batterName.trim().toLowerCase() == myName &&
-          (b.extraType ?? '').toLowerCase() != 'wide')
-      .toList();
-
-  final myBowlBalls = allBalls
-      .where((b) => b.bowlerName.trim().toLowerCase() == myName)
-      .toList();
-
-  // 4. Matches where the user actually participated
-  final participatedIds = <int>{
-    ...myBatBalls.map((b) => b.matchId),
-    ...myBowlBalls.map((b) => b.matchId),
-  };
-
-  // If no profile name set yet (first launch), fall back to match aggregates
-  final bool noProfile = myName.isEmpty || myName == 'scorely user';
-  if (noProfile) {
-    int tRuns = 0, tWickets = 0, tFours = 0, tSixes = 0, tBalls = 0;
-    int tOvers = 0, tConceded = 0;
-    for (final m in categoryMatches) {
-      tRuns += m.teamARuns + m.teamBRuns;
-      tWickets += m.teamAWickets + m.teamBWickets;
-      tOvers += m.teamAOvers + m.teamBOvers;
-      tConceded += m.teamBRuns;
-    }
-    return CareerStats(
-      matches: categoryMatches.length,
-      totalRuns: tRuns,
-      totalWickets: tWickets,
-      fours: tFours,
-      sixes: tSixes,
-      ballsFaced: tBalls,
-      overs: tOvers,
-      runsConceded: tConceded,
-    );
-  }
-
-  // ── BATTING ────────────────────────────────────────────────────────────────
-
-  // Group batting balls by match+innings to compute per-innings scores
-  final Map<String, List<dynamic>> batInnings = {};
-  for (final b in myBatBalls) {
-    final key = '${b.matchId}_${b.inningsNumber}';
-    batInnings.putIfAbsent(key, () => []).add(b);
-  }
-
-  final totalRuns = myBatBalls.fold(0, (s, b) => s + b.runs);
-  final ballsFaced = myBatBalls.length;
-  final totalFours = myBatBalls.where((b) => b.runs == 4).length;
-  final totalSixes = myBatBalls.where((b) => b.runs == 6).length;
-
-  int innings = 0;
-  int highScore = 0;
-  int fifties = 0;
-  int hundreds = 0;
-  int ducks = 0;
+  int tRuns = 0, tWickets = 0, tFours = 0, tSixes = 0, tBalls = 0;
+  int tOvers = 0, tConceded = 0;
   final List<double> runsPerMatch = [];
-  final List<Map<String, dynamic>> recentInnings = [];
-
-  for (final entry in batInnings.entries) {
-    innings++;
-    final balls = entry.value;
-    final ir = balls.fold<int>(0, (s, b) => s + (b.runs as int));
-    final ib = balls.length;
-    final ifours = balls.where((b) => b.runs == 4).length;
-    final isixes = balls.where((b) => b.runs == 6).length;
-    final sr = ib > 0 ? (ir / ib * 100) : 0.0;
-
-    if (ir > highScore) highScore = ir;
-    if (ir >= 100) {
-      hundreds++;
-    } else if (ir >= 50) {
-      fifties++;
-    }
-    if (ir == 0) ducks++;
-
-    runsPerMatch.add(ir.toDouble());
-    recentInnings.add({
-      'runs': ir,
-      'balls': ib,
-      'fours': ifours,
-      'sixes': isixes,
-      'sr': sr,
-      'notOut': false,
-    });
-  }
-
-  // ── BOWLING ────────────────────────────────────────────────────────────────
-
-  bool isBowlerWicket(dynamic b) {
-    if (!b.isWicket) return false;
-    final wt = (b.wicketType ?? '').toLowerCase();
-    return wt != 'run out' && wt != 'stumped';
-  }
-
-  final Map<String, List<dynamic>> bowlInnings = {};
-  for (final b in myBowlBalls) {
-    final key = '${b.matchId}_${b.inningsNumber}';
-    bowlInnings.putIfAbsent(key, () => []).add(b);
-  }
-
-  final totalWickets = myBowlBalls.where(isBowlerWicket).length;
-  final runsConceded = myBowlBalls.fold(0, (s, b) => s + b.runs);
-  final legalBowlBalls = myBowlBalls
-      .where((b) {
-        final et = (b.extraType ?? '').toLowerCase();
-        return et != 'wide' && et != 'noball';
-      })
-      .length;
-  final overs = legalBowlBalls ~/ 6;
-  final wides = myBowlBalls
-      .where((b) => (b.extraType ?? '').toLowerCase() == 'wide')
-      .length;
-  final noBalls = myBowlBalls
-      .where((b) => (b.extraType ?? '').toLowerCase() == 'noball')
-      .length;
-
-  int bestWickets = 0;
-  int bestConceded = 9999;
-  int fourWicketHauls = 0;
-  int fiveWicketHauls = 0;
   final List<double> wicketsPerMatch = [];
-  final List<Map<String, dynamic>> recentBowling = [];
 
-  for (final entry in bowlInnings.entries) {
-    final balls = entry.value;
-    final iw = balls.where(isBowlerWicket).length;
-    final ir = balls.fold<int>(0, (s, b) => s + (b.runs as int));
-    final legalB = balls
-        .where((b) {
-          final et = (b.extraType ?? '').toLowerCase();
-          return et != 'wide' && et != 'noball';
-        })
-        .length;
-    final inningsOvers = legalB ~/ 6;
-
-    if (iw >= 5) {
-      fiveWicketHauls++;
-    } else if (iw >= 4) {
-      fourWicketHauls++;
-    }
-
-    if (iw > bestWickets || (iw == bestWickets && ir < bestConceded)) {
-      bestWickets = iw;
-      bestConceded = ir;
-    }
-
-    wicketsPerMatch.add(iw.toDouble());
-    recentBowling.add({
-      'overs': inningsOvers,
-      'maidens': 0,
-      'runs': ir,
-      'wickets': iw,
-    });
+  for (final m in categoryMatches) {
+    final mRuns = m.teamARuns + m.teamBRuns;
+    final mWkts = m.teamAWickets + m.teamBWickets;
+    tRuns += mRuns;
+    tWickets += mWkts;
+    tOvers += m.teamAOvers + m.teamBOvers;
+    tConceded += m.teamBRuns;
+    runsPerMatch.add(mRuns.toDouble());
+    wicketsPerMatch.add(mWkts.toDouble());
   }
-
-  // ── RECENT FORM ────────────────────────────────────────────────────────────
-  final matchById = <int, dynamic>{
-    for (final m in categoryMatches) m.id: m,
-  };
-  final recentForm = <String>[];
-  for (final id in participatedIds.take(5)) {
-    final m = matchById[id];
-    if (m == null) continue;
-    final won = (m.winnerTeamName as String?) != null &&
-        (m.winnerTeamName as String).isNotEmpty;
-    // Simple heuristic: if teamA won and player batted for them
-    final playerBattedInMatch = myBatBalls.any((b) => b.matchId == id);
-    String form;
-    if (!won) {
-      form = 'D';
-    } else if (playerBattedInMatch) {
-      form = m.teamARuns > m.teamBRuns ? 'W' : 'L';
-    } else {
-      form = 'L';
-    }
-    recentForm.add(form);
-  }
-
-  final bestBowling = bestWickets > 0 ? '$bestWickets/$bestConceded' : '-';
 
   return CareerStats(
-    matches: participatedIds.length,
-    totalRuns: totalRuns,
-    totalWickets: totalWickets,
-    catches: 0,
-    recentForm: recentForm,
-    innings: innings,
-    notOuts: 0,
-    highScore: highScore,
-    fifties: fifties,
-    hundreds: hundreds,
-    fours: totalFours,
-    sixes: totalSixes,
-    ballsFaced: ballsFaced,
-    ducks: ducks,
-    recentInnings: recentInnings.take(5).toList(),
-    overs: overs,
-    maidens: 0,
-    runsConceded: runsConceded,
-    wides: wides,
-    noBalls: noBalls,
-    fourWicketHauls: fourWicketHauls,
-    fiveWicketHauls: fiveWicketHauls,
-    bestBowling: bestBowling,
-    recentBowling: recentBowling.take(5).toList(),
-    catchesTaken: 0,
-    runOutInvolvements: 0,
-    stumpings: 0,
+    matches: categoryMatches.length,
+    totalRuns: tRuns,
+    totalWickets: tWickets,
+    fours: tFours,
+    sixes: tSixes,
+    ballsFaced: tBalls,
+    overs: tOvers,
+    runsConceded: tConceded,
     runsPerMatch: runsPerMatch,
     wicketsPerMatch: wicketsPerMatch,
   );

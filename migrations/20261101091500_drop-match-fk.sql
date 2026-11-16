@@ -1,0 +1,1 @@
+ALTER TABLE public.scorer_assignment_requests DROP CONSTRAINT IF EXISTS scorer_assignment_requests_match_id_fkey;

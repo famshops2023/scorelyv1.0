@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:scorely/core/theme/colors.dart';
 import '../../../providers/history_provider.dart';
+import '../../../providers/profile_provider.dart';
 
 class HomeStatsSection extends ConsumerWidget {
   const HomeStatsSection({super.key});
@@ -69,14 +70,14 @@ class HomeStatsSection extends ConsumerWidget {
     );
   }
 
-  Widget _buildStatRow(String matches, String runs, String wickets) {
+  Widget _buildStatRow(String matches, String runs, String wickets, {bool isPersonal = true}) {
     return Row(
       children: [
         Expanded(child: _buildStatCard('MATCHES', matches)),
         const SizedBox(width: 10),
-        Expanded(child: _buildStatCard('MY RUNS', runs)),
+        Expanded(child: _buildStatCard(isPersonal ? 'MY RUNS' : 'TOTAL RUNS', runs)),
         const SizedBox(width: 10),
-        Expanded(child: _buildStatCard('MY WKTS', wickets)),
+        Expanded(child: _buildStatCard(isPersonal ? 'MY WKTS' : 'TOTAL WKTS', wickets)),
       ],
     );
   }
@@ -84,6 +85,8 @@ class HomeStatsSection extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final statsAsync = ref.watch(homePersonalStatsProvider);
+    final profile = ref.watch(profileProvider);
+    final isLoggedIn = profile.isLoggedIn;
 
     final labelBold = GoogleFonts.inter(
       fontSize: 12,
@@ -95,29 +98,52 @@ class HomeStatsSection extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Section header with "PERSONAL" badge
+        // Section header with "PERSONAL" / "MATCH TOTALS" badge
         Row(
           children: [
-            Text('MY STATS', style: labelBold),
+            Text('STATS', style: labelBold),
             const SizedBox(width: 8),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
               decoration: BoxDecoration(
-                color: AppColors.primary.withValues(alpha: 0.1),
+                color: (isLoggedIn ? AppColors.primary : AppColors.lightTextSecondary)
+                    .withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(4),
               ),
               child: Text(
-                'PERSONAL',
+                isLoggedIn ? 'PERSONAL' : 'MATCH TOTALS',
                 style: GoogleFonts.inter(
                   fontSize: 9,
                   fontWeight: FontWeight.w700,
-                  color: AppColors.primary,
+                  color: isLoggedIn ? AppColors.primary : AppColors.lightTextSecondary,
                   letterSpacing: 0.5,
                 ),
               ),
             ),
           ],
         ),
+
+        // Explanatory note visible ONLY to unauthorized players
+        if (!isLoggedIn) ...[
+          const SizedBox(height: 6),
+          Row(
+            children: [
+              const Icon(Icons.info_outline, size: 12, color: AppColors.lightTextMuted),
+              const SizedBox(width: 5),
+              Expanded(
+                child: Text(
+                  'Showing total runs of the matches. Sign in for personal stats.',
+                  style: GoogleFonts.inter(
+                    fontSize: 11,
+                    color: AppColors.lightTextMuted,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+
         const SizedBox(height: 14),
 
         // Turf / Box row
@@ -125,11 +151,12 @@ class HomeStatsSection extends ConsumerWidget {
         const SizedBox(height: 10),
         statsAsync.when(
           loading: _buildShimmerRow,
-          error: (e, st) => _buildStatRow('–', '–', '–'),
+          error: (e, st) => _buildStatRow('–', '–', '–', isPersonal: isLoggedIn),
           data: (s) => _buildStatRow(
             '${s.turfMatches}',
             '${s.turfRuns}',
             '${s.turfWickets}',
+            isPersonal: isLoggedIn,
           ),
         ),
 
@@ -140,11 +167,12 @@ class HomeStatsSection extends ConsumerWidget {
         const SizedBox(height: 10),
         statsAsync.when(
           loading: _buildShimmerRow,
-          error: (e, st) => _buildStatRow('–', '–', '–'),
+          error: (e, st) => _buildStatRow('–', '–', '–', isPersonal: isLoggedIn),
           data: (s) => _buildStatRow(
             '${s.groundMatches}',
             '${s.groundRuns}',
             '${s.groundWickets}',
+            isPersonal: isLoggedIn,
           ),
         ),
       ],

@@ -26,6 +26,9 @@ class Matches extends Table {
   /// True when this match has NOT yet been successfully pushed to InsForge.
   BoolColumn get syncPending => boolean().withDefault(const Constant(true))();
 
+  /// InsForge-assigned clean match id (e.g. SM-10001) used to manage matches.
+  TextColumn get matchAppId => text().nullable()();
+
   IntColumn get teamARuns => integer().withDefault(const Constant(0))();
   IntColumn get teamAWickets => integer().withDefault(const Constant(0))();
   IntColumn get teamAOvers => integer().withDefault(const Constant(0))();
@@ -88,7 +91,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(db_connect.connect());
 
   @override
-  int get schemaVersion => 4;
+  int get schemaVersion => 5;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -107,6 +110,9 @@ class AppDatabase extends _$AppDatabase {
       if (from < 4) {
         await m.addColumn(matches, matches.syncPending);
       }
+      if (from < 5) {
+        await m.addColumn(matches, matches.matchAppId);
+      }
     },
   );
 
@@ -114,6 +120,52 @@ class AppDatabase extends _$AppDatabase {
   Future<void> markSynced(int matchId) {
     return (update(matches)..where((m) => m.id.equals(matchId)))
         .write(const MatchesCompanion(syncPending: Value(false)));
+  }
+
+  /// Store the InsForge-assigned clean match id (e.g. SM-10001) on a local match.
+  /// Only assigns when [matchAppId] is not already set, so the id stays stable.
+  Future<void> markMatchAppId(int matchId, String matchAppId) async {
+    final match = await (select(matches)..where((m) => m.id.equals(matchId))).getSingleOrNull();
+    if (match == null || match.matchAppId != null) return;
+    await (update(matches)..where((m) => m.id.equals(matchId)))
+        .write(MatchesCompanion(matchAppId: Value(matchAppId)));
+  }
+
+  /// Returns the next sequential match app id (SM-10001, SM-10002, ...) based on
+  /// existing match_app_id values in the local matches table. The first match
+  /// always starts at SM-10001 and increments by 1 for every new match,
+  /// regardless of team, player, scorer, or creator.
+  Future<String> nextMatchAppId() async {
+    final all = await (select(matches)).get();
+    int max = 10000; // base so the first match becomes SM-10001
+    for (final m in all) {
+      final id = m.matchAppId;
+      if (id != null && id.startsWith('SM-')) {
+        final n = int.tryParse(id.substring(3));
+        if (n != null && n > max) max = n;
+      }
+    }
+    return 'SM-${max + 1}';
+  }
+
+  /// Look up a local match by its InsForge-assigned [matchAppId] (e.g. SM-10001).
+  /// Returns null if no such match exists or its matchAppId is null.
+  Future<CricketMatch?> getMatchByMatchAppId(String matchAppId) async {
+    return (select(matches)..where((m) => m.matchAppId.equals(matchAppId)))
+        .getSingleOrNull();
+  }
+
+  /// Find an existing live (not completed) match with the given team names.
+  /// Used to detect duplicates before creating a new live match at toss time.
+  /// matchTitle is stored as "Team A vs Team B", so we check both orderings.
+  Future<List<CricketMatch>> getLiveMatchByTeams(
+      String teamAName, String teamBName) async {
+    return (select(matches)
+          ..where((m) =>
+              m.isCompleted.equals(false) &
+              ((m.matchTitle.contains(teamAName) & m.matchTitle.contains(teamBName)) |
+                  (m.matchTitle.contains(teamBName) & m.matchTitle.contains(teamAName)))))
+        .get();
   }
 
   /// Get all completed matches that still need to be pushed to InsForge.
@@ -125,7 +177,10 @@ class AppDatabase extends _$AppDatabase {
 
   Future<List<CricketMatch>> getAllMatches() {
     return (select(matches)
-          ..orderBy([(t) => OrderingTerm.desc(t.createdAt)]))
+          ..orderBy([
+            (t) => OrderingTerm.desc(t.createdAt),
+            (t) => OrderingTerm.desc(t.id),
+          ]))
         .get();
   }
 
@@ -135,6 +190,29 @@ class AppDatabase extends _$AppDatabase {
   Future<void> deleteMatchById(int id) async {
     await (delete(matches)..where((m) => m.id.equals(id))).go();
     await (delete(ballEvents)..where((b) => b.matchId.equals(id))).go();
+  }
+
+  /// Prunes completed matches to keep only the most recent [limit] matches (FIFO).
+  /// Associated ball events are removed to free local storage. Active in-progress matches are preserved.
+  Future<int> pruneMatchesToLimit(int limit) async {
+    if (limit <= 0) return 0;
+    final completed = await (select(matches)
+          ..where((m) => m.isCompleted)
+          ..orderBy([
+            (t) => OrderingTerm.desc(t.createdAt),
+            (t) => OrderingTerm.desc(t.id),
+          ]))
+        .get();
+
+    if (completed.length > limit) {
+      final toDelete = completed.sublist(limit);
+      final idsToDelete = toDelete.map((m) => m.id).toList();
+
+      await (delete(ballEvents)..where((b) => b.matchId.isIn(idsToDelete))).go();
+      await (delete(matches)..where((m) => m.id.isIn(idsToDelete))).go();
+      return idsToDelete.length;
+    }
+    return 0;
   }
 }
 

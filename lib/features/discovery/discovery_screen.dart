@@ -4,14 +4,17 @@ import 'package:scorely/core/theme/colors.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:http/http.dart' as http;
 
 import '../../core/config/insforge_config.dart';
 import '../teams/providers/teams_provider.dart';
+import '../../services/ratings/player_rating_repository.dart';
+import '../../models/player_pro_rating.dart';
+import '../../models/user_profile.dart';
 
 class DiscoveryItem {
-  final String id;        // Human-readable code (team_code or display ID)
-  final String rawId;     // Actual database UUID for navigation
+  final String id; // Human-readable code (team_code or display ID)
+  final String rawId; // Actual database UUID for navigation
+  final String? profileId; // InsForge profile UUID for signed-in players
   final String name;
   final String type; // 'team', 'player', 'tournament'
   final String location;
@@ -20,6 +23,7 @@ class DiscoveryItem {
   DiscoveryItem({
     required this.id,
     String? rawId,
+    this.profileId,
     required this.name,
     required this.type,
     required this.location,
@@ -30,8 +34,8 @@ class DiscoveryItem {
 class DiscoveryScreen extends ConsumerStatefulWidget {
   final bool isSelectionMode;
   final String? initialTab;
-  final bool signedUpOnly;  // if true, only show players who have a profile_id
-  final bool multiSelect;   // if true, allow selecting multiple players
+  final bool signedUpOnly; // if true, only show players who have a profile_id
+  final bool multiSelect; // if true, allow selecting multiple players
 
   const DiscoveryScreen({
     super.key,
@@ -54,6 +58,7 @@ class _DiscoveryScreenState extends ConsumerState<DiscoveryScreen> {
 
   bool _isLoading = true;
   List<DiscoveryItem> _fetchedItems = [];
+  Map<String, Map<String, PlayerProRating>> _playerRatings = {};
 
   // Multi-select state
   final Set<String> _selectedRawIds = {};
@@ -83,15 +88,12 @@ class _DiscoveryScreenState extends ConsumerState<DiscoveryScreen> {
     setState(() => _isLoading = true);
 
     final baseUrl = InsforgeConfig.recordsUrl;
-    final headers = InsforgeConfig.headers;
-
     List<DiscoveryItem> items = [];
 
     try {
       // 1. Fetch teams from backend database
-      final teamsRes = await http.get(
+      final teamsRes = await InsforgeConfig.getWithFallback(
         Uri.parse('$baseUrl/teams?select=*&order=created_at.desc'),
-        headers: headers,
       );
       if (teamsRes.statusCode == 200) {
         final List<dynamic> data = json.decode(teamsRes.body);
@@ -101,55 +103,126 @@ class _DiscoveryScreenState extends ConsumerState<DiscoveryScreen> {
           final location = [city, state].where((s) => s.isNotEmpty).join(', ');
           final rawId = t['id']?.toString() ?? '';
           final code = t['team_code']?.toString();
-          final displayId = (code != null && code.isNotEmpty)
-              ? code
-              : (rawId.length >= 8 ? 'SCR-${rawId.substring(0, 4).toUpperCase()}' : rawId);
-
-          items.add(DiscoveryItem(
-            id: displayId,
+          final displayId = TeamData.formatDisplayId(
+            teamCode: code,
             rawId: rawId,
-            name: t['name'] ?? 'Unknown Team',
-            type: 'team',
-            location: location.isNotEmpty ? location : 'Unknown Location',
-          ));
+          );
+
+          items.add(
+            DiscoveryItem(
+              id: displayId,
+              rawId: rawId,
+              name: t['name'] ?? 'Unknown Team',
+              type: 'team',
+              location: location.isNotEmpty ? location : 'Unknown Location',
+            ),
+          );
         }
       }
 
       // 2. Fetch players from backend database
-      // When signedUpOnly=true, only fetch players that have a linked profile_id
-      final playersUrl = widget.signedUpOnly
-          ? '$baseUrl/players?select=*&profile_id=not.is.null'
-          : '$baseUrl/players?select=*';
-      final playersRes = await http.get(
+      // Discovery requirement: Show all signed-in players (profile_id != null)
+      final playersUrl = '$baseUrl/players?select=*&profile_id=not.is.null';
+      final playersRes = await InsforgeConfig.getWithFallback(
         Uri.parse(playersUrl),
-        headers: headers,
       );
       if (playersRes.statusCode == 200) {
         final List<dynamic> data = json.decode(playersRes.body);
         for (var p in data) {
-          // Extra guard: skip rows without a profile_id when signedUpOnly
-          if (widget.signedUpOnly) {
-            final pid = p['profile_id'];
-            if (pid == null || pid.toString().isEmpty) continue;
-          }
+          final pid = p['profile_id']?.toString();
+          if (pid == null || pid.isEmpty) continue;
+
           final rawId = p['id']?.toString() ?? '';
           final playingRole = p['playing_role'] as String?;
-          final rolesList = (p['roles'] as List?)?.map((e) => e.toString()).join('/') ?? '';
+          final rolesList =
+              (p['roles'] as List?)?.map((e) => e.toString()).join('/') ?? '';
           final roleStr = (playingRole != null && playingRole.isNotEmpty)
               ? playingRole
               : (rolesList.isNotEmpty
-                  ? rolesList
-                  : (p['attribute'] as String? ?? p['role'] as String? ?? 'Cricketer'));
+                    ? rolesList
+                    : (p['attribute'] as String? ??
+                          p['role'] as String? ??
+                          'Cricketer'));
 
-          items.add(DiscoveryItem(
-            id: rawId.length >= 8 ? 'P-${rawId.substring(0, 4).toUpperCase()}' : rawId,
-            rawId: rawId,
-            name: p['name'] ?? 'Unknown Player',
-            type: 'player',
-            role: roleStr,
-            location: p['location'] as String? ?? 'India',
-          ));
+          final playerDisplayId = UserProfile.deriveDisplayId(pid);
+
+          items.add(
+            DiscoveryItem(
+              id: playerDisplayId,
+              rawId: rawId,
+              profileId: pid,
+              name: p['name'] ?? 'Unknown Player',
+              type: 'player',
+              role: roleStr,
+              location: p['location'] as String? ?? 'India',
+            ),
+          );
         }
+      }
+
+      // 2b. Fetch registered users from public_profiles view
+      final profilesRes = await InsforgeConfig.getWithFallback(
+        Uri.parse('$baseUrl/public_profiles?select=*&order=created_at.desc'),
+      );
+      if (profilesRes.statusCode == 200) {
+        final List<dynamic> profData = json.decode(profilesRes.body);
+        for (var pr in profData) {
+          final pid = pr['id']?.toString();
+          if (pid == null || pid.isEmpty) continue;
+
+          final loc = (pr['location'] as String? ?? '').trim();
+          final effectiveLoc = loc.isNotEmpty ? loc : 'India';
+          final pRole =
+              pr['playing_role'] as String? ??
+              pr['role'] as String? ??
+              'Cricketer';
+
+          final existingIndex = items.indexWhere((i) => i.profileId == pid);
+          if (existingIndex >= 0) {
+            final old = items[existingIndex];
+            items[existingIndex] = DiscoveryItem(
+              id: old.id,
+              rawId: old.rawId,
+              profileId: pid,
+              name: pr['name'] ?? old.name,
+              type: 'player',
+              role: pRole.isNotEmpty ? pRole : old.role,
+              location: effectiveLoc != 'India' ? effectiveLoc : old.location,
+            );
+          } else {
+            final playerDisplayId = UserProfile.deriveDisplayId(pid);
+            items.add(
+              DiscoveryItem(
+                id: playerDisplayId,
+                rawId: pid,
+                profileId: pid,
+                name: pr['name'] ?? 'Unknown Player',
+                type: 'player',
+                role: pRole,
+                location: effectiveLoc,
+              ),
+            );
+          }
+        }
+      }
+
+      // 3. Batch fetch ratings for all signed-in players
+      final profileIds = items
+          .where(
+            (i) =>
+                i.type == 'player' &&
+                i.profileId != null &&
+                i.profileId!.isNotEmpty,
+          )
+          .map((i) => i.profileId!)
+          .toSet()
+          .toList();
+
+      if (profileIds.isNotEmpty) {
+        final ratings = await PlayerRatingRepository.batchFetchRatings(
+          profileIds,
+        );
+        _playerRatings = ratings;
       }
     } catch (_) {
       // Network or API error — handle gracefully
@@ -170,9 +243,7 @@ class _DiscoveryScreenState extends ConsumerState<DiscoveryScreen> {
     // 1. Add Riverpod local / dynamic teams first
     final stateTeams = ref.watch(teamsProvider).value ?? [];
     for (final t in stateTeams) {
-      final code = t.teamCode.isNotEmpty
-          ? t.teamCode
-          : (t.id.length >= 8 ? 'SCR-${t.id.substring(0, 4).toUpperCase()}' : t.id);
+      final code = t.displayId;
 
       combinedMap[t.id] = DiscoveryItem(
         id: code,
@@ -200,7 +271,9 @@ class _DiscoveryScreenState extends ConsumerState<DiscoveryScreen> {
       // Tab filter
       if (_selectedTab == 'Teams' && item.type != 'team') return false;
       if (_selectedTab == 'Players' && item.type != 'player') return false;
-      if (_selectedTab == 'Tournaments' && item.type != 'tournament') return false;
+      if (_selectedTab == 'Tournaments' && item.type != 'tournament') {
+        return false;
+      }
 
       // Search query filter (name, id, location, or player attribute)
       if (_searchQuery.isNotEmpty) {
@@ -210,7 +283,13 @@ class _DiscoveryScreenState extends ConsumerState<DiscoveryScreen> {
         final matchRawId = item.rawId.toLowerCase().contains(query);
         final matchLocation = item.location.toLowerCase().contains(query);
         final matchRole = (item.role ?? '').toLowerCase().contains(query);
-        if (!matchName && !matchId && !matchRawId && !matchLocation && !matchRole) return false;
+        if (!matchName &&
+            !matchId &&
+            !matchRawId &&
+            !matchLocation &&
+            !matchRole) {
+          return false;
+        }
       }
 
       return true;
@@ -234,11 +313,11 @@ class _DiscoveryScreenState extends ConsumerState<DiscoveryScreen> {
         title: Text(
           isMulti
               ? (_selectedRawIds.isEmpty
-                  ? 'Select Players'
-                  : '${_selectedRawIds.length} selected')
+                    ? 'Select Players'
+                    : '${_selectedRawIds.length} selected')
               : widget.isSelectionMode
-                  ? (_selectedTab == 'Players' ? 'Select Player' : 'Select Team')
-                  : 'Discovery',
+              ? (_selectedTab == 'Players' ? 'Select Player' : 'Select Team')
+              : 'Discovery',
           style: GoogleFonts.plusJakartaSans(
             fontSize: 20,
             fontWeight: FontWeight.w700,
@@ -269,108 +348,124 @@ class _DiscoveryScreenState extends ConsumerState<DiscoveryScreen> {
         children: [
           Column(
             children: [
-          // Search Bar
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Container(
-              decoration: BoxDecoration(
-                color: const Color(0xFF1e2024), // surface-container
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: const Color(0xFF333539)),
-              ),
-              child: TextField(
-                controller: _searchController,
-                onChanged: (val) => setState(() => _searchQuery = val),
-                style: GoogleFonts.inter(color: Colors.white),
-                decoration: InputDecoration(
-                  hintText: 'Search teams, players, or IDs...',
-                  hintStyle: GoogleFonts.inter(color: const Color(0xFFbcc7de)),
-                  prefixIcon: const Icon(Icons.search, color: Color(0xFFbcc7de)),
-                  suffixIcon: _searchQuery.isNotEmpty
-                      ? IconButton(
-                          icon: const Icon(Icons.clear, color: Color(0xFFbcc7de), size: 18),
-                          onPressed: () {
-                            _searchController.clear();
-                            setState(() => _searchQuery = '');
-                          },
-                        )
-                      : null,
-                  border: InputBorder.none,
-                  contentPadding: const EdgeInsets.symmetric(vertical: 14),
+              // Search Bar
+              Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF1e2024), // surface-container
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: const Color(0xFF333539)),
+                  ),
+                  child: TextField(
+                    controller: _searchController,
+                    onChanged: (val) => setState(() => _searchQuery = val),
+                    style: GoogleFonts.inter(color: Colors.white),
+                    decoration: InputDecoration(
+                      hintText: 'Search teams, players, or IDs...',
+                      hintStyle: GoogleFonts.inter(
+                        color: const Color(0xFFbcc7de),
+                      ),
+                      prefixIcon: const Icon(
+                        Icons.search,
+                        color: Color(0xFFbcc7de),
+                      ),
+                      suffixIcon: _searchQuery.isNotEmpty
+                          ? IconButton(
+                              icon: const Icon(
+                                Icons.clear,
+                                color: Color(0xFFbcc7de),
+                                size: 18,
+                              ),
+                              onPressed: () {
+                                _searchController.clear();
+                                setState(() => _searchQuery = '');
+                              },
+                            )
+                          : null,
+                      border: InputBorder.none,
+                      contentPadding: const EdgeInsets.symmetric(vertical: 14),
+                    ),
+                  ),
                 ),
               ),
-            ),
-          ),
 
-          // Filter Tabs
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0),
-            child: SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                children: _tabs.map((tab) => _buildTab(tab)).toList(),
-              ),
-            ),
-          ),
-
-          const SizedBox(height: 16),
-
-          // List with Pull-To-Refresh
-          Expanded(
-            child: _isLoading
-                ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
-                : RefreshIndicator(
-                    color: AppColors.primary,
-                    backgroundColor: const Color(0xFF1e2024),
-                    onRefresh: () async {
-                      await ref.read(teamsProvider.notifier).refresh();
-                      await _fetchData();
-                    },
-                    child: filtered.isEmpty
-                        ? ListView(
-                            physics: const AlwaysScrollableScrollPhysics(),
-                            children: [
-                              const SizedBox(height: 80),
-                              Center(
-                                child: Column(
-                                  children: [
-                                    const Icon(
-                                      Icons.search_off_rounded,
-                                      size: 56,
-                                      color: Color(0xFF5A6278),
-                                    ),
-                                    const SizedBox(height: 12),
-                                    Text(
-                                      'No results found',
-                                      style: GoogleFonts.plusJakartaSans(
-                                        color: Colors.white70,
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      'Try searching for another team, player, or ID',
-                                      style: GoogleFonts.inter(
-                                        color: const Color(0xFF5A6278),
-                                        fontSize: 13,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          )
-                        : ListView.builder(
-                            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-                            itemCount: filtered.length,
-                            // Extra bottom padding so items aren't hidden under the confirm button
-                            itemBuilder: (context, index) {
-                              final item = filtered[index];
-                              return _buildItemCard(item);
-                            },
-                          ),
+              // Filter Tabs
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                child: SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: _tabs.map((tab) => _buildTab(tab)).toList(),
                   ),
+                ),
+              ),
+
+              const SizedBox(height: 16),
+
+              // List with Pull-To-Refresh
+              Expanded(
+                child: _isLoading
+                    ? const Center(
+                        child: CircularProgressIndicator(
+                          color: AppColors.primary,
+                        ),
+                      )
+                    : RefreshIndicator(
+                        color: AppColors.primary,
+                        backgroundColor: const Color(0xFF1e2024),
+                        onRefresh: () async {
+                          await ref.read(teamsProvider.notifier).refresh();
+                          await _fetchData();
+                        },
+                        child: filtered.isEmpty
+                            ? ListView(
+                                physics: const AlwaysScrollableScrollPhysics(),
+                                children: [
+                                  const SizedBox(height: 80),
+                                  Center(
+                                    child: Column(
+                                      children: [
+                                        const Icon(
+                                          Icons.search_off_rounded,
+                                          size: 56,
+                                          color: Color(0xFF5A6278),
+                                        ),
+                                        const SizedBox(height: 12),
+                                        Text(
+                                          'No results found',
+                                          style: GoogleFonts.plusJakartaSans(
+                                            color: Colors.white70,
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          'Try searching for another team, player, or ID',
+                                          style: GoogleFonts.inter(
+                                            color: const Color(0xFF5A6278),
+                                            fontSize: 13,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              )
+                            : ListView.builder(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 16.0,
+                                  vertical: 8.0,
+                                ),
+                                itemCount: filtered.length,
+                                // Extra bottom padding so items aren't hidden under the confirm button
+                                itemBuilder: (context, index) {
+                                  final item = filtered[index];
+                                  return _buildItemCard(item);
+                                },
+                              ),
+                      ),
               ),
             ],
           ),
@@ -456,18 +551,28 @@ class _DiscoveryScreenState extends ConsumerState<DiscoveryScreen> {
           context.pop(item);
         } else {
           if (item.type == 'team') {
-            context.push('/team-squad', extra: {
-              'teamId': item.rawId,
-              'readOnly': true,
-            });
+            context.push(
+              '/team-squad',
+              extra: {'teamId': item.rawId, 'readOnly': true},
+            );
           } else if (item.type == 'player') {
-            context.push('/profile');
+            context.push(
+              '/performance',
+              extra: {
+                'isReadOnly': true,
+                'customTitle': 'PERFORMANCE DETAILS',
+                'targetPlayerUserId': item.profileId,
+                'targetPlayerName': item.name,
+                'targetPlayerRole': item.role,
+                'targetPlayerLocation': item.location,
+              },
+            );
           }
         }
       },
       child: Container(
         margin: const EdgeInsets.only(bottom: 12),
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
           color: isSelected ? const Color(0xFF2A0A0D) : const Color(0xFF1e2024),
           borderRadius: BorderRadius.circular(8),
@@ -480,8 +585,8 @@ class _DiscoveryScreenState extends ConsumerState<DiscoveryScreen> {
           children: [
             // Avatar
             Container(
-              width: 56,
-              height: 56,
+              width: item.type == 'player' ? 48 : 56,
+              height: item.type == 'player' ? 48 : 56,
               decoration: BoxDecoration(
                 color: const Color(0xFF111317),
                 borderRadius: BorderRadius.circular(8),
@@ -489,69 +594,24 @@ class _DiscoveryScreenState extends ConsumerState<DiscoveryScreen> {
               ),
               child: Center(
                 child: item.type == 'team'
-                    ? const Icon(Icons.shield, color: AppColors.primary, size: 32)
-                    : const Icon(Icons.person, color: Color(0xFFbcc7de), size: 32),
+                    ? const Icon(
+                        Icons.shield,
+                        color: AppColors.primary,
+                        size: 30,
+                      )
+                    : const Icon(
+                        Icons.person,
+                        color: Color(0xFFbcc7de),
+                        size: 28,
+                      ),
               ),
             ),
-            const SizedBox(width: 16),
+            const SizedBox(width: 14),
             // Details
             Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    item.name,
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.white,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Row(
-                    children: [
-                      Text(
-                        '#${item.id}',
-                        style: GoogleFonts.inter(
-                          fontSize: 14,
-                          color: const Color(0xFFbcc7de),
-                        ),
-                      ),
-                      if (item.role != null) ...[
-                        Text(
-                          ' • ',
-                          style: GoogleFonts.inter(
-                            fontSize: 14,
-                            color: const Color(0xFFbcc7de),
-                          ),
-                        ),
-                        Text(
-                          item.role!,
-                          style: GoogleFonts.inter(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                            color: const Color(0xFF3ce36a),
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
-                  const SizedBox(height: 4),
-                  Row(
-                    children: [
-                      const Icon(Icons.location_on_outlined, color: Color(0xFFbcc7de), size: 14),
-                      const SizedBox(width: 4),
-                      Text(
-                        item.location,
-                        style: GoogleFonts.inter(
-                          fontSize: 12,
-                          color: const Color(0xFFbcc7de),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
+              child: item.type == 'player'
+                  ? _buildPlayerCardContent(item)
+                  : _buildDefaultCardContent(item),
             ),
             // Multi-select checkbox
             if (isMulti) ...[
@@ -564,7 +624,9 @@ class _DiscoveryScreenState extends ConsumerState<DiscoveryScreen> {
                   color: isSelected ? AppColors.primary : Colors.transparent,
                   borderRadius: BorderRadius.circular(6),
                   border: Border.all(
-                    color: isSelected ? AppColors.primary : const Color(0xFF5A6278),
+                    color: isSelected
+                        ? AppColors.primary
+                        : const Color(0xFF5A6278),
                     width: 2,
                   ),
                 ),
@@ -576,6 +638,239 @@ class _DiscoveryScreenState extends ConsumerState<DiscoveryScreen> {
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildPlayerCardContent(DiscoveryItem item) {
+    final ratings = item.profileId != null
+        ? _playerRatings[item.profileId]
+        : null;
+    final turfRating = ratings?['turf'];
+    final groundRating = ratings?['ground'];
+
+    final hasTurf = turfRating != null && turfRating.hasRating;
+    final hasGround = groundRating != null && groundRating.hasRating;
+
+    final topBadge = turfRating?.topBadge ?? groundRating?.topBadge;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // 1. Player Name & Role (25% reduced font size)
+        Row(
+          children: [
+            Flexible(
+              child: Text(
+                item.name,
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 13.5,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.white,
+                ),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            if (item.role != null && item.role!.isNotEmpty) ...[
+              const SizedBox(width: 6),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF3ce36a).withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Text(
+                  item.role!,
+                  style: GoogleFonts.inter(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                    color: const Color(0xFF3ce36a),
+                  ),
+                ),
+              ),
+            ],
+            const SizedBox(width: 6),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(4),
+                border: Border.all(color: Colors.white.withValues(alpha: 0.15)),
+              ),
+              child: Text(
+                item.id,
+                style: GoogleFonts.inter(
+                  fontSize: 9.5,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.white70,
+                  letterSpacing: 0.4,
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 4),
+
+        // 2. Turf / Ground Rating (close to player name)
+        Row(
+          children: [
+            Text(
+              'T: ',
+              style: GoogleFonts.inter(
+                fontSize: 10.5,
+                fontWeight: FontWeight.w600,
+                color: const Color(0xFF80D8FF),
+              ),
+            ),
+            const Icon(Icons.star_rounded, size: 12, color: Color(0xFFFFB800)),
+            const SizedBox(width: 2),
+            Text(
+              hasTurf
+                  ? '${turfRating.rating}  ${turfRating.level.toUpperCase()}'
+                  : 'Unrated',
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 10.5,
+                fontWeight: FontWeight.w800,
+                color: hasTurf
+                    ? const Color(0xFFFFD54F)
+                    : const Color(0xFF8892A8),
+              ),
+            ),
+            Text(
+              ' | ',
+              style: GoogleFonts.inter(
+                fontSize: 11,
+                color: const Color(0xFF5A6278),
+              ),
+            ),
+            Text(
+              'G: ',
+              style: GoogleFonts.inter(
+                fontSize: 10.5,
+                fontWeight: FontWeight.w600,
+                color: const Color(0xFFA7FFEB),
+              ),
+            ),
+            const Icon(Icons.star_rounded, size: 12, color: Color(0xFFFFB800)),
+            const SizedBox(width: 2),
+            Text(
+              hasGround
+                  ? '${groundRating.rating}  ${groundRating.level.toUpperCase()}'
+                  : 'Unrated',
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 10.5,
+                fontWeight: FontWeight.w800,
+                color: hasGround
+                    ? const Color(0xFFFFD54F)
+                    : const Color(0xFF8892A8),
+              ),
+            ),
+          ],
+        ),
+
+        // 3. Top Badge (prominently shown as requested)
+        if (topBadge != null && topBadge.isNotEmpty) ...[
+          const SizedBox(height: 4),
+          Row(
+            children: [
+              Text(
+                topBadge,
+                style: GoogleFonts.inter(
+                  fontSize: 10.5,
+                  fontWeight: FontWeight.w700,
+                  color: const Color(0xFFFFCA28),
+                ),
+              ),
+            ],
+          ),
+        ],
+
+        const SizedBox(height: 4),
+
+        // 4. City, State
+        Row(
+          children: [
+            const Icon(
+              Icons.location_on_outlined,
+              color: Color(0xFFbcc7de),
+              size: 12,
+            ),
+            const SizedBox(width: 3),
+            Flexible(
+              child: Text(
+                item.location,
+                style: GoogleFonts.inter(
+                  fontSize: 10,
+                  color: const Color(0xFFbcc7de),
+                ),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDefaultCardContent(DiscoveryItem item) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          item.name,
+          style: GoogleFonts.plusJakartaSans(
+            fontSize: 16,
+            fontWeight: FontWeight.w700,
+            color: Colors.white,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Row(
+          children: [
+            Text(
+              item.id.startsWith('ST-') ? item.id : '#${item.id}',
+              style: GoogleFonts.inter(
+                fontSize: 13,
+                color: const Color(0xFFbcc7de),
+              ),
+            ),
+            if (item.role != null) ...[
+              Text(
+                ' • ',
+                style: GoogleFonts.inter(
+                  fontSize: 13,
+                  color: const Color(0xFFbcc7de),
+                ),
+              ),
+              Text(
+                item.role!,
+                style: GoogleFonts.inter(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: const Color(0xFF3ce36a),
+                ),
+              ),
+            ],
+          ],
+        ),
+        const SizedBox(height: 4),
+        Row(
+          children: [
+            const Icon(
+              Icons.location_on_outlined,
+              color: Color(0xFFbcc7de),
+              size: 14,
+            ),
+            const SizedBox(width: 4),
+            Text(
+              item.location,
+              style: GoogleFonts.inter(
+                fontSize: 12,
+                color: const Color(0xFFbcc7de),
+              ),
+            ),
+          ],
+        ),
+      ],
     );
   }
 }

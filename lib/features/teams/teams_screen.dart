@@ -225,7 +225,11 @@ class _TeamsScreenState extends ConsumerState<TeamsScreen> {
         elevation: 0,
         title: Row(
           children: [
-            const Icon(Icons.sports_cricket, color: Colors.white, size: 24),
+            Image.asset(
+              'assets/images/scorely_logo.png',
+              height: 28,
+              fit: BoxFit.contain,
+            ),
             const SizedBox(width: 8),
             Text(
               'TEAMS',
@@ -631,6 +635,29 @@ class _TeamCard extends StatelessWidget {
                                   overflow: TextOverflow.ellipsis,
                                 ),
                               ),
+                              const SizedBox(width: 6),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 6,
+                                  vertical: 2,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: AppColors.primary.withValues(alpha: 0.08),
+                                  borderRadius: BorderRadius.circular(4),
+                                  border: Border.all(
+                                    color: AppColors.primary.withValues(alpha: 0.2),
+                                  ),
+                                ),
+                                child: Text(
+                                  team.displayId,
+                                  style: GoogleFonts.inter(
+                                    color: AppColors.primary,
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 9,
+                                    letterSpacing: 0.5,
+                                  ),
+                                ),
+                              ),
                               if (isAdmin && !isSelectionMode) ...[
                                 const SizedBox(width: 6),
                                 Container(
@@ -759,8 +786,8 @@ class _TeamCard extends StatelessWidget {
   }
 
   Widget _buildQRBottomSheet(BuildContext context, TeamData team) {
-    // Prefer the human-readable team code for the QR payload; fallback to UUID
-    final qrData = team.teamCode.isNotEmpty ? team.teamCode : team.id;
+    // Prefer human-readable team code (ST-xxxx) for QR payload; fallback to UUID
+    final qrData = team.displayId.isNotEmpty ? team.displayId : team.id;
     return Container(
       padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
       decoration: const BoxDecoration(
@@ -819,31 +846,30 @@ class _TeamCard extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           // Team code label below QR
-          if (team.teamCode.isNotEmpty)
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              decoration: BoxDecoration(
-                color: AppColors.lightBg,
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: AppColors.lightBorder),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(Icons.tag, size: 16, color: AppColors.lightTextSecondary),
-                  const SizedBox(width: 6),
-                  Text(
-                    team.teamCode,
-                    style: GoogleFonts.inter(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.lightTextPrimary,
-                      letterSpacing: 1.2,
-                    ),
-                  ),
-                ],
-              ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            decoration: BoxDecoration(
+              color: AppColors.lightBg,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: AppColors.lightBorder),
             ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.tag, size: 16, color: AppColors.lightTextSecondary),
+                const SizedBox(width: 6),
+                Text(
+                  team.displayId,
+                  style: GoogleFonts.inter(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.lightTextPrimary,
+                    letterSpacing: 1.2,
+                  ),
+                ),
+              ],
+            ),
+          ),
           const SizedBox(height: 24),
         ],
       ),

@@ -3,6 +3,7 @@ import 'package:scorely/core/theme/colors.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../providers/profile_provider.dart';
 
 /// Shown when the user taps "Sign In" on the Live Promo dialog or navigates
@@ -108,6 +109,21 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
     } else if (err != null) {
       setState(() => _error = err);
     } else {
+      await _handleAuthSuccess();
+    }
+  }
+
+  Future<void> _handleAuthSuccess() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (!mounted) return;
+    final hasSetup = prefs.getBool('has_completed_initial_profile_setup') ?? false;
+
+    if (!hasSetup) {
+      await prefs.setBool('has_completed_initial_profile_setup', true);
+      if (!mounted) return;
+      // Navigate to profile page for initial setup
+      context.go('/profile');
+    } else {
       if (widget.onSuccess != null) {
         widget.onSuccess!();
       } else {
@@ -187,6 +203,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                       _buildGoogleButton(),
                       const SizedBox(height: 20),
                       _buildToggleText(),
+                      const SizedBox(height: 28),
+                      _buildGuestButton(),
                     ] else ...[
                       const SizedBox(height: 20),
                       Center(
@@ -237,26 +255,24 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Cricket ball accent
+        // App Logo
         Container(
-          width: 52,
-          height: 52,
+          width: 56,
+          height: 56,
           decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              colors: [AppColors.primary, Color(0xFF7B000D)],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
             borderRadius: BorderRadius.circular(16),
             boxShadow: [
               BoxShadow(
-                color: AppColors.primary.withValues(alpha: 0.4),
+                color: Colors.black.withValues(alpha: 0.3),
                 blurRadius: 16,
                 offset: const Offset(0, 6),
               ),
             ],
           ),
-          child: const Icon(Icons.sports_cricket, color: Colors.white, size: 28),
+          child: Image.asset(
+            'assets/images/scorely_logo.png',
+            fit: BoxFit.contain,
+          ),
         ),
         const SizedBox(height: 20),
         Text(
@@ -590,11 +606,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                 if (err != null) {
                   setState(() => _error = err);
                 } else {
-                  if (widget.onSuccess != null) {
-                    widget.onSuccess!();
-                  } else {
-                    context.pop();
-                  }
+                  await _handleAuthSuccess();
                 }
               },
         style: ElevatedButton.styleFrom(
@@ -618,6 +630,88 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildGuestButton() {
+    return Column(
+      children: [
+        // Subtle separator label
+        Row(
+          children: [
+            Expanded(
+              child: Container(
+                height: 1,
+                color: Colors.white.withValues(alpha: 0.07),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 14),
+              child: Text(
+                'Just browsing?',
+                style: GoogleFonts.inter(
+                  color: Colors.white30,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+            Expanded(
+              child: Container(
+                height: 1,
+                color: Colors.white.withValues(alpha: 0.07),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 14),
+        SizedBox(
+          width: double.infinity,
+          height: 50,
+          child: OutlinedButton.icon(
+            onPressed: () {
+              if (widget.onSuccess != null) {
+                widget.onSuccess!();
+              } else {
+                context.pop();
+              }
+            },
+            icon: const Icon(
+              Icons.person_outline_rounded,
+              size: 18,
+              color: Colors.white54,
+            ),
+            label: Text(
+              'Continue as Guest',
+              style: GoogleFonts.inter(
+                color: Colors.white54,
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                letterSpacing: 0.3,
+              ),
+            ),
+            style: OutlinedButton.styleFrom(
+              side: BorderSide(
+                color: Colors.white.withValues(alpha: 0.15),
+                width: 1.0,
+              ),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 8),
+        Center(
+          child: Text(
+            'Some features require an account',
+            style: GoogleFonts.inter(
+              color: Colors.white24,
+              fontSize: 11,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

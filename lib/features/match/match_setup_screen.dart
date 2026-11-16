@@ -6,8 +6,14 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:uuid/uuid.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../models/player_setup.dart';
+import '../../models/match_status.dart';
+import '../../providers/history_provider.dart';
+import '../../providers/profile_provider.dart';
+import 'providers/pending_matches_provider.dart';
 import 'providers/quick_match_storage.dart';
 import 'helpers/live_match_promo.dart';
+import '../../services/duplicate_match_service.dart';
+import 'widgets/existing_match_dialog.dart';
 
 class MatchSetupData {
   final String id;
@@ -30,10 +36,71 @@ class MatchSetupData {
   final String? teamAScorerId;
   final String? teamBScorerName;
   final String? teamBScorerId;
+  final String? matchCode;
+  final String? matchAppId;
+
+  /// Profile ID of the authenticated creator. Source of truth for "can I
+  /// proceed to toss / edit this pending match?".
+  final String? creatorProfileId;
+
+  /// Pending-only sub-state (squad selection vs ready for toss).
+  final String setupStage;
+
+  /// The single authoritative active scorer profile ID while live.
+  final String? activeScorerId;
+
+  /// Signed-in players associated with the match (both squads).
+  final List<String> playerProfileIds;
+
+  /// Result summary written when the match is completed.
+  final String? resultSummary;
+
+  /// When the match reached the completed state.
+  final DateTime? completedAt;
+
+  /// Stable client creation request ID (idempotency key) for duplicate prevention.
+  final String? creationRequestId;
+
+  bool get isPending => MatchStatus.isPending(status);
+  bool get isLive => MatchStatus.isLive(status);
+  bool get isCompleted => MatchStatus.isCompleted(status);
+  bool get isAbandoned => MatchStatus.isAbandoned(status);
+  bool get isWaitingForSquad =>
+      MatchSetupStage.normalize(setupStage) == MatchSetupStage.squadSelection;
+  bool get hasTossCompleted =>
+      tossWonBy.trim().isNotEmpty && battingFirstTeam.trim().isNotEmpty;
+
+  bool isCreator(String? profileId) =>
+      profileId != null &&
+      profileId.isNotEmpty &&
+      creatorProfileId != null &&
+      creatorProfileId == profileId;
+
+  bool isActiveScorer(String? profileId) =>
+      profileId != null &&
+      profileId.isNotEmpty &&
+      activeScorerId != null &&
+      activeScorerId == profileId;
+
+  /// Returns a clean match display ID like SM-10001
+  String get displayMatchId => (matchCode != null && matchCode!.isNotEmpty)
+      ? matchCode!
+      : deriveMatchCode(id);
+
+  /// Deterministically derives a match code in the form 'SM-10001' from raw match ID or UUID
+  static String deriveMatchCode(String rawId) {
+    if (rawId.isEmpty) return 'SM-10001';
+    final clean = rawId.replaceAll(RegExp(r'[^a-zA-Z0-9]'), '');
+    if (clean.isEmpty) return 'SM-10001';
+    final tail = clean.length >= 4 ? clean.substring(clean.length - 4) : clean.padLeft(4, '0');
+    final val = int.tryParse(tail, radix: 16) ?? int.tryParse(tail) ?? 0;
+    final num = (val.abs() % 90000) + 10001;
+    return 'SM-$num';
+  }
 
   const MatchSetupData({
     this.id = '',
-    this.status = 'draft',
+    this.status = MatchStatus.pending,
     required this.teamAName,
     required this.teamBName,
     required this.teamAPlayers,
@@ -52,6 +119,15 @@ class MatchSetupData {
     this.teamAScorerId,
     this.teamBScorerName,
     this.teamBScorerId,
+    this.matchCode,
+    this.matchAppId,
+    this.creatorProfileId,
+    this.setupStage = MatchSetupStage.readyForToss,
+    this.activeScorerId,
+    this.playerProfileIds = const [],
+    this.resultSummary,
+    this.completedAt,
+    this.creationRequestId,
   });
 
   MatchSetupData copyWith({
@@ -66,6 +142,15 @@ class MatchSetupData {
     String? teamAScorerId,
     String? teamBScorerName,
     String? teamBScorerId,
+    String? matchCode,
+    String? matchAppId,
+    String? creatorProfileId,
+    String? setupStage,
+    String? activeScorerId,
+    List<String>? playerProfileIds,
+    String? resultSummary,
+    DateTime? completedAt,
+    String? creationRequestId,
   }) {
     return MatchSetupData(
       id: id ?? this.id,
@@ -88,6 +173,15 @@ class MatchSetupData {
       teamAScorerId: teamAScorerId ?? this.teamAScorerId,
       teamBScorerName: teamBScorerName ?? this.teamBScorerName,
       teamBScorerId: teamBScorerId ?? this.teamBScorerId,
+      matchCode: matchCode ?? this.matchCode,
+      matchAppId: matchAppId ?? this.matchAppId,
+      creatorProfileId: creatorProfileId ?? this.creatorProfileId,
+      setupStage: setupStage ?? this.setupStage,
+      activeScorerId: activeScorerId ?? this.activeScorerId,
+      playerProfileIds: playerProfileIds ?? this.playerProfileIds,
+      resultSummary: resultSummary ?? this.resultSummary,
+      completedAt: completedAt ?? this.completedAt,
+      creationRequestId: creationRequestId ?? this.creationRequestId,
     );
   }
 
@@ -113,13 +207,34 @@ class MatchSetupData {
       'teamAScorerId': teamAScorerId,
       'teamBScorerName': teamBScorerName,
       'teamBScorerId': teamBScorerId,
+      'matchCode': matchCode ?? displayMatchId,
+      'matchAppId': matchAppId,
+      'creatorProfileId': creatorProfileId,
+      'setupStage': setupStage,
+      'activeScorerId': activeScorerId,
+      'playerProfileIds': playerProfileIds,
+      'resultSummary': resultSummary,
+      'completedAt': completedAt?.toIso8601String(),
+      if (creationRequestId != null && creationRequestId!.isNotEmpty)
+        'creationRequestId': creationRequestId,
     };
   }
 
   factory MatchSetupData.fromJson(Map<String, dynamic> json) {
+    final rawId = json['id'] as String? ?? '';
+    final rawStatus = json['status'] as String?;
+    final normalizedStatus = MatchStatus.normalize(rawStatus);
+    final rawStage = json['setupStage'] as String? ??
+        (rawStatus == 'waiting_for_team_b' || rawStatus == 'waiting_for_squad'
+            ? MatchSetupStage.squadSelection
+            : null);
+    final rawPlayerIds = json['playerProfileIds'];
+    final playerProfileIds = rawPlayerIds is List
+        ? rawPlayerIds.map((e) => e.toString()).where((e) => e.isNotEmpty).toList()
+        : <String>[];
     return MatchSetupData(
-      id: json['id'] as String? ?? '',
-      status: json['status'] as String? ?? 'draft',
+      id: rawId,
+      status: normalizedStatus,
       teamAName: json['teamAName'] as String? ?? '',
       teamBName: json['teamBName'] as String? ?? '',
       teamAPlayers: (json['teamAPlayers'] as List?)?.map((p) => PlayerSetupData.fromJson(p)).toList() ?? [],
@@ -138,6 +253,18 @@ class MatchSetupData {
       teamAScorerId: json['teamAScorerId'] as String?,
       teamBScorerName: json['teamBScorerName'] as String?,
       teamBScorerId: json['teamBScorerId'] as String?,
+      matchCode: json['matchCode'] as String? ?? deriveMatchCode(rawId),
+      matchAppId: json['matchAppId'] as String?,
+      creatorProfileId: json['creatorProfileId'] as String?,
+      setupStage: MatchSetupStage.normalize(rawStage),
+      activeScorerId: json['activeScorerId'] as String?,
+      playerProfileIds: playerProfileIds,
+      resultSummary: json['resultSummary'] as String?,
+      completedAt: json['completedAt'] != null
+          ? DateTime.tryParse(json['completedAt'].toString())
+          : null,
+      creationRequestId: json['creationRequestId'] as String? ??
+          json['creation_request_id'] as String?,
     );
   }
 }
@@ -169,9 +296,19 @@ class _MatchSetupScreenState extends ConsumerState<MatchSetupScreen> {
   
   bool _isQuickMatch = false;
 
+  late String _matchId;
+  late String _creationRequestId;
+  bool _isSubmitting = false;
+
   @override
   void initState() {
     super.initState();
+    _matchId = widget.initialData?['id'] as String? ??
+        widget.initialData?['sessionId'] as String? ??
+        const Uuid().v4();
+    _creationRequestId = widget.initialData?['creationRequestId'] as String? ??
+        const Uuid().v4();
+
     _teamAController = TextEditingController(
       text: widget.initialData?['teamAName'] ?? '',
     );
@@ -231,7 +368,9 @@ class _MatchSetupScreenState extends ConsumerState<MatchSetupScreen> {
     super.dispose();
   }
 
-  void _startMatch() {
+  Future<void> _startMatch() async {
+    if (_isSubmitting) return;
+
     final String teamAName = _teamAController.text.trim();
     final String teamBName = _teamBController.text.trim();
     
@@ -249,7 +388,7 @@ class _MatchSetupScreenState extends ConsumerState<MatchSetupScreen> {
         ? _venueController.text.trim()
         : 'Unknown Venue';
 
-    DateTime matchDate = _isNow
+    final DateTime matchDate = _isNow
         ? DateTime.now()
         : DateTime(
             _selectedDate.year,
@@ -259,8 +398,88 @@ class _MatchSetupScreenState extends ConsumerState<MatchSetupScreen> {
             _selectedTime.minute,
           );
 
+    setState(() => _isSubmitting = true);
+
+    try {
+      final profile = ref.read(profileProvider);
+      final creatorProfileId = profile.id.isNotEmpty ? profile.id : null;
+
+      // Duplicate detection before creating a record
+      final dupResult = await DuplicateMatchService.instance.checkForDuplicate(
+        creatorProfileId: creatorProfileId,
+        teamAName: teamAName,
+        teamBName: teamBName,
+        isQuickMatch: _isQuickMatch,
+        matchDate: matchDate,
+        currentSessionMatchId: _matchId,
+        currentCreationRequestId: _creationRequestId,
+      );
+
+      if (!mounted) return;
+
+      if (dupResult.isDuplicate && dupResult.existingMatch != null) {
+        // Show Existing Match confirmation popup
+        await ExistingMatchDialog.show(
+          context,
+          existingMatch: dupResult.existingMatch!,
+          onContinue: () {
+            DuplicateMatchService.instance.continueExistingMatch(
+              context,
+              ref,
+              dupResult.existingMatch!,
+            );
+          },
+          onCreateNew: () async {
+            // Explicit creator decision: create a separate match with new IDs
+            _matchId = const Uuid().v4();
+            _creationRequestId = const Uuid().v4();
+            await _createAndProceed(
+              matchId: _matchId,
+              creationRequestId: _creationRequestId,
+              teamAName: teamAName,
+              teamBName: teamBName,
+              venue: venue,
+              matchDate: matchDate,
+            );
+          },
+          onCancel: () {
+            // Dismiss and return to setup with zero changes
+          },
+        );
+        return;
+      }
+
+      // No duplicate or same session -> proceed
+      await _createAndProceed(
+        matchId: _matchId,
+        creationRequestId: _creationRequestId,
+        teamAName: teamAName,
+        teamBName: teamBName,
+        venue: venue,
+        matchDate: matchDate,
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isSubmitting = false);
+      }
+    }
+  }
+
+  Future<void> _createAndProceed({
+    required String matchId,
+    required String creationRequestId,
+    required String teamAName,
+    required String teamBName,
+    required String venue,
+    required DateTime matchDate,
+  }) async {
+    final profile = ref.read(profileProvider);
+    final hasSquads = _teamAPlayers.isNotEmpty && _teamBPlayers.isNotEmpty;
     final data = MatchSetupData(
-      id: const Uuid().v4(),
+      id: matchId,
+      creationRequestId: creationRequestId,
+      status: MatchStatus.pending,
+      matchCode: MatchSetupData.deriveMatchCode(matchId),
       teamAName: teamAName,
       teamBName: teamBName,
       teamAPlayers: _teamAPlayers,
@@ -275,12 +494,26 @@ class _MatchSetupScreenState extends ConsumerState<MatchSetupScreen> {
       venue: venue,
       matchDate: matchDate,
       isQuickMatch: _isQuickMatch,
+      creatorProfileId: profile.id.isNotEmpty ? profile.id : null,
+      setupStage: hasSquads
+          ? MatchSetupStage.readyForToss
+          : MatchSetupStage.squadSelection,
+      playerProfileIds: _teamAPlayers
+          .followedBy(_teamBPlayers)
+          .map((p) => p.profileId)
+          .whereType<String>()
+          .where((id) => id.isNotEmpty)
+          .toSet()
+          .toList(),
     );
-    
+
     if (_isQuickMatch) {
-      QuickMatchStorage.saveQuickMatch(data);
+      final storageLimit = ref.read(storageLimitProvider);
+      QuickMatchStorage.saveQuickMatch(data, storageLimit: storageLimit);
       proceedToToss(context, ref, data);
     } else {
+      await ref.read(pendingMatchesProvider.notifier).addOrUpdateMatch(data);
+      if (!mounted) return;
       context.push('/match-details', extra: data);
     }
   }
@@ -294,8 +527,8 @@ class _MatchSetupScreenState extends ConsumerState<MatchSetupScreen> {
         elevation: 0,
         centerTitle: true,
         leading: IconButton(
-          icon: const Icon(Icons.menu, color: Colors.white),
-          onPressed: () {},
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          onPressed: () => context.pop(),
         ),
         title: Text(
           'MATCH SETUP',
@@ -309,7 +542,20 @@ class _MatchSetupScreenState extends ConsumerState<MatchSetupScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.share_outlined, color: Colors.white),
-            onPressed: () {},
+            onPressed: () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    'Sharing match setup coming soon!',
+                    style: GoogleFonts.inter(color: Colors.white, fontSize: 13),
+                  ),
+                  backgroundColor: AppColors.lightTextPrimary,
+                  behavior: SnackBarBehavior.floating,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  duration: const Duration(seconds: 2),
+                ),
+              );
+            },
           ),
         ],
       ),
@@ -389,29 +635,45 @@ class _MatchSetupScreenState extends ConsumerState<MatchSetupScreen> {
             SizedBox(
               width: double.infinity,
               height: 56,
-              child: ElevatedButton.icon(
-                onPressed: _startMatch,
+              child: ElevatedButton(
+                onPressed: _isSubmitting ? null : _startMatch,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
+                  disabledBackgroundColor: AppColors.primary.withValues(alpha: 0.6),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
                   elevation: 4,
                   shadowColor: AppColors.primary.withValues(alpha: 0.4),
                 ),
-                icon: const Icon(
-                  Icons.play_arrow,
-                  color: Colors.white,
-                  size: 20,
-                ),
-                label: Text(
-                  _isQuickMatch ? 'START MATCH' : 'SCHEDULE MATCH',
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.white,
-                  ),
-                ),
+                child: _isSubmitting
+                    ? const SizedBox(
+                        width: 24,
+                        height: 24,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2.5,
+                          color: Colors.white,
+                        ),
+                      )
+                    : Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(
+                            Icons.play_arrow,
+                            color: Colors.white,
+                            size: 20,
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            _isQuickMatch ? 'START MATCH' : 'SCHEDULE MATCH',
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w700,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ],
+                      ),
               ),
             ),
             const SizedBox(height: 16),

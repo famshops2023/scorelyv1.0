@@ -13,7 +13,15 @@ import 'helpers/live_match_promo.dart';
 class MatchDetailsScreen extends ConsumerWidget {
   final MatchSetupData setupData;
 
-  const MatchDetailsScreen({super.key, required this.setupData});
+  /// When true, the screen is a read-only preview for associated players who
+  /// are not the creator of a pending match.
+  final bool readOnly;
+
+  const MatchDetailsScreen({
+    super.key,
+    required this.setupData,
+    this.readOnly = false,
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -41,14 +49,36 @@ class MatchDetailsScreen extends ConsumerWidget {
             icon: const Icon(Icons.arrow_back, color: Colors.white, size: 24),
             onPressed: () => context.pop(),
           ),
-          title: Text(
-            'MATCH DETAILS',
-            style: GoogleFonts.inter(
-              fontSize: 18,
-              fontWeight: FontWeight.w700,
-              color: Colors.white,
-              letterSpacing: 1.0,
-            ),
+          title: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'MATCH DETAILS',
+                style: GoogleFonts.inter(
+                  fontSize: 17,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.white,
+                  letterSpacing: 1.0,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text(
+                  setupData.displayMatchId,
+                  style: GoogleFonts.inter(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    color: const Color(0xFF68D391),
+                    letterSpacing: 0.5,
+                  ),
+                ),
+              ),
+            ],
           ),
           centerTitle: true,
         ),
@@ -62,7 +92,7 @@ class MatchDetailsScreen extends ConsumerWidget {
                     Padding(
                       padding: const EdgeInsets.only(top: 24, bottom: 24),
                       child: Text(
-                        'ALL SET – Time to Roar',
+                        readOnly ? 'MATCH PENDING' : 'ALL SET – Time to Roar',
                         style: GoogleFonts.plusJakartaSans(
                           fontSize: 24,
                           fontWeight: FontWeight.w700,
@@ -539,7 +569,7 @@ class MatchDetailsScreen extends ConsumerWidget {
                                           ),
                                           image: const DecorationImage(
                                             image: AssetImage(
-                                              'assets/images/scorely_icon.png',
+                                              'assets/images/scorely_logo.png',
                                             ),
                                             fit: BoxFit.cover,
                                           ),
@@ -699,6 +729,24 @@ class MatchDetailsScreen extends ConsumerWidget {
             ),
 
             // Fixed Bottom Action Bar
+            if (readOnly)
+              SafeArea(
+                top: false,
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+                  child: Text(
+                    'Only the match creator can start this match.',
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.inter(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white70,
+                    ),
+                  ),
+                ),
+              )
+            else
             SafeArea(
               top: false,
               child: Padding(

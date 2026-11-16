@@ -66,4 +66,22 @@ class OngoingMatchService {
       debugPrint('OngoingMatchService.clearSnapshot error: $e');
     }
   }
+
+  /// Purge all ongoing match snapshots from storage
+  Future<void> clearAllSnapshots() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final keys = prefs
+          .getKeys()
+          .where((k) =>
+              k.startsWith(_activeMatchKeyPrefix) ||
+              k == _latestActiveMatchKey)
+          .toList();
+      for (final k in keys) {
+        await prefs.remove(k);
+      }
+    } catch (e) {
+      debugPrint('OngoingMatchService.clearAllSnapshots error: $e');
+    }
+  }
 }

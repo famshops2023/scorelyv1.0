@@ -8,7 +8,6 @@ import '../../providers/history_provider.dart';
 import '../../services/database.dart';
 import '../match/providers/pending_matches_provider.dart';
 import '../match/match_setup_screen.dart';
-import '../teams/providers/teams_provider.dart';
 import '../../models/live_match_data.dart';
 import '../../providers/profile_provider.dart';
 import './providers/live_match_insforge_provider.dart';
@@ -16,6 +15,13 @@ import '../match/helpers/live_match_promo.dart';
 import 'widgets/home_drawer.dart';
 import 'widgets/quick_match_cards.dart';
 import 'widgets/home_stats_section.dart';
+import 'widgets/in_app_requests_sheet.dart';
+import '../../widgets/ads/scorely_banner_ad.dart';
+import '../../providers/scorer_notification_provider.dart';
+import '../../services/sync_manager.dart';
+import '../../services/ongoing_match_service.dart';
+import '../../services/match_lifecycle_service.dart';
+import '../match/providers/quick_match_storage.dart';
 
 // --- Colors from DESIGN_home.md ---
 class HomeColors {
@@ -80,34 +86,52 @@ class HomeScreen extends ConsumerWidget {
     final liveInsforgeAsync = ref.watch(liveMatchInsforgeProvider);
     final recentAsync = ref.watch(recentMatchesProvider);
     final pendingMatches = ref.watch(pendingMatchesProvider);
+    // Live matches are rendered in the LIVE section, never as pending.
+    final pendingOnly = pendingMatches.where((m) => m.isPending).toList();
+    final pendingScorerRequests = ref.watch(pendingScorerRequestsProvider);
 
     return Scaffold(
       backgroundColor: HomeColors.surface,
-      appBar: _buildAppBar(context, pendingMatches.isNotEmpty),
+      appBar: _buildAppBar(context, pendingOnly.isNotEmpty || pendingScorerRequests.isNotEmpty),
       drawer: const HomeDrawer(),
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 17.0, vertical: 20.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildGreeting(),
-              const SizedBox(height: 20),
-              QuickMatchActionCards(
-                onQuickMatchTap: () => _handleQuickMatchTap(context),
-                onScheduleMatchTap: () => _handleScheduleMatchTap(context),
-              ),
-              if (pendingMatches.isNotEmpty) ...[
+      body: RefreshIndicator(
+        onRefresh: () async {
+          await ref.read(syncManagerProvider).pullCompletedMatchesFromRemote();
+          ref.invalidate(homePersonalStatsProvider);
+          ref.invalidate(recentMatchesProvider);
+          ref.invalidate(liveMatchInsforgeProvider);
+          ref.invalidate(pendingMatchesProvider);
+          ref.read(pendingScorerRequestsProvider.notifier).checkRequests();
+        },
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 17.0, vertical: 20.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildGreeting(),
+                const SizedBox(height: 20),
+                QuickMatchActionCards(
+                  onQuickMatchTap: () => _handleQuickMatchTap(context, ref),
+                  onScheduleMatchTap: () => _handleScheduleMatchTap(context),
+                ),
                 const SizedBox(height: 27),
-                _buildPendingMatchSection(context, ref, pendingMatches),
+                _buildMatchesSection(
+                  context,
+                  ref,
+                  pendingMatches: pendingMatches,
+                  liveAsync: liveInsforgeAsync,
+                  onStartQuickMatch: () => _handleQuickMatchTap(context, ref),
+                ),
+                const SizedBox(height: 27),
+                HomeStatsSection(),
+                const SizedBox(height: 27),
+                _buildRecentMatchesSection(context, ref, recentAsync),
+                const SizedBox(height: 20),
+                const ScorelyBannerAd(),
               ],
-              const SizedBox(height: 27),
-              _buildLiveMatchSection(context, ref, liveInsforgeAsync),
-              const SizedBox(height: 27),
-              HomeStatsSection(),
-              const SizedBox(height: 27),
-              _buildRecentMatchesSection(context, ref, recentAsync),
-            ],
+            ),
           ),
         ),
       ),
@@ -119,9 +143,7 @@ class HomeScreen extends ConsumerWidget {
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: HomeColors.surface,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Text('Coming Soon 🚀', style: HomeTypography.headlineSm),
         content: Text(
           'Scheduled Matches with Live Sync and Team Management will be available in the next major update.\n\nFor now, enjoy Quick Matches!',
@@ -160,8 +182,8 @@ class HomeScreen extends ConsumerWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Image.asset(
-            'assets/images/scorely_icon.png',
-            height: 46,
+            'assets/images/scorely_logo.png',
+            height: 38,
             fit: BoxFit.contain,
             errorBuilder: (context, error, stackTrace) =>
                 const Icon(Icons.sports_cricket, color: Colors.amber),
@@ -198,7 +220,14 @@ class HomeScreen extends ConsumerWidget {
           children: [
             IconButton(
               icon: const Icon(Icons.notifications_none, color: Colors.white),
-              onPressed: () {},
+              onPressed: () {
+                showModalBottomSheet(
+                  context: context,
+                  isScrollControlled: true,
+                  backgroundColor: Colors.transparent,
+                  builder: (_) => const InAppRequestsSheet(),
+                );
+              },
             ),
             if (hasNotifications)
               Positioned(
@@ -257,11 +286,11 @@ class HomeScreen extends ConsumerWidget {
     );
   }
 
-  Future<void> _handleQuickMatchTap(BuildContext context) async {
+  Future<void> _handleQuickMatchTap(BuildContext context, WidgetRef ref) async {
     final prefs = await SharedPreferences.getInstance();
     final bool hasSeenQuickMatchWarning =
         prefs.getBool('seen_quick_match_warning') ?? false;
-    final int limit = prefs.getInt('settings_storage_limit') ?? 5;
+    final int limit = ref.read(storageLimitProvider);
 
     if (hasSeenQuickMatchWarning) {
       if (context.mounted) {
@@ -320,12 +349,35 @@ class HomeScreen extends ConsumerWidget {
                     ),
                     const SizedBox(height: 12),
                     Text(
-                      'To keep Scorely running smoothly, only your latest $limit matches are stored on your device. Older matches will be automatically deleted as new matches are added',
+                      'To keep Scorely running smoothly, only your latest $limit matches are stored on your device. Older matches will be automatically deleted as new matches are added.',
                       textAlign: TextAlign.center,
                       style: GoogleFonts.inter(
                         fontSize: 14,
-                        color: const Color(0xFF5A6278), // Slate grey from image
+                        color: const Color(0xFF5A6278),
                         height: 1.5,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    RichText(
+                      textAlign: TextAlign.center,
+                      text: TextSpan(
+                        style: GoogleFonts.inter(
+                          fontSize: 13,
+                          color: const Color(0xFF5A6278),
+                          height: 1.5,
+                        ),
+                        children: [
+                          const TextSpan(text: 'Want to store more? Go to '),
+                          TextSpan(
+                            text: 'Settings \u2192 Storage Optimizer',
+                            style: GoogleFonts.inter(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.primary,
+                            ),
+                          ),
+                          const TextSpan(text: ' to increase the limit.'),
+                        ],
                       ),
                     ),
                     const SizedBox(height: 24),
@@ -339,7 +391,9 @@ class HomeScreen extends ConsumerWidget {
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(12),
                               ),
-                              side: const BorderSide(color: AppColors.darkSurface),
+                              side: const BorderSide(
+                                color: AppColors.darkSurface,
+                              ),
                             ),
                             child: Text(
                               'CANCEL',
@@ -394,93 +448,95 @@ class HomeScreen extends ConsumerWidget {
     }
   }
 
-  // ======================== PENDING MATCHES ========================
+  // ======================== MATCHES (PENDING & LIVE) ========================
 
-  Widget _buildPendingMatchSection(
+  Widget _buildMatchesSection(
     BuildContext context,
-    WidgetRef ref,
-    List<MatchSetupData> pendingMatches,
-  ) {
+    WidgetRef ref, {
+    required List<MatchSetupData> pendingMatches,
+    required AsyncValue<List<LiveMatchData>> liveAsync,
+    required VoidCallback onStartQuickMatch,
+  }) {
+    final liveMatches = liveAsync.value ?? [];
+
+    // Build the unified list of cards: LIVE cards first, then PENDING cards
+    final List<Widget> cards = [];
+    final seenMatchIds = <String>{};
+
+    // 1. Live matches from cloud/InsForge
+    for (final liveMatch in liveMatches) {
+      if (liveMatch.id.isNotEmpty) seenMatchIds.add(liveMatch.id);
+      cards.add(_LiveInsforgeMatchCard(match: liveMatch));
+    }
+
+    // 2. Local Live Matches (e.g. guest or local match started before server poll)
+    for (final p in pendingMatches) {
+      if (p.isLive && (p.id.isEmpty || !seenMatchIds.contains(p.id))) {
+        if (p.id.isNotEmpty) seenMatchIds.add(p.id);
+        cards.add(_PendingMatchCard(context: context, ref: ref, match: p));
+      }
+    }
+
+    // 3. Pending Matches (status == pending)
+    for (final p in pendingMatches) {
+      if (p.isPending && (p.id.isEmpty || !seenMatchIds.contains(p.id))) {
+        if (p.id.isNotEmpty) seenMatchIds.add(p.id);
+        cards.add(_PendingMatchCard(context: context, ref: ref, match: p));
+      }
+    }
+
+    // Loading state: when live matches are loading and no pending matches are available
+    if (cards.isEmpty && liveAsync.isLoading) {
+      return const Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _MatchesSectionHeader(),
+          SizedBox(height: 10),
+          _EmptyCard(
+            message: 'Checking for matches...',
+            isLoading: true,
+          ),
+        ],
+      );
+    }
+
+    // Empty state: no live matches and no pending matches
+    if (cards.isEmpty) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const _MatchesSectionHeader(),
+          const SizedBox(height: 10),
+          _EmptyMatchesCard(
+            onStartQuickMatch: onStartQuickMatch,
+          ),
+        ],
+      );
+    }
+
+    // Unified horizontal slider/carousel showing all eligible matches
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          children: [
-            Container(
-              width: 7,
-              height: 7,
-              decoration: const BoxDecoration(
-                color: AppColors.primary,
-                shape: BoxShape.circle,
-              ),
-            ),
-            const SizedBox(width: 7),
-            Text(
-              'PENDING MATCHES',
-              style: HomeTypography.labelBold.copyWith(
-                color: HomeColors.secondary,
-              ),
-            ),
-          ],
-        ),
+        _MatchesSectionHeader(totalCount: cards.length),
         const SizedBox(height: 10),
         SingleChildScrollView(
           scrollDirection: Axis.horizontal,
+          physics: const BouncingScrollPhysics(),
           clipBehavior: Clip.none,
           child: Row(
-            children: pendingMatches.map((m) {
-              return Padding(
-                padding: const EdgeInsets.only(right: 14),
-                child: _PendingMatchCard(context: context, ref: ref, match: m),
-              );
-            }).toList(),
+            children: [
+              for (int i = 0; i < cards.length; i++)
+                Padding(
+                  padding: EdgeInsets.only(
+                    right: (i == cards.length - 1) ? 0 : 14,
+                  ),
+                  child: cards[i],
+                ),
+            ],
           ),
         ),
       ],
-    );
-  }
-
-  // ======================== LIVE MATCH ========================
-
-  Widget _buildLiveMatchSection(
-    BuildContext context,
-    WidgetRef ref,
-    AsyncValue<List<LiveMatchData>> liveAsync,
-  ) {
-    return liveAsync.when(
-      loading: () => const Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _LiveMatchHeader(),
-          SizedBox(height: 10),
-          _ShimmerCard(height: 130),
-        ],
-      ),
-      error: (e, _) => const SizedBox.shrink(),
-      data: (matches) {
-        if (matches.isEmpty) {
-          return const SizedBox.shrink();
-        }
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const _LiveMatchHeader(),
-            const SizedBox(height: 10),
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              clipBehavior: Clip.none,
-              child: Row(
-                children: matches.map((m) {
-                  return Padding(
-                    padding: const EdgeInsets.only(right: 14),
-                    child: _LiveInsforgeMatchCard(match: m),
-                  );
-                }).toList(),
-              ),
-            ),
-          ],
-        );
-      },
     );
   }
 
@@ -511,12 +567,19 @@ class HomeScreen extends ConsumerWidget {
         ),
         const SizedBox(height: 10),
         recentAsync.when(
-          loading: () => const _ShimmerCard(height: 130),
-          error: (e, _) => const _EmptyCard(message: 'Could not load matches'),
+          loading: () => const _EmptyCard(
+            message: 'Loading recent matches...',
+            isLoading: true,
+          ),
+          error: (e, _) => const _EmptyCard(
+            message: 'No matches available to show',
+            subtitle: 'Tap Quick Match above to start a match!',
+          ),
           data: (matches) {
             if (matches.isEmpty) {
               return const _EmptyCard(
-                message: 'No recent matches yet.\nTap Quick Match to start!',
+                message: 'No matches available to show',
+                subtitle: 'Tap Quick Match above to start a match!',
               );
             }
             return SingleChildScrollView(
@@ -557,11 +620,51 @@ class _PendingMatchCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final profile = ref.watch(profileProvider);
     final format = match.matchType;
-    final isWaitingForB = match.status == 'waiting_for_team_b';
+    final isWaitingForB = match.isWaitingForSquad; // used for status badge only
+    final isCreator = match.isCreator(profile.id);
+
+    // Active scorer assigned to someone else
+    final hasAssignedOtherScorer = match.activeScorerId != null &&
+        match.activeScorerId!.isNotEmpty &&
+        match.activeScorerId != profile.id;
+
+    // Creator can proceed to toss only if active scorer is not assigned to someone else
+    final canProceedToToss = isCreator && !hasAssignedOtherScorer;
+
+    final String statusLabel;
+    final Color statusColor;
+    if (match.isLive) {
+      statusLabel = 'LIVE';
+      statusColor = HomeColors.activeGreen;
+    } else if (isWaitingForB) {
+      statusLabel = 'PENDING • SQUAD';
+      statusColor = const Color(0xFFF2994A);
+    } else {
+      statusLabel = 'PENDING';
+      statusColor = const Color(0xFFF2994A);
+    }
+
+    // Simplified button rules (Pending match):
+    //   • Creator (active scorer not assigned) → PROCEED TO TOSS
+    //   • Associated signed-in players / viewers → VIEW DETAILS
+    //   • Live local guest match → RESUME SCORING
+    final String buttonLabel;
+    final Color buttonColor;
+    if (match.isLive) {
+      buttonLabel = 'RESUME SCORING';
+      buttonColor = HomeColors.primary;
+    } else if (canProceedToToss) {
+      buttonLabel = 'PROCEED TO TOSS';
+      buttonColor = HomeColors.primary;
+    } else {
+      buttonLabel = 'VIEW DETAILS';
+      buttonColor = HomeColors.secondary;
+    }
 
     return Container(
-      width: 280,
+      width: 290,
       decoration: BoxDecoration(
         color: HomeColors.cardBg,
         borderRadius: BorderRadius.circular(16),
@@ -585,16 +688,16 @@ class _PendingMatchCard extends ConsumerWidget {
                   Container(
                     width: 7,
                     height: 7,
-                    decoration: const BoxDecoration(
-                      color: Color(0xFFF2994A),
+                    decoration: BoxDecoration(
+                      color: statusColor,
                       shape: BoxShape.circle,
                     ),
                   ),
                   const SizedBox(width: 5),
                   Text(
-                    isWaitingForB ? 'WAITING FOR SQUAD' : 'READY FOR TOSS',
+                    statusLabel,
                     style: HomeTypography.labelBold.copyWith(
-                      color: const Color(0xFFF2994A),
+                      color: statusColor,
                     ),
                   ),
                 ],
@@ -637,49 +740,30 @@ class _PendingMatchCard extends ConsumerWidget {
             height: 41,
             child: ElevatedButton(
               onPressed: () {
-                if (isWaitingForB) {
-                  final teams = ref.read(teamsProvider).value ?? [];
-
-                  final teamB = teams.firstWhere(
-                    (t) => t.name == match.teamBName,
-                    orElse: () => TeamData(
-                      id: '',
-                      name: '',
-                      location: '',
-                      dateActive: DateTime.now(),
-                      members: [],
-                    ),
-                  );
-                  if (teamB.id.isNotEmpty) {
-                    context.push(
-                      '/team-squad',
-                      extra: {
-                        'teamId': teamB.id,
-                        'readOnly': false,
-                        'singleSelectionMode': false,
-                        'setupData': match,
-                        'isSelectingPlayingXi': true,
-                        'teamType': 'B',
-                      },
-                    );
-                  } else {
-                    proceedToToss(context, ref, match);
-                  }
-                } else {
+                if (match.isLive) {
+                  context.push('/scoring', extra: match);
+                  return;
+                }
+                if (canProceedToToss) {
+                  // Creator proceeds to Toss (if active scorer not assigned)
                   proceedToToss(context, ref, match);
+                } else {
+                  // Associated signed-in player / viewer → read-only details
+                  context.push('/match-details', extra: {
+                    'setupData': match,
+                    'readOnly': true,
+                  });
                 }
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: isWaitingForB
-                    ? HomeColors.secondary
-                    : HomeColors.primary,
+                backgroundColor: buttonColor,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
                 elevation: 0,
               ),
               child: Text(
-                isWaitingForB ? 'SELECT SQUAD B' : 'PROCEED TO TOSS',
+                buttonLabel,
                 style: GoogleFonts.inter(
                   fontSize: 12,
                   fontWeight: FontWeight.w700,
@@ -695,10 +779,11 @@ class _PendingMatchCard extends ConsumerWidget {
   }
 }
 
-// ======================== LIVE MATCH SUB-WIDGETS ========================
+// ======================== MATCHES SUB-WIDGETS ========================
 
-class _LiveMatchHeader extends StatelessWidget {
-  const _LiveMatchHeader();
+class _MatchesSectionHeader extends StatelessWidget {
+  final int totalCount;
+  const _MatchesSectionHeader({this.totalCount = 0});
 
   @override
   Widget build(BuildContext context) {
@@ -708,16 +793,124 @@ class _LiveMatchHeader extends StatelessWidget {
           width: 7,
           height: 7,
           decoration: const BoxDecoration(
-            color: HomeColors.activeGreen,
+            color: AppColors.primary,
             shape: BoxShape.circle,
           ),
         ),
         const SizedBox(width: 7),
         Text(
-          'LIVE MATCH',
-          style: HomeTypography.labelBold.copyWith(color: HomeColors.secondary),
+          'MATCHES',
+          style: HomeTypography.labelBold.copyWith(
+            color: HomeColors.secondary,
+          ),
         ),
+        if (totalCount > 0) ...[
+          const SizedBox(width: 6),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+            decoration: BoxDecoration(
+              color: HomeColors.secondary.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Text(
+              '$totalCount',
+              style: GoogleFonts.inter(
+                fontSize: 10,
+                fontWeight: FontWeight.w700,
+                color: HomeColors.secondary,
+              ),
+            ),
+          ),
+        ],
       ],
+    );
+  }
+}
+
+class _EmptyMatchesCard extends StatelessWidget {
+  final VoidCallback onStartQuickMatch;
+
+  const _EmptyMatchesCard({required this.onStartQuickMatch});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(vertical: 22, horizontal: 20),
+      decoration: BoxDecoration(
+        color: HomeColors.cardBg,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: const [
+          BoxShadow(
+            color: Color.fromRGBO(26, 33, 56, 0.04),
+            blurRadius: 16,
+            offset: Offset(0, 4),
+          ),
+        ],
+        border: Border.all(color: const Color(0xFFE9ECF0)),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              color: AppColors.primary.withValues(alpha: 0.08),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.sports_cricket_outlined,
+              color: AppColors.primary,
+              size: 22,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            'No matches right now',
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: HomeColors.onSurface,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Start a Quick Match or Schedule a Match to begin!',
+            style: GoogleFonts.inter(
+              fontSize: 12,
+              color: HomeColors.secondary,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 14),
+          SizedBox(
+            height: 36,
+            child: ElevatedButton.icon(
+              onPressed: onStartQuickMatch,
+              icon: const Icon(Icons.flash_on, size: 16, color: Colors.white),
+              label: Text(
+                'START QUICK MATCH',
+                style: GoogleFonts.inter(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.white,
+                  letterSpacing: 0.5,
+                ),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: HomeColors.primary,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                elevation: 0,
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -731,7 +924,8 @@ class _LiveInsforgeMatchCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final profile = ref.watch(profileProvider);
     final myId = profile.id;
-    final isScorer = match.scorerId == myId;
+    // The server-persisted active scorer is the only one allowed to resume.
+    final isScorer = myId.isNotEmpty && match.scorerId == myId;
 
     return Container(
       width: 290,
@@ -750,15 +944,66 @@ class _LiveInsforgeMatchCard extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Format + Venue
-          Text(
-            '${match.format.toUpperCase()} • ${match.venue.toUpperCase()}',
-            style: HomeTypography.labelBold.copyWith(
-              color: HomeColors.secondary,
-              fontSize: 10,
-            ),
+          // Top row: LIVE badge + Format / Venue
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    width: 7,
+                    height: 7,
+                    decoration: const BoxDecoration(
+                      color: HomeColors.activeGreen,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                  const SizedBox(width: 5),
+                  Text(
+                    'LIVE',
+                    style: HomeTypography.labelBold.copyWith(
+                      color: HomeColors.activeGreen,
+                    ),
+                  ),
+                ],
+              ),
+              Flexible(
+                child: Text(
+                  match.venue.isNotEmpty
+                      ? '${match.format.toUpperCase()} • ${match.venue.toUpperCase()}'
+                      : match.format.toUpperCase(),
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: HomeColors.secondary,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 12),
+          if (match.scorerName.isNotEmpty) ...[
+            const SizedBox(height: 6),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                decoration: BoxDecoration(
+                  color: HomeColors.primary.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text(
+                  'Scorer: ${match.scorerName}',
+                  style: GoogleFonts.inter(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w600,
+                    color: HomeColors.primary,
+                  ),
+                ),
+              ),
+            ),
+          ],
+          const SizedBox(height: 10),
           // Team A Name & Score
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -860,30 +1105,69 @@ class _LiveInsforgeMatchCard extends ConsumerWidget {
             width: double.infinity,
             height: 41,
             child: ElevatedButton(
-              onPressed: () {
+              onPressed: () async {
                 if (isScorer) {
-                  // Resume scoring: retrieve match data from pending matches provider
+                  // Resume scoring: restore original match data (teams, players, squads)
                   final pendingList = ref.read(pendingMatchesProvider);
-                  final localSetup = pendingList.firstWhere(
-                    (m) => m.id == match.id,
-                    orElse: () => MatchSetupData(
-                      id: match.id,
-                      teamAName: match.teamAName,
-                      teamBName: match.teamBName,
-                      teamAPlayers: [],
-                      teamBPlayers: [],
-                      overs: 20,
-                      tossWonBy: '',
-                      maxOversPerBowler: 4,
-                      powerplayOvers: 6,
-                      battingFirstTeam: match.teamAName,
-                      matchType: match.format,
-                      ballType: 'Tennis',
-                      venue: match.venue,
-                      matchDate: DateTime.now(),
-                    ),
+                  var localSetup = pendingList.cast<MatchSetupData?>().firstWhere(
+                    (m) => m!.id == match.id,
+                    orElse: () => null,
                   );
-                  context.push('/scoring', extra: localSetup);
+
+                  // 1. If not found or squads empty, hydrate from OngoingMatchService snapshot
+                  if (localSetup == null || (localSetup.teamAPlayers.isEmpty && localSetup.teamBPlayers.isEmpty)) {
+                    final snapshot = await OngoingMatchService.instance.getSnapshot(match.id);
+                    if (snapshot != null && snapshot['setup'] is Map) {
+                      try {
+                        localSetup = MatchSetupData.fromJson(
+                          Map<String, dynamic>.from(snapshot['setup'] as Map),
+                        );
+                      } catch (_) {}
+                    }
+                  }
+
+                  // 2. Check QuickMatchStorage
+                  if (localSetup == null || (localSetup.teamAPlayers.isEmpty && localSetup.teamBPlayers.isEmpty)) {
+                    final quickMatches = await QuickMatchStorage.getAllMatches();
+                    final matchInQuick = quickMatches.cast<MatchSetupData?>().firstWhere(
+                      (m) => m!.id == match.id,
+                      orElse: () => null,
+                    );
+                    if (matchInQuick != null && (matchInQuick.teamAPlayers.isNotEmpty || matchInQuick.teamBPlayers.isNotEmpty)) {
+                      localSetup = matchInQuick;
+                    }
+                  }
+
+                  // 3. Try fetching authoritative row from InsForge server
+                  if (localSetup == null || (localSetup.teamAPlayers.isEmpty && localSetup.teamBPlayers.isEmpty)) {
+                    final row = await MatchLifecycleService.fetchRow(match.id);
+                    if (row != null && row['match_data'] is Map) {
+                      try {
+                        localSetup = MatchSetupData.fromJson(
+                          Map<String, dynamic>.from(row['match_data'] as Map),
+                        );
+                      } catch (_) {}
+                    }
+                  }
+
+                  // 4. Per Point 15 Q15: Remove the fallback that resumes with empty squads.
+                  // If original data cannot be recovered, show clear error message instead of opening incomplete match.
+                  if (localSetup == null || (localSetup.teamAPlayers.isEmpty && localSetup.teamBPlayers.isEmpty)) {
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Cannot resume match: Squad and player data could not be recovered. Please check your network or re-open from Pending Matches.'),
+                          backgroundColor: AppColors.primary,
+                          duration: Duration(seconds: 4),
+                        ),
+                      );
+                    }
+                    return;
+                  }
+
+                  if (context.mounted) {
+                    context.push('/scoring', extra: localSetup);
+                  }
                 } else {
                   // Show stats: navigate to live match view screen
                   context.push('/live-match', extra: match);
@@ -946,6 +1230,10 @@ class _RecentMatchCard extends ConsumerWidget {
         final teamAScore = '${match.teamARuns}/${match.teamAWickets}';
         final teamBScore = '${match.teamBRuns}/${match.teamBWickets}';
 
+        final matchCode = match.matchTitle.contains('(') && match.matchTitle.contains(')')
+            ? match.matchTitle.split('(').last.replaceAll(')', '').trim()
+            : (match.matchTitle.startsWith('SM-') ? match.matchTitle : '');
+
         final winner = match.winnerTeamName;
         final resultText = winner != null
             ? _buildResultText(winner, match, teamA, teamB)
@@ -975,7 +1263,9 @@ class _RecentMatchCard extends ConsumerWidget {
                   children: [
                     Flexible(
                       child: Text(
-                        '$dateStr • $format',
+                        matchCode.isNotEmpty
+                            ? '$dateStr • $format • $matchCode'
+                            : '$dateStr • $format',
                         style: HomeTypography.labelBold.copyWith(
                           fontSize: 9,
                           letterSpacing: 0.4,
@@ -1078,6 +1368,10 @@ class _RecentMatchCard extends ConsumerWidget {
     String teamA,
     String teamB,
   ) {
+    if (winner.toLowerCase().contains('abandon')) {
+      return 'Match Abandoned';
+    }
+
     final teamARuns = match.teamARuns;
     final teamBRuns = match.teamBRuns;
     final teamBWickets = match.teamBWickets;
@@ -1132,22 +1426,80 @@ class _ShimmerCard extends StatelessWidget {
 
 class _EmptyCard extends StatelessWidget {
   final String message;
-  const _EmptyCard({required this.message});
+  final String? subtitle;
+  final bool isLoading;
+
+  const _EmptyCard({
+    required this.message,
+    this.subtitle,
+    this.isLoading = false,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(vertical: 28, horizontal: 20),
+      padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 20),
       decoration: BoxDecoration(
         color: HomeColors.cardBg,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE0E3E6)),
+        boxShadow: const [
+          BoxShadow(
+            color: Color.fromRGBO(26, 33, 56, 0.04),
+            blurRadius: 16,
+            offset: Offset(0, 4),
+          ),
+        ],
+        border: Border.all(color: const Color(0xFFE9ECF0)),
       ),
-      child: Text(
-        message,
-        style: GoogleFonts.inter(fontSize: 13, color: HomeColors.secondary),
-        textAlign: TextAlign.center,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (isLoading)
+            const SizedBox(
+              width: 24,
+              height: 24,
+              child: CircularProgressIndicator(
+                strokeWidth: 2.2,
+                color: AppColors.primary,
+              ),
+            )
+          else
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                color: AppColors.primary.withValues(alpha: 0.08),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.sports_cricket_outlined,
+                color: AppColors.primary,
+                size: 22,
+              ),
+            ),
+          const SizedBox(height: 12),
+          Text(
+            message,
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: HomeColors.onSurface,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          if (subtitle != null && subtitle!.isNotEmpty) ...[
+            const SizedBox(height: 4),
+            Text(
+              subtitle!,
+              style: GoogleFonts.inter(
+                fontSize: 12,
+                color: HomeColors.secondary,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ],
       ),
     );
   }

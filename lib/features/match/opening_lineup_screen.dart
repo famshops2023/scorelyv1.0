@@ -5,7 +5,10 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import 'match_setup_screen.dart';
+import 'widgets/match_role_card.dart';
+import 'providers/pending_matches_provider.dart';
 import '../teams/providers/teams_provider.dart';
+import '../../providers/profile_provider.dart';
 
 class OpeningLineupResult {
   final TeamMember openingBat1;
@@ -28,11 +31,29 @@ class OpeningLineupResult {
 class OpeningLineupScreen extends ConsumerStatefulWidget {
   final MatchSetupData setupData;
   final bool isSecondInnings;
+  /// True when this screen is opened on the recipient's (handover) device.
+  /// In this case, pressing "Start Match" must push directly to /scoring
+  /// because there is no innings_break_screen on the stack waiting for a pop.
+  final bool isHandoverMode;
+  // 1st innings metadata forwarded to ScoringScreen
+  final int? firstInningsRuns;
+  final int? firstInningsWickets;
+  final String? firstInningsBattingTeam;
+  final String? firstInningsOvers;
+  final int? firstInningsBalls;
+  final int? target;
 
   const OpeningLineupScreen({
     super.key,
     required this.setupData,
     this.isSecondInnings = false,
+    this.isHandoverMode = false,
+    this.firstInningsRuns,
+    this.firstInningsWickets,
+    this.firstInningsBattingTeam,
+    this.firstInningsOvers,
+    this.firstInningsBalls,
+    this.target,
   });
 
   @override
@@ -50,14 +71,20 @@ class _OpeningLineupScreenState extends ConsumerState<OpeningLineupScreen> {
   @override
   void initState() {
     super.initState();
-    final scorerName = widget.setupData.teamBScorerName ?? widget.setupData.teamAScorerName;
-    if (scorerName != null && scorerName.isNotEmpty) {
-      officialScorer = TeamMember(
-        id: 'official_scorer',
-        name: scorerName,
-        roles: ['Official Scorer'],
-      );
-    }
+    final profile = ref.read(profileProvider);
+    final scorerName = widget.setupData.teamBScorerName ??
+        widget.setupData.teamAScorerName ??
+        (profile.name.isNotEmpty ? profile.name : 'Scorer (Myself)');
+    final scorerId = widget.setupData.teamBScorerId ??
+        widget.setupData.teamAScorerId ??
+        (profile.id.isNotEmpty ? profile.id : 'scorer_myself');
+
+    officialScorer = TeamMember(
+      id: scorerId,
+      profileId: scorerId,
+      name: scorerName,
+      roles: const ['Official Scorer'],
+    );
   }
 
   bool get _isReady {
@@ -66,15 +93,15 @@ class _OpeningLineupScreenState extends ConsumerState<OpeningLineupScreen> {
         openingBowler != null &&
         wicketKeeper != null &&
         officialScorer != null;
-        
-    if (widget.setupData.isQuickMatch) {
+
+    if (widget.setupData.isQuickMatch || widget.isSecondInnings) {
       return baseReady;
     } else {
       return baseReady && captain != null;
     }
   }
 
-  void _proceedToScore() {
+  Future<void> _proceedToScore() async {
     final lineup = OpeningLineupResult(
       openingBat1: openingBat1!,
       openingBat2: openingBat2!,
@@ -84,14 +111,122 @@ class _OpeningLineupScreenState extends ConsumerState<OpeningLineupScreen> {
       officialScorer: officialScorer,
     );
 
-    if (widget.isSecondInnings) {
+    final profile = ref.read(profileProvider);
+    final matchId = widget.setupData.id;
+    final scorerProfileId = officialScorer?.profileId ?? officialScorer?.id ?? '';
+    final isSignedIn = profile.isLoggedIn && profile.id.isNotEmpty;
+    final isGuestScorer = scorerProfileId == 'scorer_myself' ||
+        scorerProfileId.isEmpty ||
+        !isSignedIn;
+    final isOfficialScorer = isSignedIn &&
+        (scorerProfileId == profile.id || isGuestScorer);
+
+    if (matchId.isNotEmpty) {
+      if (widget.setupData.isQuickMatch) {
+        // Quick match for signed-in user: transition to live atomically on InsForge
+        if (isSignedIn) {
+          final effectiveScorerId = (officialScorer?.profileId != null &&
+                  officialScorer!.profileId!.isNotEmpty &&
+                  officialScorer!.profileId != 'scorer_myself')
+              ? officialScorer!.profileId!
+              : profile.id;
+          final effectiveScorerName = officialScorer?.name ?? profile.name;
+          await ref.read(pendingMatchesProvider.notifier).markLive(
+                matchId,
+                scorerId: effectiveScorerId,
+                scorerName: effectiveScorerName,
+              );
+        }
+        // Guest quick matches stay local without server requirement
+      } else {
+        if (!isSignedIn) {
+          _showScorerOnlyDialog(
+            'Please sign in to start a live match. Guest matches stay offline.',
+          );
+          return;
+        }
+        if (!isOfficialScorer) {
+          _showScorerOnlyDialog(
+            'Only the assigned official scorer can start scoring. '
+            'The scorer request has been sent to the selected player.',
+          );
+          return;
+        }
+
+        // This is the ONLY place a match becomes live: the signed-in official
+        // scorer has completed the Opening Lineup and explicitly proceeded.
+        final wentLive = await ref.read(pendingMatchesProvider.notifier).markLive(
+              matchId,
+              scorerId: profile.id,
+              scorerName: profile.name,
+            );
+        if (!mounted) return;
+        if (!wentLive) {
+          _showScorerOnlyDialog(
+            'Could not start scoring. You are not the active scorer for this '
+            'match, or the connection was lost. Please check your connection '
+            'and try again.',
+          );
+          return;
+        }
+      }
+    }
+
+    if (!mounted) return;
+    if (widget.isSecondInnings && widget.isHandoverMode) {
+      // Recipient (handover) device: no innings_break_screen on the stack.
+      // Navigate directly to the scoring screen for 2nd innings.
+      context.pushReplacement('/scoring', extra: <String, dynamic>{
+        'setupData': widget.setupData,
+        'lineup': lineup,
+        'isSecondInnings': true,
+        // Forward 1st innings metadata so the scoring screen shows the correct target
+        'firstInningsRuns': widget.firstInningsRuns,
+        'firstInningsWickets': widget.firstInningsWickets,
+        'firstInningsBattingTeam': widget.firstInningsBattingTeam,
+        'firstInningsOvers': widget.firstInningsOvers,
+        'firstInningsBalls': widget.firstInningsBalls,
+        'target': widget.target,
+      });
+    } else if (widget.isSecondInnings) {
+      // Normal flow: innings_break_screen is on the stack, pop back to it.
       Navigator.pop(context, lineup);
     } else {
-      context.pushReplacement('/scoring', extra: {
+      context.pushReplacement('/scoring', extra: <String, dynamic>{
         'setupData': widget.setupData,
         'lineup': lineup,
       });
     }
+  }
+
+  void _showScorerOnlyDialog(String message) {
+    showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text(
+          'OFFICIAL SCORER ONLY',
+          style: GoogleFonts.inter(
+            fontSize: 13,
+            fontWeight: FontWeight.w700,
+            letterSpacing: 0.8,
+          ),
+        ),
+        content: Text(
+          message,
+          style: GoogleFonts.inter(fontSize: 14, height: 1.4),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: Text(
+              'OK',
+              style: GoogleFonts.inter(fontWeight: FontWeight.w700),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   Future<void> _selectPlayer(String role, String targetTeamName) async {
@@ -124,9 +259,6 @@ class _OpeningLineupScreenState extends ConsumerState<OpeningLineupScreen> {
               break;
             case 'Captain':
               captain = selectedPlayer;
-              break;
-            case 'Official Scorer':
-              officialScorer = selectedPlayer;
               break;
           }
         });
@@ -183,9 +315,6 @@ class _OpeningLineupScreenState extends ConsumerState<OpeningLineupScreen> {
             break;
           case 'Captain':
             captain = selectedPlayer;
-            break;
-          case 'Official Scorer':
-            officialScorer = selectedPlayer;
             break;
         }
       });
@@ -252,43 +381,37 @@ class _OpeningLineupScreenState extends ConsumerState<OpeningLineupScreen> {
                 crossAxisSpacing: 16,
                 childAspectRatio: 0.85,
                 children: [
-                  _buildRoleCard(
+                  MatchRoleCard(
                     title: 'OPENING BAT 1',
                     icon: Icons.sports_cricket,
                     player: openingBat1,
                     onSelect: () => _selectPlayer('Opening Bat 1', battingTeam),
                   ),
-                  _buildRoleCard(
+                  MatchRoleCard(
                     title: 'OPENING BAT 2',
                     icon: Icons.sports_cricket,
                     player: openingBat2,
                     onSelect: () => _selectPlayer('Opening Bat 2', battingTeam),
                   ),
-                  _buildRoleCard(
+                  MatchRoleCard(
                     title: 'OPENING BOWLER',
                     icon: Icons.sports_baseball,
                     player: openingBowler,
                     onSelect: () => _selectPlayer('Opening Bowler', bowlingTeam),
                   ),
-                  _buildRoleCard(
+                  MatchRoleCard(
                     title: 'WICKETKEEPER',
                     icon: Icons.sports_handball, // Fallback icon for wicketkeeper
                     player: wicketKeeper,
                     onSelect: () => _selectPlayer('Wicketkeeper', bowlingTeam),
                   ),
-                  if (!widget.setupData.isQuickMatch)
-                    _buildRoleCard(
+                  if (!widget.setupData.isQuickMatch && !widget.isSecondInnings)
+                    MatchRoleCard(
                       title: 'CAPTAIN',
                       icon: Icons.stars,
                       player: captain,
                       onSelect: () => _selectPlayer('Captain', battingTeam), // Either team could have a captain, default to batting
                     ),
-                  _buildRoleCard(
-                    title: 'OFFICIAL SCORER',
-                    icon: Icons.description,
-                    player: officialScorer,
-                    onSelect: () => _selectPlayer('Official Scorer', battingTeam), // Scorer could be from any team or not in squad
-                  ),
                 ],
               ),
             ),
@@ -364,101 +487,4 @@ class _OpeningLineupScreenState extends ConsumerState<OpeningLineupScreen> {
     );
   }
 
-  Widget _buildRoleCard({
-    required String title,
-    required IconData icon,
-    TeamMember? player,
-    required VoidCallback onSelect,
-  }) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.03),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      padding: const EdgeInsets.all(12),
-      child: Column(
-        children: [
-          Align(
-            alignment: Alignment.centerLeft,
-            child: Text(
-              title,
-              style: GoogleFonts.inter(
-                fontSize: 10,
-                fontWeight: FontWeight.w600,
-                color: AppColors.lightTextSecondary,
-              ),
-            ),
-          ),
-          const Spacer(),
-          if (player == null)
-            Container(
-              width: 56,
-              height: 56,
-              decoration: const BoxDecoration(
-                color: Color(0xFFF2F4F8),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(icon, color: AppColors.primary, size: 24),
-            )
-          else
-            Column(
-              children: [
-                CircleAvatar(
-                  radius: 28,
-                  backgroundColor: AppColors.lightTextPrimary,
-                  child: Text(
-                    player.name[0].toUpperCase(),
-                    style: GoogleFonts.plusJakartaSans(
-                      color: Colors.white,
-                      fontSize: 20,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  player.name,
-                  style: GoogleFonts.inter(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.lightTextPrimary,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
-            ),
-          const Spacer(),
-          SizedBox(
-            width: double.infinity,
-            height: 36,
-            child: TextButton(
-              onPressed: onSelect,
-              style: TextButton.styleFrom(
-                backgroundColor: const Color(0xFFF2F4F8),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-              ),
-              child: Text(
-                player == null ? 'SELECT' : 'CHANGE',
-                style: GoogleFonts.inter(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.primary,
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 }

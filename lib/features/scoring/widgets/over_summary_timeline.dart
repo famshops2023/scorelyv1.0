@@ -9,6 +9,8 @@ class OverSummaryTimeline extends StatelessWidget {
   final int historyLength;
   final VoidCallback? onUndo;
   final VoidCallback? onRedo;
+  final VoidCallback? onCheckLastOver;
+  final bool hasLastOver;
 
   const OverSummaryTimeline({
     super.key,
@@ -18,6 +20,8 @@ class OverSummaryTimeline extends StatelessWidget {
     required this.historyLength,
     this.onUndo,
     this.onRedo,
+    this.onCheckLastOver,
+    this.hasLastOver = false,
   });
 
   @override
@@ -58,32 +62,124 @@ class OverSummaryTimeline extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                'THIS OVER: $overDisplay',
-                style: GoogleFonts.inter(
-                  fontSize: 10,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.grey[400],
-                ),
+              Row(
+                children: [
+                  Text(
+                    'THIS OVER: $overDisplay',
+                    style: GoogleFonts.inter(
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.grey[400],
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: AppColors.success.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Text(
+                      '$overRuns Runs',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.success,
+                      ),
+                    ),
+                  ),
+                ],
               ),
-              Text(
-                'Runs: $overRuns',
-                style: GoogleFonts.plusJakartaSans(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.success,
-                ),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (onCheckLastOver != null)
+                    InkWell(
+                      onTap: onCheckLastOver,
+                      borderRadius: BorderRadius.circular(8),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: hasLastOver
+                              ? AppColors.primary.withValues(alpha: 0.2)
+                              : Colors.white.withValues(alpha: 0.05),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                            color: hasLastOver
+                                ? AppColors.primary.withValues(alpha: 0.5)
+                                : Colors.white.withValues(alpha: 0.1),
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.history,
+                              size: 13,
+                              color:
+                                  hasLastOver ? AppColors.primary : Colors.grey,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              'Last Over',
+                              style: GoogleFonts.inter(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                                color: hasLastOver ? Colors.white : Colors.grey,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  const SizedBox(width: 6),
+                  IconButton(
+                    icon: const Icon(Icons.undo, size: 18),
+                    color: historyIndex > 0 ? Colors.white : Colors.grey[700],
+                    onPressed: historyIndex > 0 ? onUndo : null,
+                    tooltip: 'Undo',
+                    padding: const EdgeInsets.all(4),
+                    constraints: const BoxConstraints(),
+                  ),
+                  const SizedBox(width: 6),
+                  IconButton(
+                    icon: const Icon(Icons.redo, size: 18),
+                    color: historyIndex < historyLength - 1
+                        ? Colors.white
+                        : Colors.grey[700],
+                    onPressed: historyIndex < historyLength - 1 ? onRedo : null,
+                    tooltip: 'Redo',
+                    padding: const EdgeInsets.all(4),
+                    constraints: const BoxConstraints(),
+                  ),
+                ],
               ),
             ],
           ),
-          Expanded(
-            child: SingleChildScrollView(
+          const SizedBox(height: 10),
+          if (thisOver.isEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 4),
+              child: Text(
+                'Waiting for first ball of over...',
+                style: GoogleFonts.inter(
+                  fontSize: 12,
+                  fontStyle: FontStyle.italic,
+                  color: Colors.grey[500],
+                ),
+              ),
+            )
+          else
+            SingleChildScrollView(
               scrollDirection: Axis.horizontal,
               child: Row(
                 children: thisOver.map((ball) {
@@ -105,7 +201,7 @@ class OverSummaryTimeline extends StatelessWidget {
                   }
 
                   return Container(
-                    margin: const EdgeInsets.symmetric(horizontal: 4),
+                    margin: const EdgeInsets.only(right: 8),
                     width: 36,
                     height: 36,
                     decoration: BoxDecoration(
@@ -125,23 +221,6 @@ class OverSummaryTimeline extends StatelessWidget {
                 }).toList(),
               ),
             ),
-          ),
-          Row(
-            children: [
-              IconButton(
-                icon: const Icon(Icons.undo, size: 20),
-                color: historyIndex > 0 ? Colors.white : Colors.grey[700],
-                onPressed: historyIndex > 0 ? onUndo : null,
-              ),
-              IconButton(
-                icon: const Icon(Icons.redo, size: 20),
-                color: historyIndex < historyLength - 1
-                    ? Colors.white
-                    : Colors.grey[700],
-                onPressed: historyIndex < historyLength - 1 ? onRedo : null,
-              ),
-            ],
-          ),
         ],
       ),
     );

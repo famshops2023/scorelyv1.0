@@ -6,15 +6,21 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'core/theme/app_theme.dart';
 import 'routes/app_router.dart';
+import 'services/ads/ad_service.dart';
 import 'services/error_reporter.dart';
 import 'services/notification_service.dart';
 import 'services/sync_manager.dart';
+import 'providers/scorer_notification_provider.dart';
+import 'providers/match_result_popup_provider.dart';
 import 'widgets/error_boundary.dart';
 
 void main() async {
   // ── 1. Ensure Flutter is initialised before anything else ────────────────
   WidgetsFlutterBinding.ensureInitialized();
   await NotificationService.instance.init();
+
+  // ── Initialize AdMob SDK asynchronously (never delays app launch) ─────────
+  unawaited(AdService.instance.initialize());
 
   // ── 2. Flutter framework errors (widget build failures, render errors) ───
   FlutterError.onError = (FlutterErrorDetails details) {
@@ -87,6 +93,10 @@ class _ScorelyAppState extends ConsumerState<ScorelyApp> {
     super.initState();
     // Bootstrap sync manager so it starts listening for connectivity immediately.
     ref.read(syncManagerProvider);
+    // Bootstrap scorer request monitor for real-time notifications & handover popups
+    ref.read(pendingScorerRequestsProvider);
+    // Bootstrap completed-match result popup monitor
+    ref.read(matchResultPopupProvider);
     _initDeepLinks();
   }
 

@@ -11,13 +11,23 @@ class MatchStatsCalculator {
     List<BallEvent> balls,
     bool isFirstInnings,
   ) {
+    // Clean team names helper
+    String cleanTeamName(String raw) {
+      final s = raw
+          .replaceAll(RegExp(r'\[SM-\d+\]'), '')
+          .replaceAll(RegExp(r'SM-\d+:?'), '')
+          .replaceAll(RegExp(r'Cricket Match\s*(\(SM-\d+\))?', caseSensitive: false), '')
+          .trim();
+      return s.isNotEmpty ? s : raw.trim();
+    }
+
     // Determine team names from match title if teams are null
     final titleParts = match.matchTitle.split(' vs ');
     final defaultTeamAName = titleParts.isNotEmpty && titleParts[0].trim().isNotEmpty
-        ? titleParts[0].trim()
+        ? cleanTeamName(titleParts[0])
         : 'Team A';
     final defaultTeamBName = titleParts.length > 1 && titleParts[1].trim().isNotEmpty
-        ? titleParts[1].trim()
+        ? cleanTeamName(titleParts[1])
         : 'Team B';
 
     final teamAName = teamA?.name.isNotEmpty == true ? teamA!.name : defaultTeamAName;
@@ -26,40 +36,69 @@ class MatchStatsCalculator {
     // --- Determine which team batted in which innings ---
     final innings1Balls = balls.where((b) => b.inningsNumber == 1).toList();
     final innings2Balls = balls.where((b) => b.inningsNumber == 2).toList();
-    final bool hasInningsData = innings1Balls.isNotEmpty || innings2Balls.isNotEmpty;
 
     final teamAPlayerIds = teamAPlayers.map((e) => e.id).toSet();
     final teamBPlayerIds = teamBPlayers.map((e) => e.id).toSet();
+    final teamAPlayerNames = teamAPlayers
+        .map((e) => e.name.trim().toLowerCase())
+        .where((n) => n.isNotEmpty)
+        .toSet();
+    final teamBPlayerNames = teamBPlayers
+        .map((e) => e.name.trim().toLowerCase())
+        .where((n) => n.isNotEmpty)
+        .toSet();
 
-    String innings1TeamName;
-    String innings2TeamName;
+    bool? teamABattedFirst;
 
-    if (hasInningsData && innings1Balls.isNotEmpty) {
-      final firstBatterName = innings1Balls.first.batterName;
-      final firstBatterId = innings1Balls.first.batterId;
-
-      bool teamABattedFirst = true;
-      if (teamAPlayers.any((p) => p.name == firstBatterName) || teamAPlayerIds.contains(firstBatterId)) {
+    // 1. Try resolving using Innings 1 balls
+    if (innings1Balls.isNotEmpty) {
+      int teamAVotes = 0;
+      int teamBVotes = 0;
+      for (var b in innings1Balls) {
+        final bName = b.batterName.trim().toLowerCase();
+        final bwName = b.bowlerName.trim().toLowerCase();
+        if (teamAPlayerIds.contains(b.batterId) || teamAPlayerNames.contains(bName)) teamAVotes++;
+        if (teamBPlayerIds.contains(b.batterId) || teamBPlayerNames.contains(bName)) teamBVotes++;
+        // Bowler in Innings 1 is bowling (fielding team)
+        if (teamAPlayerIds.contains(b.bowlerId) || teamAPlayerNames.contains(bwName)) teamBVotes++;
+        if (teamBPlayerIds.contains(b.bowlerId) || teamBPlayerNames.contains(bwName)) teamAVotes++;
+      }
+      if (teamAVotes > teamBVotes) {
         teamABattedFirst = true;
-      } else if (teamBPlayers.any((p) => p.name == firstBatterName) || teamBPlayerIds.contains(firstBatterId)) {
+      } else if (teamBVotes > teamAVotes) {
         teamABattedFirst = false;
-      } else {
-        teamABattedFirst = true;
       }
-
-      innings1TeamName = teamABattedFirst ? teamAName : teamBName;
-      innings2TeamName = teamABattedFirst ? teamBName : teamAName;
-    } else {
-      bool teamABattedFirst = true;
-      if (balls.isNotEmpty) {
-        if (teamBPlayerIds.contains(balls.first.batterId) ||
-            teamBPlayers.any((p) => p.name == balls.first.batterName)) {
-          teamABattedFirst = false;
-        }
-      }
-      innings1TeamName = teamABattedFirst ? teamAName : teamBName;
-      innings2TeamName = teamABattedFirst ? teamBName : teamAName;
     }
+
+    // 2. If not resolved yet (e.g. Scorer Handover where only Innings 2 balls were saved),
+    // resolve using Innings 2 balls.
+    // In Innings 2:
+    // - Batters belong to the team batting SECOND.
+    // - If Innings 2 batter is from Team B, then Team B batted 2nd -> Team A batted 1st!
+    // - If Innings 2 batter is from Team A, then Team A batted 2nd -> Team B batted 1st!
+    if (teamABattedFirst == null && innings2Balls.isNotEmpty) {
+      int teamAVotes = 0;
+      int teamBVotes = 0;
+      for (var b in innings2Balls) {
+        final bName = b.batterName.trim().toLowerCase();
+        final bwName = b.bowlerName.trim().toLowerCase();
+        if (teamAPlayerIds.contains(b.batterId) || teamAPlayerNames.contains(bName)) teamBVotes++; // A batting 2nd -> B batted 1st
+        if (teamBPlayerIds.contains(b.batterId) || teamBPlayerNames.contains(bName)) teamAVotes++; // B batting 2nd -> A batted 1st
+        if (teamAPlayerIds.contains(b.bowlerId) || teamAPlayerNames.contains(bwName)) teamAVotes++; // A bowling 2nd -> A batted 1st
+        if (teamBPlayerIds.contains(b.bowlerId) || teamBPlayerNames.contains(bwName)) teamBVotes++; // B bowling 2nd -> B batted 1st
+      }
+      if (teamAVotes > teamBVotes) {
+        teamABattedFirst = true;
+      } else if (teamBVotes > teamAVotes) {
+        teamABattedFirst = false;
+      }
+    }
+
+    // 3. Fallback: default to Team A batting first
+    teamABattedFirst ??= true;
+
+    final innings1TeamName = teamABattedFirst ? teamAName : teamBName;
+    final innings2TeamName = teamABattedFirst ? teamBName : teamAName;
 
     final teamName = isFirstInnings ? innings1TeamName : innings2TeamName;
     final isTeamABatting = isFirstInnings
@@ -87,14 +126,18 @@ class MatchStatsCalculator {
 
     // Pick the correct set of balls
     List<BallEvent> inningsBalls;
-    if (hasInningsData) {
-      inningsBalls = isFirstInnings ? innings1Balls : innings2Balls;
-    } else {
-      // Legacy: split by player IDs
+    final targetInningsBalls = isFirstInnings ? innings1Balls : innings2Balls;
+    if (targetInningsBalls.isNotEmpty) {
+      inningsBalls = targetInningsBalls;
+    } else if (innings1Balls.isNotEmpty || innings2Balls.isNotEmpty) {
+      // Legacy: split by batter ownership (e.g. inningsNumber not populated for
+      // one innings while the other has balls, such as scorer handover).
       final battingTeamPlayerIds = battingTeamPlayers.map((e) => e.id).toSet();
       inningsBalls = battingTeamPlayerIds.isNotEmpty
           ? balls.where((b) => battingTeamPlayerIds.contains(b.batterId)).toList()
           : [];
+    } else {
+      inningsBalls = [];
     }
 
     // Process balls in chronological order

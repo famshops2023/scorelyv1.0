@@ -4,14 +4,21 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../providers/history_provider.dart';
+import '../../providers/profile_provider.dart';
+import '../../widgets/ads/scorely_banner_ad.dart';
 
 class HistoryScreen extends ConsumerWidget {
   const HistoryScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final matches = ref.watch(matchHistoryProvider);
+    final allMatches = ref.watch(matchHistoryProvider);
+    final profile = ref.watch(profileProvider);
+    final limit = ref.watch(storageLimitProvider);
     final pendingCount = ref.watch(pendingSyncCountProvider).value ?? 0;
+
+    // Apply storage optimizer limit: max 5 matches for guest users, settings limit for logged-in users
+    final matches = allMatches.take(limit).toList();
 
     return Scaffold(
       backgroundColor: AppColors.lightBg,
@@ -29,6 +36,12 @@ class HistoryScreen extends ConsumerWidget {
           ),
         ),
         automaticallyImplyLeading: false,
+        leading: Navigator.of(context).canPop()
+            ? IconButton(
+                icon: const Icon(Icons.arrow_back, color: AppColors.lightTextPrimary),
+                onPressed: () => Navigator.of(context).pop(),
+              )
+            : null,
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(1),
           child: Container(
@@ -67,18 +80,23 @@ class HistoryScreen extends ConsumerWidget {
               ? _buildEmptyState()
               : ListView.builder(
               padding: const EdgeInsets.all(16),
-              itemCount: (matches.length > 20 ? 20 : matches.length) + 1,
+              itemCount: matches.length + 1,
               itemBuilder: (context, index) {
-                if (index == (matches.length > 20 ? 20 : matches.length)) {
+                if (index == matches.length) {
                   return Padding(
                     padding: const EdgeInsets.symmetric(vertical: 24.0),
                     child: Center(
                       child: Text(
-                        'For older matches, please contact our support team.',
+                        !profile.isLoggedIn
+                            ? 'Showing latest 5 matches (Guest limit).\nSign in to store and view up to 50 matches.'
+                            : matches.length >= limit
+                                ? 'Showing latest $limit matches as per Storage Optimizer.\nYou can adjust your limit in Settings > Storage Optimizer.'
+                                : 'For older matches, please contact our support team.',
                         style: GoogleFonts.inter(
                           fontSize: 13,
                           fontWeight: FontWeight.w500,
                           color: AppColors.lightTextSecondary,
+                          height: 1.4,
                         ),
                         textAlign: TextAlign.center,
                       ),
@@ -117,12 +135,20 @@ class HistoryScreen extends ConsumerWidget {
           ),
         ],
       ),
+      bottomNavigationBar: const ScorelyBannerAd(
+        padding: EdgeInsets.symmetric(vertical: 4),
+      ),
     );
   }
 
   Widget _buildMatchItem(dynamic match) {
-    final String winnerText = match.winnerTeamName != null && match.winnerTeamName.toString().isNotEmpty
-        ? '${match.winnerTeamName} WON'
+    final rawWinner = match.winnerTeamName?.toString().trim() ?? '';
+    final String winnerText = rawWinner.isNotEmpty
+        ? (rawWinner.toLowerCase().contains('abandon')
+            ? 'MATCH ABANDONED'
+            : (rawWinner.toLowerCase().contains('won')
+                ? rawWinner.toUpperCase()
+                : '$rawWinner WON'))
         : 'MATCH DRAWN';
 
     return Container(

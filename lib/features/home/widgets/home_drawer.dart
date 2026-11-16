@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:scorely/core/theme/colors.dart';
 import '../../../providers/profile_provider.dart';
 
@@ -25,6 +26,106 @@ class HomeDrawer extends ConsumerWidget {
         ),
       ),
       onTap: onTap,
+    );
+  }
+
+  void _showSignInDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (ctx) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 64,
+                height: 64,
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.lock_person_rounded,
+                  color: AppColors.primary,
+                  size: 32,
+                ),
+              ),
+              const SizedBox(height: 18),
+              Text(
+                'Sign In to Access Profile',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.lightTextPrimary,
+                ),
+              ),
+              const SizedBox(height: 10),
+              Text(
+                'Profile is only visible for signed-in players. Please sign in or create an account to view and customize your cricket profile, track stats, and generate your personal QR code.',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.inter(
+                  fontSize: 13.5,
+                  color: const Color(0xFF5A6278),
+                  height: 1.5,
+                ),
+              ),
+              const SizedBox(height: 24),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () => Navigator.pop(ctx),
+                      style: OutlinedButton.styleFrom(
+                        side: BorderSide(color: Colors.grey.shade300),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        padding: const EdgeInsets.symmetric(vertical: 13),
+                      ),
+                      child: Text(
+                        'CANCEL',
+                        style: GoogleFonts.inter(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.lightTextSecondary,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () {
+                        Navigator.pop(ctx);
+                        context.push('/login');
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        padding: const EdgeInsets.symmetric(vertical: 13),
+                        elevation: 0,
+                      ),
+                      child: Text(
+                        'SIGN IN',
+                        style: GoogleFonts.inter(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 
@@ -95,7 +196,11 @@ class HomeDrawer extends ConsumerWidget {
             title: 'Profile',
             onTap: () {
               Navigator.pop(context);
-              context.push('/profile');
+              if (!isLoggedIn) {
+                _showSignInDialog(context);
+              } else {
+                context.push('/profile');
+              }
             },
           ),
           _buildDrawerItem(
@@ -133,9 +238,15 @@ class HomeDrawer extends ConsumerWidget {
           _buildDrawerItem(
             icon: Icons.privacy_tip_outlined,
             title: 'Privacy Policy',
-            onTap: () {
+            onTap: () async {
               Navigator.pop(context);
-              context.push('/info', extra: 2);
+              final uri =
+                  Uri.parse('https://innomerce.in/scorely-privacy-policy');
+              try {
+                await launchUrl(uri, mode: LaunchMode.externalApplication);
+              } catch (e) {
+                debugPrint('Could not launch Privacy Policy: $e');
+              }
             },
           ),
           _buildDrawerItem(

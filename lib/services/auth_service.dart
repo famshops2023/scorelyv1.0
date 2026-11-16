@@ -51,6 +51,14 @@ class AuthService {
 
   static Map<String, String> get _headers => InsforgeConfig.headers;
 
+  /// Helper to extract the 7-day insforge_refresh_token from the Set-Cookie header.
+  static String? _extractRefreshToken(Map<String, String> headers) {
+    final cookie = headers['set-cookie'];
+    if (cookie == null || cookie.isEmpty) return null;
+    final match = RegExp(r'insforge_refresh_token=([^;]+)').firstMatch(cookie);
+    return match?.group(1);
+  }
+
   // ─────────────────────────────── SIGN UP ────────────────────────────────
 
   Future<AuthResult> signUp({
@@ -123,6 +131,8 @@ class AuthService {
       if (res.statusCode == 200 || res.statusCode == 201) {
         final userId = body['user']?['id'] as String? ?? '';
         final accessToken = body['accessToken'] as String? ?? body['access_token'] as String? ?? '';
+        final csrfToken = body['csrfToken'] as String?;
+        final refreshToken = _extractRefreshToken(res.headers);
         final displayName =
             body['user']?['user_metadata']?['name'] as String? ?? email.split('@').first;
 
@@ -132,6 +142,8 @@ class AuthService {
           name: displayName,
           isLoggedIn: true,
           accessToken: accessToken,
+          refreshToken: refreshToken,
+          csrfToken: csrfToken,
         );
         return AuthResult.ok(profile);
       }
@@ -162,6 +174,8 @@ class AuthService {
       if (res.statusCode == 200) {
         final userId = body['user']?['id'] as String? ?? '';
         final token = body['accessToken'] as String? ?? '';
+        final csrfToken = body['csrfToken'] as String?;
+        final refreshToken = _extractRefreshToken(res.headers);
         final displayName =
             body['user']?['user_metadata']?['name'] as String? ?? email.split('@').first;
 
@@ -171,6 +185,8 @@ class AuthService {
           name: displayName,
           isLoggedIn: true,
           accessToken: token,
+          refreshToken: refreshToken,
+          csrfToken: csrfToken,
         );
         return AuthResult.ok(profile);
       }
@@ -199,6 +215,7 @@ class AuthService {
       final googleSignIn = GoogleSignIn.instance;
       _googleInitialization ??= googleSignIn.initialize(
         serverClientId: _googleServerClientId,
+        clientId: kIsWeb ? _googleServerClientId : null,
       );
       await _googleInitialization;
 
@@ -237,6 +254,8 @@ class AuthService {
       if (res.statusCode == 200 || res.statusCode == 201) {
         final userId = body['user']?['id'] as String? ?? '';
         final token = body['accessToken'] as String? ?? '';
+        final csrfToken = body['csrfToken'] as String?;
+        final refreshToken = _extractRefreshToken(res.headers);
         final displayName = googleUser.displayName ?? googleUser.email.split('@').first;
 
         final profile = UserProfile(
@@ -245,6 +264,8 @@ class AuthService {
           name: displayName,
           isLoggedIn: true,
           accessToken: token,
+          refreshToken: refreshToken,
+          csrfToken: csrfToken,
         );
         return AuthResult.ok(profile);
       }
@@ -277,6 +298,101 @@ class AuthService {
         );
       }
       return AuthResult.err('Google Sign-in failed: $e');
+    }
+  }
+
+  // ─────────────────────────── DELETE ACCOUNT ─────────────────────────────
+
+  /// Permanently deletes the user account on InsForge backend.
+  Future<AuthResult> deleteAccount({
+    required String userId,
+    String? accessToken,
+  }) async {
+    try {
+      bool deleted = false;
+      // 1. Try deleting via authenticated user endpoint
+      if (accessToken != null && accessToken.isNotEmpty) {
+        final resMe = await http.delete(
+          Uri.parse('$_host/api/auth/users/me'),
+          headers: InsforgeConfig.authHeaders(accessToken),
+        );
+        if (resMe.statusCode == 200 || resMe.statusCode == 204) {
+          deleted = true;
+        }
+      }
+
+      // 2. Try deleting via user ID endpoint
+      if (!deleted && userId.isNotEmpty) {
+        final resId = await http.delete(
+          Uri.parse('$_host/api/auth/users/$userId'),
+          headers: _headers,
+        );
+        if (resId.statusCode == 200 || resId.statusCode == 204) {
+          deleted = true;
+        }
+      }
+
+      return const AuthResult(success: true);
+    } catch (e) {
+      debugPrint('AuthService.deleteAccount error: $e');
+      return AuthResult.err('Failed to complete remote account deletion: $e');
+    }
+  }
+
+  // ─────────────────────────── REFRESH TOKEN ──────────────────────────────
+
+  /// Silently refreshes an expired access token using the stored 7-day refresh token
+  /// and CSRF token. Returns updated [UserProfile] with a fresh access token.
+  Future<AuthResult> refreshToken({
+    required String refreshToken,
+    required String csrfToken,
+  }) async {
+    try {
+      final res = await http.post(
+        Uri.parse('$_host/api/auth/refresh'),
+        headers: {
+          'apikey': InsforgeConfig.apiKey,
+          'Authorization': 'Bearer ${InsforgeConfig.apiKey}',
+          'cookie': 'insforge_refresh_token=$refreshToken',
+          'x-csrf-token': csrfToken,
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({
+          'csrfToken': csrfToken,
+        }),
+      );
+
+      if (res.statusCode == 200) {
+        final body = jsonDecode(res.body) as Map<String, dynamic>;
+        final newAccessToken = body['accessToken'] as String? ?? '';
+        final newCsrfToken = body['csrfToken'] as String? ?? csrfToken;
+        final newRefreshToken = _extractRefreshToken(res.headers) ?? refreshToken;
+        final user = body['user'] as Map<String, dynamic>?;
+        final userId = user?['id'] as String? ?? '';
+        final email = user?['email'] as String? ?? '';
+        final displayName =
+            user?['user_metadata']?['name'] as String? ??
+            user?['profile']?['name'] as String? ??
+            (email.isNotEmpty ? email.split('@').first : 'Scorely User');
+
+        final profile = UserProfile(
+          id: userId,
+          email: email,
+          name: displayName,
+          isLoggedIn: true,
+          accessToken: newAccessToken,
+          refreshToken: newRefreshToken,
+          csrfToken: newCsrfToken,
+        );
+        return AuthResult.ok(profile);
+      }
+
+      final body = jsonDecode(res.body);
+      final msg = (body is Map) ? body['message'] as String? : null;
+      return AuthResult.err(msg ?? 'Refresh failed (${res.statusCode})');
+    } catch (e) {
+      debugPrint('AuthService.refreshToken error: $e');
+      return AuthResult.err('Network error during token refresh: $e');
     }
   }
 

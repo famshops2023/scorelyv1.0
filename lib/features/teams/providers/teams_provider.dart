@@ -5,6 +5,7 @@ import '../../../core/config/insforge_config.dart';
 
 import '../../../providers/profile_provider.dart';
 import '../../../services/profile_service.dart';
+import '../../../models/user_profile.dart';
 
 // ============================================================
 // INSFORGE CONFIG
@@ -86,6 +87,12 @@ class TeamMember {
       profileImageUrl: profileImageUrl ?? this.profileImageUrl,
     );
   }
+
+  /// Returns a short, human-readable ID like SP-1042 for players.
+  String get displayId {
+    final raw = (profileId != null && profileId!.isNotEmpty) ? profileId! : id;
+    return UserProfile.deriveDisplayId(raw);
+  }
 }
 
 class TeamData {
@@ -98,6 +105,22 @@ class TeamData {
   final List<TeamMember> members;
 
   final String? createdBy;
+
+  /// Returns a short, human-readable ID like ST-1042 for teams.
+  String get displayId => formatDisplayId(teamCode: teamCode, rawId: id);
+
+  /// Helper to format team display ID (ST-xxxx)
+  static String formatDisplayId({String? teamCode, required String rawId}) {
+    if (teamCode != null && teamCode.isNotEmpty) {
+      if (teamCode.startsWith('ST-')) return teamCode;
+      return 'ST-$teamCode';
+    }
+    if (rawId.isEmpty) return 'ST-0000';
+    final hex = rawId.replaceAll('-', '');
+    final tail = hex.length >= 4 ? hex.substring(hex.length - 4) : hex.padLeft(4, '0');
+    final num = int.tryParse(tail, radix: 16) ?? 0;
+    return 'ST-${(num % 9000 + 1000)}';
+  }
 
   TeamData({
     required this.id,
@@ -173,17 +196,15 @@ class TeamsNotifier extends AsyncNotifier<List<TeamData>> {
   Future<List<TeamData>> _fetchAll() async {
     try {
       // 1. Fetch teams
-      final teamsRes = await http.get(
+      final teamsRes = await InsforgeConfig.getWithFallback(
         Uri.parse('${_InsForge.baseUrl}/teams?select=*&order=created_at.desc'),
-        headers: _InsForge.headers,
       );
       if (teamsRes.statusCode != 200) return [];
       final teamsJson = jsonDecode(teamsRes.body) as List;
 
       // 2. Fetch all players
-      final playersRes = await http.get(
+      final playersRes = await InsforgeConfig.getWithFallback(
         Uri.parse('${_InsForge.baseUrl}/players?select=*'),
-        headers: _InsForge.headers,
       );
       final playersJson =
           playersRes.statusCode == 200 ? jsonDecode(playersRes.body) as List : [];

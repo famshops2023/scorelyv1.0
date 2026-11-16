@@ -9,7 +9,11 @@ import '../match/match_setup_screen.dart';
 import '../match/providers/pending_matches_provider.dart';
 import '../match/helpers/live_match_promo.dart';
 import '../../models/player_setup.dart';
+import '../../models/match_status.dart';
 import 'package:uuid/uuid.dart';
+import '../../services/ratings/player_rating_repository.dart';
+import '../../models/player_pro_rating.dart';
+import '../../providers/profile_provider.dart';
 
 class TeamSquadScreen extends ConsumerStatefulWidget {
   final String teamId;
@@ -19,6 +23,7 @@ class TeamSquadScreen extends ConsumerStatefulWidget {
   final bool isSelectingPlayingXi;
   final String? teamType;
   final List<String>? excludedPlayerNames;
+  final bool signedUpOnly;
 
   const TeamSquadScreen({
     super.key, 
@@ -29,6 +34,7 @@ class TeamSquadScreen extends ConsumerStatefulWidget {
     this.isSelectingPlayingXi = false,
     this.teamType,
     this.excludedPlayerNames,
+    this.signedUpOnly = false,
   });
 
   @override
@@ -43,6 +49,13 @@ class _TeamSquadScreenState extends ConsumerState<TeamSquadScreen> {
   Widget build(BuildContext context) {
     final teamsAsync = ref.watch(teamsProvider);
     final teams = teamsAsync.value ?? [];
+    final isTurfContext = widget.setupData != null
+        ? PlayerRatingRepository.isTurfMatch(
+            widget.setupData?.matchType ?? '',
+            widget.setupData?.venue ?? '',
+          )
+        : true;
+    final activeMatchType = isTurfContext ? 'turf' : 'ground';
     TeamData team;
     bool isLoading = false;
 
@@ -59,6 +72,7 @@ class _TeamSquadScreenState extends ConsumerState<TeamSquadScreen> {
         dateActive: DateTime.now(),
         members: players.map((p) => TeamMember(
           id: const Uuid().v4(),
+          profileId: p.profileId,
           name: p.name,
           roles: [],
           isCaptain: p.isCaptain,
@@ -66,14 +80,43 @@ class _TeamSquadScreenState extends ConsumerState<TeamSquadScreen> {
       );
     } else {
       team = teams.firstWhere(
-        (t) => t.id == widget.teamId,
-        orElse: () => TeamData(
-          id: '',
-          name: '',
-          location: '',
-          dateActive: DateTime.now(),
-          members: [],
-        ),
+        (t) =>
+            (widget.teamId.isNotEmpty && t.id == widget.teamId) ||
+            (widget.teamType != null &&
+                widget.teamType!.isNotEmpty &&
+                t.name.toLowerCase() == widget.teamType!.toLowerCase()),
+        orElse: () {
+          if (widget.setupData != null) {
+            final isTeamA = widget.teamType == widget.setupData!.teamAName;
+            final players = isTeamA
+                ? widget.setupData!.teamAPlayers
+                : widget.setupData!.teamBPlayers;
+            return TeamData(
+              id: 'match_team_${widget.teamType}',
+              name: widget.teamType ?? 'Team',
+              location: 'Local',
+              dateActive: DateTime.now(),
+              members: players
+                  .map((p) => TeamMember(
+                        id: (p.profileId != null && p.profileId!.isNotEmpty)
+                            ? p.profileId!
+                            : const Uuid().v4(),
+                        profileId: p.profileId,
+                        name: p.name,
+                        roles: [],
+                        isCaptain: p.isCaptain,
+                      ))
+                  .toList(),
+            );
+          }
+          return TeamData(
+            id: '',
+            name: '',
+            location: '',
+            dateActive: DateTime.now(),
+            members: [],
+          );
+        },
       );
       isLoading = teamsAsync.isLoading;
     }
@@ -132,8 +175,13 @@ class _TeamSquadScreenState extends ConsumerState<TeamSquadScreen> {
     }
 
     List<TeamMember> displayedMembers = team.members;
+    if (widget.signedUpOnly) {
+      displayedMembers = displayedMembers
+          .where((m) => m.profileId != null && m.profileId!.isNotEmpty)
+          .toList();
+    }
     if (widget.excludedPlayerNames != null && widget.excludedPlayerNames!.isNotEmpty) {
-      displayedMembers = team.members.where((m) => !widget.excludedPlayerNames!.contains(m.name)).toList();
+      displayedMembers = displayedMembers.where((m) => !widget.excludedPlayerNames!.contains(m.name)).toList();
     }
 
     final int selectedCount = _selectedPlayerIds.length;
@@ -259,6 +307,23 @@ class _TeamSquadScreenState extends ConsumerState<TeamSquadScreen> {
                                 fontSize: 24,
                               ),
                             ),
+                            const SizedBox(height: 6),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withValues(alpha: 0.15),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: Text(
+                                team.displayId,
+                                style: GoogleFonts.inter(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 11,
+                                  letterSpacing: 1.0,
+                                ),
+                              ),
+                            ),
                           ],
                         ),
                       ],
@@ -348,6 +413,46 @@ class _TeamSquadScreenState extends ConsumerState<TeamSquadScreen> {
                         ],
                       ),
                     ),
+
+                  if (displayedMembers.isEmpty)
+                    Container(
+                      padding: const EdgeInsets.symmetric(vertical: 36, horizontal: 16),
+                      alignment: Alignment.center,
+                      child: Column(
+                        children: [
+                          Icon(
+                            widget.signedUpOnly ? Icons.person_off_outlined : Icons.group_off_outlined,
+                            size: 48,
+                            color: AppColors.lightBorder,
+                          ),
+                          const SizedBox(height: 12),
+                          Text(
+                            widget.signedUpOnly ? 'No Signed-in Players in Squad' : 'No Players Available',
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.lightTextPrimary,
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            widget.signedUpOnly
+                                ? 'Official scorers must be signed-in Scorely users to receive handover requests.'
+                                : 'No eligible players found for selection.',
+                            textAlign: TextAlign.center,
+                            style: GoogleFonts.inter(
+                              fontSize: 13,
+                              color: AppColors.lightTextSecondary,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                  // ── Use Myself as Scorer button ──────────────────────────
+                  // Only shown in scorer-selection mode for signed-in users
+                  if (widget.signedUpOnly && widget.singleSelectionMode)
+                    _buildUseMyselfScorerButton(context),
 
                   // Player List
                   ListView.builder(
@@ -443,6 +548,26 @@ class _TeamSquadScreenState extends ConsumerState<TeamSquadScreen> {
                                         fontSize: 14,
                                       ),
                                     ),
+                                    const SizedBox(width: 6),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 5,
+                                        vertical: 1.5,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: AppColors.primary.withValues(alpha: 0.08),
+                                        borderRadius: BorderRadius.circular(4),
+                                      ),
+                                      child: Text(
+                                        member.displayId,
+                                        style: GoogleFonts.inter(
+                                          color: AppColors.primary,
+                                          fontWeight: FontWeight.w700,
+                                          fontSize: 9.5,
+                                          letterSpacing: 0.5,
+                                        ),
+                                      ),
+                                    ),
                                     if (member.isCaptain) ...[
                                       const SizedBox(width: 6),
                                       Container(
@@ -471,6 +596,9 @@ class _TeamSquadScreenState extends ConsumerState<TeamSquadScreen> {
                                           fontSize: 10,
                                         ),
                                       ),
+                                    const Spacer(),
+                                    _buildSquadProTitle(member.profileId, activeMatchType),
+                                    const SizedBox(width: 4),
                                   ],
                                 ),
                               ),
@@ -527,7 +655,8 @@ class _TeamSquadScreenState extends ConsumerState<TeamSquadScreen> {
                       if (widget.teamType == 'A') {
                         currentData = currentData.copyWith(
                           teamAPlayers: players,
-                          status: 'waiting_for_team_b',
+                          status: MatchStatus.pending,
+                          setupStage: MatchSetupStage.squadSelection,
                         );
 
                         // Add to pending matches
@@ -554,7 +683,8 @@ class _TeamSquadScreenState extends ConsumerState<TeamSquadScreen> {
                       } else if (widget.teamType == 'B') {
                         currentData = currentData.copyWith(
                           teamBPlayers: players,
-                          status: 'ready_for_toss',
+                          status: MatchStatus.pending,
+                          setupStage: MatchSetupStage.readyForToss,
                         );
                         await ref.read(pendingMatchesProvider.notifier).addOrUpdateMatch(currentData);
                         if (context.mounted) {
@@ -619,5 +749,164 @@ class _TeamSquadScreenState extends ConsumerState<TeamSquadScreen> {
         ],
       ),
     );
+  }
+
+  /// "Use Myself as Scorer" card — shown above the player list in scorer-
+  /// selection mode. Tapping it pops the screen with the current profile as
+  /// the selected scorer TeamMember.
+  Widget _buildUseMyselfScorerButton(BuildContext context) {
+    final profile = ref.read(profileProvider);
+
+    final effectiveName = profile.name.isNotEmpty
+        ? profile.name
+        : (widget.setupData?.teamAScorerName ?? 'Scorer (Myself)');
+    final effectiveId = profile.id.isNotEmpty
+        ? profile.id
+        : (widget.setupData?.teamAScorerId ?? 'scorer_myself');
+
+    return GestureDetector(
+      onTap: () {
+        context.pop(
+          TeamMember(
+            id: effectiveId,
+            profileId: effectiveId,
+            name: effectiveName,
+            roles: ['Official Scorer'],
+          ),
+        );
+      },
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            colors: [Color(0xFF1B5E20), Color(0xFF2E7D32)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF2E7D32).withValues(alpha: 0.35),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        child: Row(
+          children: [
+            // Icon bubble
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.15),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.person_pin_circle_rounded,
+                color: Colors.white,
+                size: 24,
+              ),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'USE MYSELF AS SCORER',
+                    style: GoogleFonts.plusJakartaSans(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w800,
+                      fontSize: 13,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    '${profile.name} • ${profile.displayId}',
+                    style: GoogleFonts.inter(
+                      color: Colors.white.withValues(alpha: 0.85),
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            // Arrow
+            Container(
+              padding: const EdgeInsets.all(6),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Icon(
+                Icons.check_circle_outline_rounded,
+                color: Colors.white,
+                size: 20,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSquadProTitle(String? profileId, String matchType) {
+
+    if (profileId == null || profileId.isEmpty) return const SizedBox.shrink();
+
+    return FutureBuilder<PlayerProRating>(
+      future: PlayerRatingRepository.getPlayerRating(
+        playerUserId: profileId,
+        matchType: matchType,
+      ),
+      builder: (context, snapshot) {
+        final rating = snapshot.data;
+        if (rating == null || !rating.hasRating || rating.matchesPlayed == 0) {
+          return const SizedBox.shrink();
+        }
+
+        final level = rating.level.toUpperCase();
+        final color = _getLevelColor(level);
+
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: 0.12),
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: color.withValues(alpha: 0.3)),
+          ),
+          child: Text(
+            level,
+            style: GoogleFonts.plusJakartaSans(
+              color: color,
+              fontWeight: FontWeight.w800,
+              fontSize: 9.5,
+              letterSpacing: 0.5,
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Color _getLevelColor(String level) {
+    switch (level.toLowerCase()) {
+      case 'legend':
+        return const Color(0xFFD32F2F);
+      case 'elite':
+        return const Color(0xFF8E24AA);
+      case 'senior':
+        return const Color(0xFF1976D2);
+      case 'aspirant':
+        return const Color(0xFF2E7D32);
+      case 'active':
+        return const Color(0xFF0288D1);
+      default:
+        return const Color(0xFF757575);
+    }
   }
 }

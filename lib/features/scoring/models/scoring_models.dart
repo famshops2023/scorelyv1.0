@@ -42,6 +42,62 @@ class LocalBallEvent {
       );
 }
 
+class CompletedOverSummary {
+  final int overNumber;
+  final String bowlerName;
+  final List<String> balls;
+  final int runs;
+  final int wickets;
+
+  CompletedOverSummary({
+    required this.overNumber,
+    required this.bowlerName,
+    required this.balls,
+    required this.runs,
+    required this.wickets,
+  });
+
+  bool get isMaiden {
+    for (final ball in balls) {
+      if (ball.contains('Wd') || ball.contains('Nb')) return false;
+      if (ball == 'W' || ball == '.') continue;
+      if (ball.endsWith('LB')) continue;
+      if (ball.endsWith('B') && !ball.contains('N')) continue;
+      final r = int.tryParse(ball);
+      if (r != null && r > 0) return false;
+    }
+    return balls.isNotEmpty;
+  }
+
+  Map<String, dynamic> toJson() => {
+        'overNumber': overNumber,
+        'bowlerName': bowlerName,
+        'balls': balls,
+        'runs': runs,
+        'wickets': wickets,
+      };
+
+  factory CompletedOverSummary.fromJson(Map<String, dynamic> json) =>
+      CompletedOverSummary(
+        overNumber: json['overNumber'] as int? ?? 1,
+        bowlerName: json['bowlerName'] as String? ?? '',
+        balls: (json['balls'] as List<dynamic>?)
+                ?.map((e) => e.toString())
+                .toList() ??
+            [],
+        runs: json['runs'] as int? ?? 0,
+        wickets: json['wickets'] as int? ?? 0,
+      );
+
+  CompletedOverSummary clone() => CompletedOverSummary(
+        overNumber: overNumber,
+        bowlerName: bowlerName,
+        balls: List<String>.from(balls),
+        runs: runs,
+        wickets: wickets,
+      );
+}
+
 // --- Local Data Models for Stats & Undo Stack ---
 
 class MatchState {
@@ -59,6 +115,7 @@ class MatchState {
   final List<String> batterOrder;
   final int nextBatterIndex;
   final List<LocalBallEvent> localBalls;
+  final List<CompletedOverSummary> completedOvers;
 
   MatchState({
     required this.runs,
@@ -75,6 +132,7 @@ class MatchState {
     required this.batterOrder,
     required this.nextBatterIndex,
     required this.localBalls,
+    this.completedOvers = const [],
   });
 
   MatchState clone() {
@@ -93,6 +151,7 @@ class MatchState {
       batterOrder: List.from(batterOrder),
       nextBatterIndex: nextBatterIndex,
       localBalls: List.from(localBalls),
+      completedOvers: completedOvers.map((o) => o.clone()).toList(),
     );
   }
 }

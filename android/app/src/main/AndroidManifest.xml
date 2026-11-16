@@ -49,6 +49,11 @@
                 <data android:scheme="scorely" />
             </intent-filter>
         </activity>
+        <!-- Google AdMob Application ID: Production ID for Innomerce Solutions / Scorely. -->
+        <meta-data
+            android:name="com.google.android.gms.ads.APPLICATION_ID"
+            android:value="ca-app-pub-3883384869913004~1569174407" />
+
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
         <meta-data

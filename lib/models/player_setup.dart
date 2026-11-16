@@ -39,22 +39,30 @@ class PlayerSetupData {
   final String name;
   final PlayerRole role;
   final bool isCaptain;
+  final String? profileId;
+  final bool isSignedIn;
 
   const PlayerSetupData({
     required this.name,
     this.role = PlayerRole.batsman,
     this.isCaptain = false,
+    this.profileId,
+    this.isSignedIn = false,
   });
 
   PlayerSetupData copyWith({
     String? name,
     PlayerRole? role,
     bool? isCaptain,
+    String? profileId,
+    bool? isSignedIn,
   }) {
     return PlayerSetupData(
       name: name ?? this.name,
       role: role ?? this.role,
       isCaptain: isCaptain ?? this.isCaptain,
+      profileId: profileId ?? this.profileId,
+      isSignedIn: isSignedIn ?? this.isSignedIn,
     );
   }
 
@@ -63,10 +71,14 @@ class PlayerSetupData {
       'name': name,
       'role': role.toString(),
       'isCaptain': isCaptain,
+      'profileId': profileId,
+      'isSignedIn': isSignedIn,
     };
   }
 
   factory PlayerSetupData.fromJson(Map<String, dynamic> json) {
+    final pid = json['profileId'] as String?;
+    final signedIn = json['isSignedIn'] as bool? ?? (pid != null && pid.isNotEmpty);
     return PlayerSetupData(
       name: json['name'] as String? ?? '',
       role: PlayerRole.values.firstWhere(
@@ -74,6 +86,8 @@ class PlayerSetupData {
         orElse: () => PlayerRole.batsman,
       ),
       isCaptain: json['isCaptain'] as bool? ?? false,
+      profileId: pid,
+      isSignedIn: signedIn,
     );
   }
 }

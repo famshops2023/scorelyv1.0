@@ -4,6 +4,10 @@ import 'package:drift/drift.dart';
 
 DatabaseConnection connect() {
   return DatabaseConnection(
-    WebDatabase('scorely_db', logStatements: false),
+    WebDatabase.withStorage(
+      // ignore: experimental_member_use
+      DriftWebStorage.indexedDb('scorely_db'),
+      logStatements: false,
+    ),
   );
 }

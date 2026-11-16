@@ -4,6 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../../providers/history_provider.dart';
+import '../../providers/profile_provider.dart';
 
 class ScorelyShell extends ConsumerStatefulWidget {
   final StatefulNavigationShell navigationShell;
@@ -32,6 +34,15 @@ class _ScorelyShellState extends ConsumerState<ScorelyShell> {
       // Show match start bottom sheet
       _showMatchPickerBottomSheet(context);
     } else {
+      // If user tapped Profile tab (index 4 -> branch 3) and is not signed in:
+      if (index == 4) {
+        final profile = ref.read(profileProvider);
+        if (!profile.isLoggedIn) {
+          _showSignInToAccessProfileDialog(context);
+          return;
+        }
+      }
+
       // Map back to branch index
       final branchIndex = index > 2 ? index - 1 : index;
       widget.navigationShell.goBranch(
@@ -41,11 +52,113 @@ class _ScorelyShellState extends ConsumerState<ScorelyShell> {
     }
   }
 
+  void _showSignInToAccessProfileDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        return Dialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+          child: Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 64,
+                  height: 64,
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withValues(alpha: 0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.lock_person_rounded,
+                    color: AppColors.primary,
+                    size: 32,
+                  ),
+                ),
+                const SizedBox(height: 18),
+                Text(
+                  'Sign In to Access Profile',
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.lightTextPrimary,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  'Profile is only visible for signed-in players. Please sign in or create an account to view and customize your cricket profile, track stats, and generate your personal QR code.',
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.inter(
+                    fontSize: 13.5,
+                    color: const Color(0xFF5A6278),
+                    height: 1.5,
+                  ),
+                ),
+                const SizedBox(height: 24),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () => Navigator.pop(ctx),
+                        style: OutlinedButton.styleFrom(
+                          side: BorderSide(color: Colors.grey.shade300),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          padding: const EdgeInsets.symmetric(vertical: 13),
+                        ),
+                        child: Text(
+                          'CANCEL',
+                          style: GoogleFonts.inter(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.lightTextSecondary,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () {
+                          Navigator.pop(ctx);
+                          context.push('/login');
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primary,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          padding: const EdgeInsets.symmetric(vertical: 13),
+                          elevation: 0,
+                        ),
+                        child: Text(
+                          'SIGN IN',
+                          style: GoogleFonts.inter(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   Future<void> _handleQuickMatchTap(BuildContext context) async {
     final prefs = await SharedPreferences.getInstance();
     final bool hasSeenQuickMatchWarning =
         prefs.getBool('seen_quick_match_warning') ?? false;
-    final int limit = prefs.getInt('settings_storage_limit') ?? 5;
+    final int limit = ref.read(storageLimitProvider);
     final int defaultOvers = prefs.getInt('settings_default_overs') ?? 20;
 
     if (hasSeenQuickMatchWarning) {
@@ -158,6 +271,29 @@ class _ScorelyShellState extends ConsumerState<ScorelyShell> {
                         fontSize: 13,
                         color: const Color(0xFF5A6278),
                         height: 1.5,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    RichText(
+                      textAlign: TextAlign.center,
+                      text: TextSpan(
+                        style: GoogleFonts.inter(
+                          fontSize: 13,
+                          color: const Color(0xFF5A6278),
+                          height: 1.5,
+                        ),
+                        children: [
+                          const TextSpan(text: 'Want to store more? Go to '),
+                          TextSpan(
+                            text: 'Settings \u2192 Storage Optimizer',
+                            style: GoogleFonts.inter(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.primary,
+                            ),
+                          ),
+                          const TextSpan(text: ' to increase the limit.'),
+                        ],
                       ),
                     ),
                     const SizedBox(height: 24),
